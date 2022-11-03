@@ -36,5 +36,4 @@ func TestEnableDefaultLogger(t *testing.T) {
 	<-exit
 	os.Stderr = &stderr
 	require.Contains(t, buf.String(), msg)
-
 }
