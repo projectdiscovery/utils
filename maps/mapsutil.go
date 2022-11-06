@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
+	"golang.org/x/exp/maps"
 	extmaps "golang.org/x/exp/maps"
 )
 
@@ -225,13 +226,11 @@ func Walk(m map[string]any, callback func(k string, v any)) {
 	}
 }
 
-// Clear returns the same map without any keys
-func Clear[K comparable, V any](m map[K]V) map[K]V {
-	for k := range m {
-		delete(m, k)
+// Clear the map passed as parameter
+func Clear[K comparable, V any](mm ...map[K]V) {
+	for _, m := range mm {
+		maps.Clear(m)
 	}
-
-	return m
 }
 
 // SliceToMap returns a map having as keys the elements in
