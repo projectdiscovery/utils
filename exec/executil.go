@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"os/exec"
+	"runtime"
 )
 
 const (
@@ -105,6 +106,9 @@ func splitCmdArgs(cmds string) []string {
 
 // Run the specified command and return the output
 func Run(cmd string) (string, error) {
+	if runtime.GOOS == "windows" {
+		return "", errors.New("can't execute sh on windows platform")
+	}
 	return RunSh(splitCmdArgs(cmd)...)
 }
 

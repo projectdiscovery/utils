@@ -10,13 +10,14 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
+	"golang.org/x/exp/maps"
 	extmaps "golang.org/x/exp/maps"
 )
 
-// MergeMaps merges the inputted maps into a new one.
+// Merge merges the inputted maps into a new one.
 // Be aware: In case of duplicated keys in multiple maps,
 // the one ending in the result is unknown a priori.
-func MergeMaps[K comparable, V any](maps ...map[K]V) (result map[K]V) {
+func Merge[K comparable, V any](maps ...map[K]V) (result map[K]V) {
 	result = make(map[K]V)
 
 	for _, m := range maps {
@@ -102,8 +103,8 @@ func DNSToMap(msg *dns.Msg, format string) (m map[string]interface{}) {
 	return m
 }
 
-// HTTPRequesToMap Converts HTTP Request to Matcher Map
-func HTTPRequesToMap(req *http.Request) (map[string]interface{}, error) {
+// HTTPRequestToMap Converts HTTP Request to Matcher Map
+func HTTPRequestToMap(req *http.Request) (map[string]interface{}, error) {
 	m := make(map[string]interface{})
 	var headers string
 	for k, v := range req.Header {
@@ -223,4 +224,32 @@ func Walk(m map[string]any, callback func(k string, v any)) {
 			callback(k, v)
 		}
 	}
+}
+
+// Clear the map passed as parameter
+func Clear[K comparable, V any](mm ...map[K]V) {
+	for _, m := range mm {
+		maps.Clear(m)
+	}
+}
+
+// SliceToMap returns a map having as keys the elements in
+// even positions and as values the elements in odd positions.
+// If the number of elements is odd the default value applies.
+func SliceToMap[T comparable](s []T, dflt T) map[T]T {
+	result := map[T]T{}
+
+	for i := 0; i < len(s); i += 2 {
+		if i+1 < len(s) {
+			result[s[i]] = s[i+1]
+		} else {
+			result[s[i]] = dflt
+		}
+	}
+	return result
+}
+
+// IsEmpty checks if a map is empty.
+func IsEmpty[K comparable, V any](m map[K]V) bool {
+	return len(m) == 0
 }
