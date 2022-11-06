@@ -20,13 +20,23 @@ func init() {
 func TestRun(t *testing.T) {
 	// try to run the echo command
 	s, err := Run("echo test")
-	require.Nil(t, err, "failed execution", err)
-	require.Equal(t, "test"+newLineMarker, s, "output doesn't contain expected result", s)
+	if runtime.GOOS == "windows" {
+		require.NotNil(t, err)
+		require.Empty(t, s)
+	} else {
+		require.Nil(t, err, "failed execution", err)
+		require.Equal(t, "test"+newLineMarker, s, "output doesn't contain expected result", s)
+	}
 }
 
 func TestRunSh(t *testing.T) {
 	// try to run the echo command
 	s, err := RunSh("echo", "test")
-	require.Nil(t, err, "failed execution", err)
-	require.Equal(t, "test"+newLineMarker, s, "output doesn't contain expected result", s)
+	if runtime.GOOS == "windows" {
+		require.NotNil(t, err, "failed execution", err)
+		require.Empty(t, s)
+	} else {
+		require.Nil(t, err, "failed execution", err)
+		require.Equal(t, "test"+newLineMarker, s, "output doesn't contain expected result", s)
+	}
 }
