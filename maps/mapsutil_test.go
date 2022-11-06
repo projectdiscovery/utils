@@ -205,3 +205,25 @@ func TestIsEmpty(t *testing.T) {
 		require.EqualValues(t, false, got)
 	})
 }
+
+func TestClear(t *testing.T) {
+	t.Run("Clear(nil)", func(t *testing.T) {
+		var m map[string]string
+		Clear(m)
+		require.Empty(t, m)
+	})
+
+	t.Run("Clear(m)", func(t *testing.T) {
+		m := map[string]string{"a": "a", "b": "b"}
+		Clear(m)
+		require.Empty(t, m)
+	})
+
+	t.Run("Clear(m1,m2)", func(t *testing.T) {
+		m1 := map[string]string{"a": "a", "b": "b"}
+		m2 := map[string]string{"a": "a", "b": "b"}
+		Clear(m1, m2)
+		require.Empty(t, m1)
+		require.Empty(t, m2)
+	})
+}
