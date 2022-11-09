@@ -3,12 +3,14 @@ package mapsutil
 import (
 	"crypto/tls"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/miekg/dns"
 	"github.com/stretchr/testify/require"
 )
 
@@ -82,7 +84,15 @@ func TestHTTPToMap(t *testing.T) {
 }
 
 func TestDNSToMap(t *testing.T) {
-	// not implemented
+	msg := dns.Msg{}
+	msg.Rcode = 1
+	msg.Question = []dns.Question{{Name: "test", Qtype: 1, Qclass: 1}}
+	msg.Extra = []dns.RR{&dns.A{Hdr: dns.RR_Header{Name: "test", Rrtype: 1, Class: 1, Ttl: 1}, A: net.ParseIP("0.0.0.0")}}
+	msg.Answer = []dns.RR{&dns.A{Hdr: dns.RR_Header{Name: "test", Rrtype: 1, Class: 1, Ttl: 1}, A: net.ParseIP("0.0.0.0")}}
+	msg.Ns = []dns.RR{&dns.A{Hdr: dns.RR_Header{Name: "test", Rrtype: 1, Class: 1, Ttl: 1}, A: net.ParseIP("0.0.0.0")}}
+	m := DNSToMap(&msg, "")
+	require.NotNil(t, m)
+	require.NotEmpty(t, m)
 }
 
 func TestHTTPRequestToMap(t *testing.T) {
@@ -225,5 +235,58 @@ func TestClear(t *testing.T) {
 		Clear(m1, m2)
 		require.Empty(t, m1)
 		require.Empty(t, m2)
+	})
+}
+
+func TestFlatten(t *testing.T) {
+	t.Run("Flatten (flat-map)", func(t *testing.T) {
+		input := make(map[string]interface{})
+		expected := map[string]any{"item": 0, "item1": 1, "item2": 2}
+		for i, v := range expected {
+			input[i] = v
+		}
+		result := Flatten(input, ".")
+		require.EqualValues(t, expected, result)
+	})
+	t.Run("Flatten (nested-map)", func(t *testing.T) {
+		input := make(map[string]any)
+		testData := []string{"item", "item1", "item2"}
+		expected := map[string]any{"item.item": 0, "item1.item1": 1, "item2.item2": 2}
+		for i, v := range testData {
+			child := make(map[string]interface{})
+			child[v] = i
+			input[v] = child
+		}
+		got := Flatten(input, ".")
+		require.EqualValues(t, expected, got)
+	})
+}
+
+func TestWalk(t *testing.T) {
+	t.Run("Walk (flat-map)", func(t *testing.T) {
+		input := make(map[string]interface{})
+		expected := []string{"item", "item1", "item2"}
+		for i, v := range expected {
+			input[v] = i
+		}
+		var got []string
+		Walk(input, func(k string, v interface{}) {
+			got = append(got, k)
+		})
+		require.Equal(t, len(expected), len(got))
+	})
+	t.Run("Walk (nested-map)", func(t *testing.T) {
+		input := make(map[string]any)
+		expected := []string{"item", "item1", "item2"}
+		for i, v := range expected {
+			child := make(map[string]interface{})
+			child[v] = i
+			input[v] = child
+		}
+		var got []string
+		Walk(input, func(k string, v interface{}) {
+			got = append(got, k)
+		})
+		require.Equal(t, len(expected), len(got))
 	})
 }
