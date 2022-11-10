@@ -12,6 +12,7 @@ import (
 
 	"github.com/miekg/dns"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/maps"
 )
 
 func TestMergeMaps(t *testing.T) {
@@ -240,25 +241,22 @@ func TestClear(t *testing.T) {
 
 func TestFlatten(t *testing.T) {
 	t.Run("Flatten (flat-map)", func(t *testing.T) {
-		input := make(map[string]interface{})
-		expected := map[string]any{"item": 0, "item1": 1, "item2": 2}
-		for i, v := range expected {
-			input[i] = v
-		}
+		input := map[string]any{"item": 0, "item1": 1, "item2": 2}
+		expected := maps.Clone(input)
 		result := Flatten(input, ".")
 		require.EqualValues(t, expected, result)
 	})
 	t.Run("Flatten (nested-map)", func(t *testing.T) {
 		input := make(map[string]any)
 		testData := []string{"item", "item1", "item2"}
-		expected := map[string]any{"item.item": 0, "item1.item1": 1, "item2.item2": 2}
+		expected := GetKeys(map[string]any{"item.item": 0, "item1.item1": 1, "item2.item2": 2})
 		for i, v := range testData {
 			child := make(map[string]interface{})
 			child[v] = i
 			input[v] = child
 		}
 		got := Flatten(input, ".")
-		require.EqualValues(t, expected, got)
+		require.ElementsMatch(t, expected, GetKeys(got))
 	})
 }
 
