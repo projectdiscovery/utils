@@ -1,7 +1,7 @@
 //go:build !race
 
-// Package israce reports if the Go race detector is enabled.
-package israce
+// Package raceutil reports if the Go race detector is enabled.
+package raceutil
 
 // Enabled reports if the race detector is enabled.
 const Enabled = false
