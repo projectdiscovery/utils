@@ -159,7 +159,7 @@ func TestGetValues(t *testing.T) {
 func TestDifference(t *testing.T) {
 	t.Run("Difference(empty)", func(t *testing.T) {
 		got := Difference(map[string]interface{}{}, []string{}...)
-		require.EqualValues(t, map[string]interface{}{}, got)
+		require.ElementsMatch(t, map[string]interface{}{}, got)
 	})
 
 	t.Run("Difference(string)", func(t *testing.T) {
