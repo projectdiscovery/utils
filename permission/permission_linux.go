@@ -3,10 +3,12 @@
 package permissionutil
 
 import (
+	"errors"
 	"os"
 	"runtime"
 
-	"github.com/projectdiscovery/naabu/v2/pkg/israce"
+	raceutil "github.com/projectdiscovery/utils/race"
+
 	"golang.org/x/sys/unix"
 )
 
@@ -34,8 +36,7 @@ func checkCurrentUserCapNetRaw() (bool, error) {
 		return false, err
 	}
 	data.Inheritable = (1 << unix.CAP_NET_RAW)
-	err := unix.Capset(&header, &data)
-	if err != nil {
+	if err = unix.Capset(&header, &data); err != nil {
 		return false, err
 	}
 	return true, nil
