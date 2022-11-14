@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"strconv"
@@ -63,7 +64,7 @@ func init() {
 
 	_, err := newInternalRangeChecker()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }
 
