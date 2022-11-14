@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"strconv"
@@ -15,19 +14,7 @@ import (
 	"go.uber.org/multierr"
 )
 
-// internalRangeChecker contains a list of internal IP ranges.
-type internalRangeChecker struct {
-	ipv4 []*net.IPNet
-	ipv6 []*net.IPNet
-}
-
 var (
-	ipv4InternalRanges = []string{}
-	ipv6InternalRanges = []string{}
-	rangeChecker       = internalRangeChecker{}
-)
-
-func init() {
 	// ipv4InternalRanges contains the IP ranges internal in IPv4 range.
 	ipv4InternalRanges = []string{
 		"0.0.0.0/8",       // Current network (only valid as source address)
@@ -62,10 +49,28 @@ func init() {
 		"ff00::/8",      // Multicast
 	}
 
-	_, err := newInternalRangeChecker()
-	if err != nil {
-		log.Fatal(err)
+	ipv4, ipv6 []*net.IPNet
+)
+
+func init() {
+	for _, cidr := range ipv4InternalRanges {
+		_, rangeNet, err := net.ParseCIDR(cidr)
+		if err != nil {
+			panic(err)
+		}
+		ipv4 = append(ipv4, rangeNet)
 	}
+
+	for _, cidr := range ipv6InternalRanges {
+		_, rangeNet, err := net.ParseCIDR(cidr)
+		if err != nil {
+			panic(err)
+		}
+		ipv6 = append(ipv6, rangeNet)
+	}
+
+	fmt.Println("ipv4", ipv4)
+	fmt.Println("ipv6", ipv6)
 }
 
 // IsIP checks if a string is either IP version 4 or 6. Alias for `net.ParseIP`
@@ -110,12 +115,12 @@ func IsInternal(str string) bool {
 
 	}
 	IP := net.ParseIP(str)
-	for _, net := range rangeChecker.ipv4 {
+	for _, net := range ipv4 {
 		if net.Contains(IP) {
 			return true
 		}
 	}
-	for _, net := range rangeChecker.ipv6 {
+	for _, net := range ipv6 {
 		if net.Contains(IP) {
 			return true
 		}
@@ -312,43 +317,4 @@ func GetBindableAddress(port int, ips ...string) (string, error) {
 	}
 
 	return "", errs
-}
-
-// newInternalRangeChecker creates a structure for checking if a host is from
-// a internal IP range whether its ipv4 or ipv6.
-func newInternalRangeChecker() (*internalRangeChecker, error) {
-	err := rangeChecker.appendIPv4Ranges(ipv4InternalRanges)
-	if err != nil {
-		return nil, err
-	}
-
-	err = rangeChecker.appendIPv6Ranges(ipv6InternalRanges)
-	if err != nil {
-		return nil, err
-	}
-	return &rangeChecker, nil
-}
-
-// appendIPv4Ranges adds a list of IPv4 Ranges to the list.
-func (r *internalRangeChecker) appendIPv4Ranges(ranges []string) error {
-	for _, ip := range ranges {
-		_, rangeNet, err := net.ParseCIDR(ip)
-		if err != nil {
-			return err
-		}
-		r.ipv4 = append(r.ipv4, rangeNet)
-	}
-	return nil
-}
-
-// appendIPv6Ranges adds a list of IPv6 Ranges to the list.
-func (r *internalRangeChecker) appendIPv6Ranges(ranges []string) error {
-	for _, ip := range ranges {
-		_, rangeNet, err := net.ParseCIDR(ip)
-		if err != nil {
-			return err
-		}
-		r.ipv6 = append(r.ipv6, rangeNet)
-	}
-	return nil
 }
