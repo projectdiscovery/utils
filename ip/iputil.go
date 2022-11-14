@@ -59,8 +59,6 @@ func init() {
 		"fe80::/10",     // Link-local address
 		"ff00::/8",      // Multicast
 	}
-
-	newInternalRangeChecker()
 }
 
 // IsIP checks if a string is either IP version 4 or 6. Alias for `net.ParseIP`
@@ -100,6 +98,11 @@ func IsIPv4(ips ...interface{}) bool {
 // Check if an IP address is part of the list of internal IPs we have declared
 // checks for all ipv4 and ipv6 list
 func IsInternal(str string) bool {
+	_, err := newInternalRangeChecker()
+	if err != nil {
+		return false
+	}
+
 	if !IsIP(str) {
 		return false
 
