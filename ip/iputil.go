@@ -17,12 +17,6 @@ import (
 var ipv4InternalRanges = []string{}
 var ipv6InternalRanges = []string{}
 
-// internalRangeChecker contains a list of internal IP ranges.
-type internalRangeChecker struct {
-	ipv4 []*net.IPNet
-	ipv6 []*net.IPNet
-}
-
 func init() {
 	// ipv4InternalRanges contains the IP ranges internal in IPv4 range.
 	ipv4InternalRanges = []string{
