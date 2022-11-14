@@ -63,7 +63,7 @@ func TestDeleteFilesOlderThan(t *testing.T) {
 		fName := createFile()
 		fileInfo, _ := os.Stat(fName)
 		// sleep for 5 seconds
-		time.Sleep(5 * time.Second)
+		time.Sleep(sleepTime)
 		// delete files older than 5 seconds
 		filter := FileFilters{
 			OlderThan: ttl,
@@ -92,7 +92,7 @@ func TestDeleteFilesOlderThan(t *testing.T) {
 		fName1 := createFile()
 
 		// sleep for 5 seconds
-		time.Sleep(5 * time.Second)
+		time.Sleep(sleepTime)
 		// delete files older than 5 seconds
 		filter := FileFilters{
 			OlderThan:    ttl,
@@ -108,7 +108,7 @@ func TestDeleteFilesOlderThan(t *testing.T) {
 		fName1 := createFile()
 
 		// sleep for 5 seconds
-		time.Sleep(5 * time.Second)
+		time.Sleep(sleepTime)
 		// delete files older than 5 seconds
 		filter := FileFilters{
 			OlderThan: ttl,
@@ -124,7 +124,7 @@ func TestDeleteFilesOlderThan(t *testing.T) {
 	t.Run("custom check props negative test", func(t *testing.T) {
 		fName := createFile()
 		// sleep for 5 seconds
-		time.Sleep(5 * time.Second)
+		time.Sleep(sleepTime)
 		// delete files older than 5 seconds
 		filter := FileFilters{
 			OlderThan: ttl,
@@ -141,7 +141,7 @@ func TestDeleteFilesOlderThan(t *testing.T) {
 		fName1 := createFile()
 
 		// sleep for 5 seconds
-		time.Sleep(5 * time.Second)
+		time.Sleep(sleepTime)
 		// delete files older than 5 seconds
 		filter := FileFilters{
 			OlderThan: ttl,
