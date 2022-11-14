@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"strconv"
@@ -14,16 +15,17 @@ import (
 	"go.uber.org/multierr"
 )
 
-var ipv4InternalRanges = []string{}
-var ipv6InternalRanges = []string{}
-
 // internalRangeChecker contains a list of internal IP ranges.
 type internalRangeChecker struct {
 	ipv4 []*net.IPNet
 	ipv6 []*net.IPNet
 }
 
-var rangeChecker = internalRangeChecker{}
+var (
+	ipv4InternalRanges = []string{}
+	ipv6InternalRanges = []string{}
+	rangeChecker       = internalRangeChecker{}
+)
 
 func init() {
 	// ipv4InternalRanges contains the IP ranges internal in IPv4 range.
@@ -58,6 +60,11 @@ func init() {
 		"fc00::/7",      // Unique local address
 		"fe80::/10",     // Link-local address
 		"ff00::/8",      // Multicast
+	}
+
+	_, err := newInternalRangeChecker()
+	if err != nil {
+		log.Fatal(err)
 	}
 }
 
@@ -98,11 +105,6 @@ func IsIPv4(ips ...interface{}) bool {
 // Check if an IP address is part of the list of internal IPs we have declared
 // checks for all ipv4 and ipv6 list
 func IsInternal(str string) bool {
-	_, err := newInternalRangeChecker()
-	if err != nil {
-		return false
-	}
-
 	if !IsIP(str) {
 		return false
 
@@ -122,7 +124,7 @@ func IsInternal(str string) bool {
 }
 
 // Check if an IP address is part of the list of internal IPs we have declared
-func IsInternalIpv4(str string) bool {
+func IsInIpv4List(str string) bool {
 	for _, ip := range ipv4InternalRanges {
 		if strings.Contains(ip, str) {
 			return true
@@ -132,7 +134,7 @@ func IsInternalIpv4(str string) bool {
 }
 
 // Check if an IP address is part of the list of internal IPs we have declared
-func IsInternalIpv6(str string) bool {
+func IsInIpv6List(str string) bool {
 	for _, ip := range ipv6InternalRanges {
 		if strings.Contains(ip, str) {
 			return true
