@@ -68,9 +68,6 @@ func init() {
 		}
 		ipv6 = append(ipv6, rangeNet)
 	}
-
-	fmt.Println("ipv4", ipv4)
-	fmt.Println("ipv6", ipv6)
 }
 
 // IsIP checks if a string is either IP version 4 or 6. Alias for `net.ParseIP`
