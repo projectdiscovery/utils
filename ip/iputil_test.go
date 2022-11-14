@@ -12,6 +12,15 @@ func TestIsIP(t *testing.T) {
 	require.False(t, IsIP("test"), "string recognized as ip")
 }
 
+func TestIsInternalIPv4(t *testing.T) {
+	// Test this ipv4
+	require.False(t, IsInternal("153.12.14.1"), "internal ipv4 address recognized as not valid")
+	require.True(t, IsInternal("172.16.0.0"), "internal ipv4 address recognized as valid")
+	// Test with ipv6
+	require.False(t, IsInternal("684D:1111:222:3333:4444:5555:6:77"), "internal ipv4 address recognized as not valid")
+	require.True(t, IsInternal("fc00:7e5b:cfa9::"), "internal ipv4 address recognized as valid")
+}
+
 func TestIsPort(t *testing.T) {
 	require.False(t, IsPort("0"), "invalid port 0")
 	require.False(t, IsPort("-1"), "negative port")
