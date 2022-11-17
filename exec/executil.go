@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"golang.org/x/text/encoding/unicode"
 )
 
 const (
@@ -214,7 +215,12 @@ func RunPS(cmd string) (string, error) {
 		https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_powershell_exe?view=powershell-5.1#-encodedcommand-base64encodedcommand
 	*/
 
-	b64cmd := base64.StdEncoding.EncodeToString([]byte(cmd))
+	utf16 := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM)
+	encodedCmd, err := utf16.NewEncoder().String(cmd)
+	if err != nil {
+		return "", err
+	}
+	b64cmd := base64.StdEncoding.EncodeToString([]byte(encodedCmd))
 
 	cmdExec := exec.Command("powershell.exe", "-EncodedCommand", b64cmd)
 
