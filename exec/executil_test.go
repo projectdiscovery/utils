@@ -18,9 +18,6 @@ func init() {
 }
 
 func TestRun(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		return
-	}
 	// try to run the echo command
 	s, err := Run("echo test")
 	require.Nil(t, err, "failed execution", err)
