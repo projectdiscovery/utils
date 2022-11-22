@@ -102,8 +102,7 @@ func New() (Router, error) {
 			default:
 				// use last route type and print a warning
 				if lastType != "" {
-					fmt.Println("using '", lastType, "' for unknown route type: '", outputLine, "'")
-					route.Type = lastType
+					return nil, fmt.Errorf("using '%s' for unknown route type: '%s'\n", lastType, outputLine)
 				} else {
 					// we can't determine the route type
 					return nil, fmt.Errorf("could not determine route type for: '%s'", outputLine)
