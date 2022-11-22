@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/sliceutil"
 	"github.com/projectdiscovery/stringsutil"
 	"go.uber.org/multierr"
@@ -103,7 +102,7 @@ func New() (Router, error) {
 			default:
 				// use last route type and print a warning
 				if lastType != "" {
-					gologger.Debug().Msgf("using '%s' for unknown route type: '%s'\n", lastType, outputLine)
+					fmt.Println("using '", lastType, "' for unknown route type: '", outputLine, "'")
 					route.Type = lastType
 				} else {
 					// we can't determine the route type
