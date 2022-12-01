@@ -12,5 +12,4 @@ type LenReader interface {
 func GetLength(reader io.Reader) (int64, bool) {
 	len, ok := reader.(LenReader)
 	return int64(len.Len()), ok
-
 }

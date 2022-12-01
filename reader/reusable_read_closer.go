@@ -18,9 +18,7 @@ type ReusableReadCloser struct {
 func NewReusableReadCloser(raw interface{}) (*ReusableReadCloser, error) {
 	readBuf := bytes.Buffer{}
 	backBuf := bytes.Buffer{}
-
 	if raw != nil {
-		//
 		switch body := raw.(type) {
 
 		case []byte:
@@ -65,11 +63,9 @@ func NewReusableReadCloser(raw interface{}) (*ReusableReadCloser, error) {
 		default:
 			// type not implemented or cannot handle
 			return nil, fmt.Errorf("cannot handle type %T", body)
-
 		}
 
 	}
-
 	reusableReadCloser := &ReusableReadCloser{
 		io.TeeReader(&readBuf, &backBuf),
 		&readBuf,

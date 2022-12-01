@@ -10,7 +10,6 @@ import (
 )
 
 func TestReusableReader(t *testing.T) {
-
 	testcases := []interface{}{
 		strings.NewReader("test"),
 		bytes.NewBuffer([]byte("test")),
@@ -19,7 +18,6 @@ func TestReusableReader(t *testing.T) {
 		[]byte("test"),
 		"test",
 	}
-
 	for _, v := range testcases {
 		reusableReader, err := NewReusableReadCloser(v)
 		require.Nil(t, err)
