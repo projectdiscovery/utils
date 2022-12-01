@@ -1,4 +1,4 @@
-package fileutil
+package reader
 
 import (
 	"io"
@@ -12,7 +12,7 @@ func TestFrozenReader(t *testing.T) {
 		wrappedStdin := FrozenReader{}
 		_, err := io.Copy(os.Stdout, wrappedStdin)
 		if err != nil {
-			return 
+			return
 		}
 	}
 	go forever()
