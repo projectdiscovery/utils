@@ -26,6 +26,10 @@ func TestReusableReader(t *testing.T) {
 			n, err := io.Copy(io.Discard, reusableReader)
 			require.Nil(t, err)
 			require.Positive(t, n)
+
+			bin, err := io.ReadAll(reusableReader)
+			require.Nil(t, err)
+			require.Len(t, bin, 4)
 		}
 	}
 }
