@@ -45,6 +45,12 @@ func FolderExists(foldername string) bool {
 	return info.IsDir()
 }
 
+// FileOrFolderExists checks if the file/folder exists
+func FileOrFolderExists(name string) bool {
+	_, err := os.Stat(name)
+	return !os.IsNotExist(err)
+}
+
 type FileFilters struct {
 	OlderThan    time.Duration
 	Prefix       string
