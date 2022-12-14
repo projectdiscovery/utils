@@ -80,3 +80,18 @@ func ToInt(s []string) ([]int, error) {
 
 	return ns, nil
 }
+
+// Equal checks if the items of two slices are equal respecting the order
+func Equal[T comparable](s1, s2 []T) bool {
+	if len(s1) != len(s2) {
+		return false
+	}
+
+	for idx := range s1 {
+		if s1[idx] != s2[idx] {
+			return false
+		}
+	}
+
+	return true
+}
