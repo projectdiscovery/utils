@@ -85,3 +85,9 @@ func TestToInt(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, test2, res, "unexptected result")
 }
+
+func TestEqual(t *testing.T) {
+	test1 := []string{"1", "2"}
+	require.True(t, Equal(test1, test1), "unexptected result")
+	require.False(t, Equal(test1, []string{"2", "1"}), "unexptected result")
+}

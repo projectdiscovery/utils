@@ -13,6 +13,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestFileOrFolderExists(t *testing.T) {
+	tests := map[string]bool{
+		"file.go": true,
+		"aaa.bbb": false,
+		".":       true,
+		"../file": true,
+		"aabb":    false,
+	}
+	for fpath, mustExist := range tests {
+		exist := FileOrFolderExists(fpath)
+		require.Equalf(t, mustExist, exist, "invalid \"%s\": %v", fpath, exist)
+	}
+}
+
 func TestFileExists(t *testing.T) {
 	tests := map[string]bool{
 		"file.go": true,
@@ -21,7 +35,7 @@ func TestFileExists(t *testing.T) {
 	}
 	for fpath, mustExist := range tests {
 		exist := FileExists(fpath)
-		require.Equalf(t, mustExist, exist, "invalid \"%s\": %s", fpath, exist)
+		require.Equalf(t, mustExist, exist, "invalid \"%s\": %v", fpath, exist)
 	}
 }
 
