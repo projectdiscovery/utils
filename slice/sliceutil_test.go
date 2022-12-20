@@ -91,3 +91,23 @@ func TestEqual(t *testing.T) {
 	require.True(t, Equal(test1, test1), "unexptected result")
 	require.False(t, Equal(test1, []string{"2", "1"}), "unexptected result")
 }
+
+func TestIsEmpty(t *testing.T) {
+	require.True(t, IsEmpty([]string{}))
+	require.False(t, IsEmpty([]string{"a"}))
+}
+
+func TestElementsMatch(t *testing.T) {
+	require.True(t, ElementsMatch([]string{}, []string{}))
+	require.True(t, ElementsMatch([]int{1}, []int{1}))
+	require.True(t, ElementsMatch([]int{1, 2}, []int{2, 1}))
+	require.False(t, ElementsMatch([]int{1}, []int{2}))
+}
+
+func TestDiff(t *testing.T) {
+	s1 := []int{1, 2, 3}
+	s2 := []int{3, 4, 5}
+	extraS1, extraS2 := Diff(s1, s2)
+	require.ElementsMatch(t, extraS1, []int{1, 2})
+	require.ElementsMatch(t, extraS2, []int{4, 5})
+}

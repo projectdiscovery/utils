@@ -95,3 +95,54 @@ func Equal[T comparable](s1, s2 []T) bool {
 
 	return true
 }
+
+// IsEmpty checks if the slice has length zero
+func IsEmpty[V comparable](s []V) bool {
+	return len(s) == 0
+}
+
+// ElementsMatch asserts that the specified listA(array, slice...) is equal to specified
+// listB(array, slice...) ignoring the order of the elements. If there are duplicate elements,
+// the number of appearances of each of them in both lists should match.
+func ElementsMatch[V comparable](s1, s2 []V) bool {
+	if IsEmpty(s1) && IsEmpty(s2) {
+		return true
+	}
+
+	extraS1, extrS2 := Diff(s1, s2)
+	return IsEmpty(extraS1) && IsEmpty(extrS2)
+}
+
+// Diff calculates the extra elements between two sequences
+func Diff[V comparable](s1, s2 []V) (extraS1, extraS2 []V) {
+	s1Len := len(s1)
+	s2Len := len(s2)
+
+	visited := make([]bool, s2Len)
+	for i := 0; i < s1Len; i++ {
+		element := s1[i]
+		found := false
+		for j := 0; j < s2Len; j++ {
+			if visited[j] {
+				continue
+			}
+			if s2[j] == element {
+				visited[j] = true
+				found = true
+				break
+			}
+		}
+		if !found {
+			extraS1 = append(extraS1, element)
+		}
+	}
+
+	for j := 0; j < s2Len; j++ {
+		if visited[j] {
+			continue
+		}
+		extraS2 = append(extraS2, s2[j])
+	}
+
+	return
+}
