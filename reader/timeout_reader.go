@@ -1,6 +1,7 @@
 package reader
 
 import (
+	"context"
 	"errors"
 	"io"
 	"time"
@@ -10,34 +11,33 @@ var ErrTimeout = errors.New("Timeout")
 
 // TimeoutReader is a reader wrapper that stops waiting after Timeout
 type TimeoutReader struct {
-	Timeout     time.Duration
-	Reader      io.Reader
-	timeoutchan chan struct{}
-	datachan    chan struct{}
+	Timeout  time.Duration
+	Reader   io.Reader
+	datachan chan struct{}
 }
 
 // Read into the buffer
 func (reader TimeoutReader) Read(p []byte) (n int, err error) {
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+	if reader.Timeout > 0 {
+		ctx, cancel = context.WithTimeout(context.Background(), time.Duration(reader.Timeout))
+		defer cancel()
+	}
+
 	if reader.datachan == nil {
 		reader.datachan = make(chan struct{})
 	}
-	if reader.timeoutchan == nil {
-		reader.timeoutchan = make(chan struct{})
-	}
-	go func() {
-		// if timeout is zero behaves like a normal reader
-		if reader.Timeout > 0 {
-			time.Sleep(reader.Timeout)
-			reader.timeoutchan <- struct{}{}
-		}
-	}()
+
 	go func() {
 		n, err = reader.Reader.Read(p)
 		reader.datachan <- struct{}{}
 	}()
 
 	select {
-	case <-reader.timeoutchan:
+	case <-ctx.Done():
 		err = ErrTimeout
 		return
 	case <-reader.datachan:
