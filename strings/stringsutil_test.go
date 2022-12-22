@@ -285,6 +285,6 @@ func TestLongestRepeatingSequence(t *testing.T) {
 
 	for _, test := range tests {
 		result := LongestRepeatingSequence(test.s)
-		require.Equalf(t, test.expected, result, "test: %s, expected %q, got: %s", test.s, test.expected, result)
+		require.Equalf(t, test.expected, result.Sequence, "test: %s, expected %q, got: %s", test.s, test.expected, result.Sequence)
 	}
 }
