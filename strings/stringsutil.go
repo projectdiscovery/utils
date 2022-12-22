@@ -201,3 +201,47 @@ func ReplaceAll(s, new string, olds ...string) string {
 	}
 	return s
 }
+
+type LongestSequence struct {
+	Sequence string
+	Count    int
+}
+
+// LongestRepeatingSequence finds the longest repeating non-overlapping sequence in a string
+func LongestRepeatingSequence(s string) LongestSequence {
+	res := ""
+	resLength := 0
+	n := len(s)
+	lcsre := make([][]int, n+1)
+
+	for i := range lcsre {
+		lcsre[i] = make([]int, n+1)
+	}
+
+	idx := 0
+	for i := 1; i <= n; i++ {
+		for j := i + 1; j <= n; j++ {
+			if s[i-1] == s[j-1] && lcsre[i-1][j-1] < (j-i) {
+				lcsre[i][j] = lcsre[i-1][j-1] + 1
+				if lcsre[i][j] > resLength {
+					resLength = lcsre[i][j]
+					if i > idx {
+						idx = i
+					}
+				}
+			} else {
+				lcsre[i][j] = 0
+			}
+		}
+	}
+	if resLength > 0 {
+		for i := idx - resLength + 1; i <= idx; i++ {
+			res += string(s[i-1])
+		}
+	}
+	resCount := 0
+	if res != "" {
+		resCount = strings.Count(s, res)
+	}
+	return LongestSequence{Sequence: res, Count: resCount}
+}
