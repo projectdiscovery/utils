@@ -270,3 +270,21 @@ func TestReplaceAll(t *testing.T) {
 		require.Equalf(t, test.Result, res, "test: %s, new: %s, old: %s, expected: %s, got: %s", str, test.New, test.Old, test.Result, res)
 	}
 }
+
+func TestLongestRepeatingSequence(t *testing.T) {
+	tests := []struct {
+		s        string
+		expected string
+	}{
+		{"abcdefg", ""},
+		{"abcabcabc", "abc"},
+		{"abcdefabcdef", "abcdef"},
+		{"abcdefgabcdefg", "abcdefg"},
+		{"abcabcdefdef", "abc"},
+	}
+
+	for _, test := range tests {
+		result := LongestRepeatingSequence(test.s)
+		require.Equalf(t, test.expected, result.Sequence, "test: %s, expected %q, got: %s", test.s, test.expected, result.Sequence)
+	}
+}
