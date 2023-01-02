@@ -17,4 +17,6 @@ type Error interface {
 	Equal(err ...error) bool
 	// ShowStackTrace includes StackTrace with Error Message
 	ShowStackTrace()
+	// WithCallback execute ErrCallback function when Error is triggered
+	WithCallback(handle ErrCallback) Error
 }

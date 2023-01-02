@@ -64,10 +64,10 @@ func (e *enrichedError) Wrap(err ...error) Error {
 			continue
 		}
 		if ee, ok := v.(*enrichedError); ok {
-			e.Msgf(ee.errString).WithLevel(ee.Level).WithTag(ee.Tags...)
+			_ = e.Msgf(ee.errString).WithLevel(ee.Level).WithTag(ee.Tags...)
 			e.StackTrace += ee.StackTrace
 		} else {
-			e.Msgf(v.Error())
+			_ = e.Msgf(v.Error())
 		}
 	}
 	return e
@@ -103,8 +103,9 @@ func (e *enrichedError) Equal(err ...error) bool {
 }
 
 // WithCallback executes callback when error is triggered
-func (e *enrichedError) WithCallback(handle ErrCallback) {
+func (e *enrichedError) WithCallback(handle ErrCallback) Error {
 	e.OnError = handle
+	return e
 }
 
 // ShowStackTrace
@@ -142,6 +143,6 @@ func NewWithErr(err error) Error {
 // NewWithTag creates an error with tag
 func NewWithTag(tag string, format string, args ...any) Error {
 	ee := New(format, args...)
-	ee.WithTag(tag)
+	_ = ee.WithTag(tag)
 	return ee
 }

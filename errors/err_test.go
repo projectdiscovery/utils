@@ -50,3 +50,27 @@ func TestStackTrace(t *testing.T) {
 		}
 	})
 }
+
+func TestErrorCallback(t *testing.T) {
+	callbackExecuted := false
+
+	err := errors.NewWithTag("callback", "got error").WithCallback(func(level errors.ErrorLevel, err string, tags ...string) {
+		if level != errors.Runtime {
+			t.Errorf("Default error level should be Runtime")
+		}
+		if tags[0] != "callback" {
+			t.Errorf("missing callback")
+		}
+		callbackExecuted = true
+	})
+
+	errval := err.Error()
+
+	if !strings.Contains(errval, "callback") || !strings.Contains(errval, "got error") || !strings.Contains(errval, "RUNTIME") {
+		t.Errorf("error content missing expected values `callback,got error and Runtime` in error value but got %v", errval)
+	}
+
+	if !callbackExecuted {
+		t.Errorf("error callback failed to execute")
+	}
+}
