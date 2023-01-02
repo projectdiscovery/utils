@@ -7,17 +7,19 @@ import (
 	"strings"
 )
 
+// ShowStackTrace in Error Message
+var ShowStackTrace bool = false
+
 // ErrCallback function to handle given error
 type ErrCallback func(level ErrorLevel, err string, tags ...string)
 
 // enrichedError is enriched version of normal error
 // with tags, stacktrace and other methods
 type enrichedError struct {
-	printStacktrace bool // default false
-	errString       string
-	StackTrace      string
-	Tags            []string
-	Level           ErrorLevel
+	errString  string
+	StackTrace string
+	Tags       []string
+	Level      ErrorLevel
 
 	//OnError is called when Error() method is triggered
 	OnError ErrCallback
@@ -50,7 +52,7 @@ func (e *enrichedError) Error() string {
 	label := fmt.Sprintf("[%v:%v]", strings.Join(e.Tags, ","), e.Level.String())
 	buff.WriteString(fmt.Sprintf("%v %v\n", label, e.errString))
 
-	if e.printStacktrace {
+	if ShowStackTrace {
 		e.captureStack()
 		buff.WriteString(fmt.Sprintf("Stacktrace:\n%v\n", e.StackTrace))
 	}
@@ -106,11 +108,6 @@ func (e *enrichedError) Equal(err ...error) bool {
 func (e *enrichedError) WithCallback(handle ErrCallback) Error {
 	e.OnError = handle
 	return e
-}
-
-// ShowStackTrace
-func (e *enrichedError) ShowStackTrace() {
-	e.printStacktrace = true
 }
 
 // captureStack

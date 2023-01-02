@@ -15,8 +15,6 @@ type Error interface {
 	Msgf(format string, args ...any) Error
 	// Equal Checks Equality of errors
 	Equal(err ...error) bool
-	// ShowStackTrace includes StackTrace with Error Message
-	ShowStackTrace()
 	// WithCallback execute ErrCallback function when Error is triggered
 	WithCallback(handle ErrCallback) Error
 }

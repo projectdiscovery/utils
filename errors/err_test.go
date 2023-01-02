@@ -42,9 +42,7 @@ func TestStackTrace(t *testing.T) {
 		if strings.Contains(errx.Error(), "captureStack") {
 			t.Errorf("stacktrace should be disabled by default")
 		}
-		if ee, ok := errx.(errors.Error); ok {
-			ee.ShowStackTrace()
-		}
+		errors.ShowStackTrace = true
 		if !strings.Contains(errx.Error(), "captureStack") {
 			t.Errorf("missing stacktrace got %v", errx.Error())
 		}
