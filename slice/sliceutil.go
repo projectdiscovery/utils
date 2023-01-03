@@ -146,3 +146,17 @@ func Diff[V comparable](s1, s2 []V) (extraS1, extraS2 []V) {
 
 	return
 }
+
+// Merge and dedupe multiple items
+func Merge[V comparable](ss ...[]V) []V {
+	var final []V
+	for _, s := range ss {
+		final = append(final, s...)
+	}
+	return Dedupe(final)
+}
+
+// Merge and dedupe multiple items into a
+func MergeItems[V comparable](items ...V) []V {
+	return Dedupe(items)
+}
