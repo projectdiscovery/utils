@@ -111,3 +111,37 @@ func TestDiff(t *testing.T) {
 	require.ElementsMatch(t, extraS1, []int{1, 2})
 	require.ElementsMatch(t, extraS2, []int{4, 5})
 }
+
+func TestMerge(t *testing.T) {
+	tests := []struct {
+		input    [][]int
+		expected []int
+	}{
+		{[][]int{{1, 2, 3}, {3, 4, 5}, {5, 6, 7}}, []int{1, 2, 3, 4, 5, 6, 7}},
+		{[][]int{{1, 1, 2}, {2, 3, 3}, {3, 4, 5}}, []int{1, 2, 3, 4, 5}},
+		{[][]int{{1, 2, 3}, {4, 5, 6}}, []int{1, 2, 3, 4, 5, 6}},
+	}
+
+	for _, test := range tests {
+		output := Merge(test.input...)
+		require.ElementsMatch(t, test.expected, output)
+	}
+}
+
+func TestMergeItems(t *testing.T) {
+	tests := []struct {
+		input    []int
+		expected []int
+	}{
+		{[]int{1, 2, 3, 3, 4, 5, 5, 6, 7}, []int{1, 2, 3, 4, 5, 6, 7}},
+		{[]int{1, 1, 2, 2, 3, 3}, []int{1, 2, 3}},
+		{[]int{1, 2, 3, 4, 5, 6}, []int{1, 2, 3, 4, 5, 6}},
+	}
+
+	for _, test := range tests {
+		// merge single basic types (int, string, etc)
+		output := MergeItems(test.input...)
+		require.ElementsMatch(t, test.expected, output)
+	}
+
+}
