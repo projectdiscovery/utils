@@ -1,4 +1,4 @@
-package errors
+package errorutil
 
 // IsAny checks if err is not nil and matches any one of errxx errors
 // if match successful returns true else false

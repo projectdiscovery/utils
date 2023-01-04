@@ -1,4 +1,4 @@
-package errors
+package errorutil
 
 // Error is enriched version of normal error
 // with tags, stacktrace and other methods
