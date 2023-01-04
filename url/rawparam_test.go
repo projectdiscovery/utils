@@ -84,3 +84,19 @@ func TestPercentEncoding(t *testing.T) {
 		t.Errorf("expected percentencoding to be %v but got %v", expected, payload)
 	}
 }
+
+func TestGetParams(t *testing.T) {
+	values := url.Values{}
+	values.Add("sqli", "1+AND+(SELECT+*+FROM+(SELECT(SLEEP(12)))nQIP)")
+	values.Add("xss", "<script>alert('XSS')</script>")
+	p := GetParams(values)
+	if p == nil {
+		t.Errorf("expected params but got nil")
+	}
+	if p.Get("sqli") != values.Get("sqli") {
+		t.Errorf("malformed or missing value for param sqli expected %v but got %v", values.Get("sqli"), p.Get("sqli"))
+	}
+	if p.Get("xss") != values.Get("xss") {
+		t.Errorf("malformed or missing value for param xss expected %v but got %v", values.Get("xss"), p.Get("xss"))
+	}
+}

@@ -3,6 +3,7 @@ package urlutil
 import (
 	"bytes"
 	"encoding/hex"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -19,9 +20,9 @@ var MustEscapeCharSet []rune = []rune{'?', '#', '@', ';', '&', ',', '[', ']', '^
 
 type Params map[string][]string
 
-func NewParams() *Params {
+func NewParams() Params {
 	p := make(Params)
-	return &p
+	return p
 }
 
 // Add Parameters to store
@@ -160,6 +161,18 @@ func PercentEncoding(data string) string {
 		}
 	}
 	return buff.String()
+}
+
+// GetParams return Params type using url.Values
+func GetParams(query url.Values) Params {
+	if query == nil {
+		return nil
+	}
+	p := NewParams()
+	for k, v := range query {
+		p[k] = v
+	}
+	return p
 }
 
 func getrunemap(runes []rune) map[rune]struct{} {
