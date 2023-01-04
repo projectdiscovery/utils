@@ -55,6 +55,7 @@ func TestParamIntegration(t *testing.T) {
 		}
 		w.WriteHeader(http.StatusOK)
 	})
+	//nolint:all
 	go http.ListenAndServe(":9000", nil)
 
 	p := NewParams()
