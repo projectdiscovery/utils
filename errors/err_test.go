@@ -1,11 +1,11 @@
-package errors_test
+package errorutil_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/projectdiscovery/utils/errors"
+	errors "github.com/projectdiscovery/utils/errors"
 )
 
 func TestErrorEqual(t *testing.T) {
