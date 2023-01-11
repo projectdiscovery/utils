@@ -9,14 +9,17 @@ import (
 	"strings"
 )
 
-/* Reserved Chars from RFC includes
-! * ' ( ) ; : @ & = + $ , / ? % # [ ]
-*/
+// Legacy Seperator (i.e `;`) is used as seperator for parameters
+// this was removed in go >=1.17
+var AllowLegacySeperator bool = false
 
 // MustEscapeCharSet are special chars that are always escaped and are based on reserved chars from RFC
 // Some of Reserved Chars From RFC were excluded and some were added for various reasons
 // and goal here is to encode parameters key and value only
 var MustEscapeCharSet []rune = []rune{'?', '#', '@', ';', '&', ',', '[', ']', '^'}
+
+// Reserved Chars from RFC ! * ' ( ) ; : @ & = + $ , / ? % # [ ]
+var RFCEscapeCharSet []rune = []rune{'!', '*', '\'', '(', ')', ';', ':', '@', '&', '=', '+', '$', ',', '/', '?', '%', '#', '[', ']'}
 
 type Params map[string][]string
 
@@ -26,11 +29,11 @@ func NewParams() Params {
 }
 
 // Add Parameters to store
-func (p Params) Add(key string, value string) {
+func (p Params) Add(key string, value ...string) {
 	if p.Has(key) {
-		p[key] = append(p[key], value)
+		p[key] = append(p[key], value...)
 	} else {
-		p[key] = []string{value}
+		p[key] = value
 	}
 }
 
@@ -69,6 +72,16 @@ func (p Params) Del(key string) {
 	}
 }
 
+// Merges given paramset into existing one with base as priority
+func (p Params) Merge(x Params) {
+	if x == nil {
+		return
+	}
+	for k, v := range x {
+		p.Add(k, v...)
+	}
+}
+
 // Encode URL encodes and returns values ("bar=baz&foo=quux") sorted by key.
 func (p Params) Encode() string {
 	if p == nil {
@@ -88,19 +101,61 @@ func (p Params) Encode() string {
 				buf.WriteByte('&')
 			}
 			buf.WriteString(keyEscaped)
-			buf.WriteByte('=')
-			buf.WriteString(ParamEncode(v))
+			value := ParamEncode(v)
+			// donot specify = if parameter has no value (reference: nuclei-templates)
+			if value != "" {
+				buf.WriteRune('=')
+				buf.WriteString(value)
+			}
 		}
 	}
 	return buf.String()
 }
 
+// Decode is opposite of Encode() where ("bar=baz&foo=quux") is parsed
+// Parameters are loosely parsed to allow any scenario
+func (p Params) Decode(raw string) {
+	if raw == "" {
+		return
+	}
+	if p == nil {
+		p = make(Params)
+	}
+	arr := []string{}
+	var tbuff bytes.Buffer
+	for _, v := range raw {
+		switch v {
+		case '&':
+			arr = append(arr, tbuff.String())
+			tbuff.Reset()
+		case ';':
+			if AllowLegacySeperator {
+				arr = append(arr, tbuff.String())
+				tbuff.Reset()
+			}
+		default:
+			tbuff.WriteRune(v)
+		}
+	}
+	if tbuff.Len() > 0 {
+		arr = append(arr, tbuff.String())
+	}
+
+	for _, pair := range arr {
+		d := strings.SplitN(pair, "=", 2)
+		if len(d) == 2 {
+			p.Add(d[0], d[1])
+		} else if len(d) == 1 {
+			p.Add(d[0], "")
+		}
+	}
+}
+
 // ParamEncode  encodes Key characters only. key characters include
-// whitespaces + non printable chars + non-ascii + `almost` all reserved
-// with some execptions i.e (). and other
+// whitespaces + non printable chars + non-ascii
 // also this does not double encode encoded characters
 func ParamEncode(data string) string {
-	return URLEncodeWithEscapes(data, MustEscapeCharSet...)
+	return URLEncodeWithEscapes(data)
 }
 
 // URLEncodeWithEscapes URL encodes data with given special characters escaped (similar to burpsuite intruder)
