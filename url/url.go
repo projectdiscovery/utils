@@ -54,11 +54,19 @@ func (u *URL) Query() Params {
 
 // Clone
 func (u *URL) Clone() *URL {
-	userinfo := (*u.User)
+	var userinfo *url.Userinfo
+	if u.User != nil {
+		// userinfo is immutable so this is the only way
+		tempurl := "https://" + u.User.String() + "@" + "scanme.sh/"
+		turl, _ := url.Parse(tempurl)
+		if turl != nil {
+			userinfo = turl.User
+		}
+	}
 	ux := &url.URL{
 		Scheme:      u.Scheme,
 		Opaque:      u.Opaque,
-		User:        &userinfo,
+		User:        userinfo,
 		Host:        u.Host,
 		Path:        u.Path,
 		RawPath:     u.RawPath,

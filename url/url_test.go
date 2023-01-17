@@ -54,3 +54,15 @@ func TestParse(t *testing.T) {
 	require.Equal(t, "a", U.Fragment, "different fragment")
 	require.Equal(t, "http://127.0.0.1/#a", U.String(), "different full url")
 }
+
+func TestClone(t *testing.T) {
+	U, err := Parse("https://scanme.sh/some/path?with=param#fragment")
+	require.Nil(t, err)
+	cloned := U.Clone()
+	require.Equal(t, U, cloned)
+
+	U, err = Parse("https://secret:secret@scanme.sh/some/path?with=param#fragment")
+	require.Nil(t, err)
+	cloned = U.Clone()
+	require.Equal(t, U, cloned)
+}
