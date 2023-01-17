@@ -18,11 +18,11 @@ var DisableAutoCorrect bool
 type URL struct {
 	*url.URL
 
-	Params Params // Query Parameters
-	// should call Update() method when directly updating wrapped url.URL
 	Original   string // original or given url(without params if any)
 	Unsafe     bool   // If request is unsafe (skip validation)
-	IsRelative bool
+	IsRelative bool   // If URL is relative
+	Params     Params // Query Parameters
+	// should call Update() method when directly updating wrapped url.URL or parameters
 }
 
 // mergepath merges given relative path
