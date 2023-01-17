@@ -64,15 +64,15 @@ func (u *URL) Clone() *URL {
 		}
 	}
 	ux := &url.URL{
-		Scheme:      u.Scheme,
-		Opaque:      u.Opaque,
-		User:        userinfo,
-		Host:        u.Host,
-		Path:        u.Path,
-		RawPath:     u.RawPath,
-		RawQuery:    u.RawQuery,
-		Fragment:    u.Fragment,
-		OmitHost:    u.OmitHost,
+		Scheme:   u.Scheme,
+		Opaque:   u.Opaque,
+		User:     userinfo,
+		Host:     u.Host,
+		Path:     u.Path,
+		RawPath:  u.RawPath,
+		RawQuery: u.RawQuery,
+		Fragment: u.Fragment,
+		// OmitHost:    u.OmitHost, // only supported in 1.19
 		ForceQuery:  u.ForceQuery,
 		RawFragment: u.RawFragment,
 	}
@@ -273,7 +273,7 @@ func Parse(inputURL string) (*URL, error) {
 // copy parsed data from src to dst this does not include fragment or params
 func copy(dst *url.URL, src *url.URL) {
 	dst.Host = src.Host
-	dst.OmitHost = src.OmitHost
+	// dst.OmitHost = src.OmitHost // only supported in 1.19
 	dst.Opaque = src.Opaque
 	dst.Path = src.Path
 	dst.RawPath = src.RawPath
