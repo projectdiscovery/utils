@@ -44,12 +44,12 @@ func TestMergeUnsafePaths(t *testing.T) {
 		Expected string //Path
 	}{
 		{"/admin", "/%20test%0a", "/admin/%20test%0a"},
-		{"scanme.sh", "%20test%0a", "%20test%0a"},
+		{"scanme.sh", "%20test%0a", "/%20test%0a"},
 		{"https://scanme.sh", "/%20test%0a", "/%20test%0a"},
-		{"/?admin=true", "/path?yes=true", "/path"},
-		{"scanme.sh", "../../../etc/passwd", "../../../etc/passwd"},
+		{"/?admin=true", "/path?yes=true", "/path?admin=true&yes=true"},
+		{"scanme.sh", "../../../etc/passwd", "/../../etc/passwd"},
 		{"//scanme.sh", "/..%252F..%252F..%252F..%252F..%252F", "/..%252F..%252F..%252F..%252F..%252F"},
-		// {"/?user=true", "/profile", "/profile?user=true"},
+		{"/?user=true", "/profile", "/profile?user=true"},
 	}
 
 	for _, v := range testcase2 {
@@ -59,8 +59,8 @@ func TestMergeUnsafePaths(t *testing.T) {
 			continue
 		}
 		rurl.MergePath(v.Path2, true)
-		if rurl.Path != v.Expected {
-			t.Errorf("expected %v but got %v", v.Expected, rurl.Path)
+		if rurl.GetRelativePath() != v.Expected {
+			t.Errorf("expected %v but got %v", v.Expected, rurl.GetRelativePath())
 		}
 	}
 }
@@ -106,7 +106,10 @@ func TestAutoMergePaths(t *testing.T) {
 	}
 
 	for _, v := range testcase {
-		got := AutoMergePaths(v.path1, v.Path2)
+		got, err := AutoMergeRelPaths(v.path1, v.Path2)
+		if err != nil {
+			t.Errorf("%v failed to merge paths", err)
+		}
 		if v.Expected != got {
 			t.Errorf("expected %v but got %v", v.Expected, got)
 		}
@@ -128,8 +131,8 @@ func TestParameterParsing(t *testing.T) {
 			t.Error(err)
 			continue
 		}
-		if v.ExpectedQuery != rurl.params.Encode() {
-			t.Errorf("expected: %v\ngot: %v\n", v.ExpectedQuery, rurl.params.Encode())
+		if v.ExpectedQuery != rurl.Params.Encode() {
+			t.Errorf("expected: %v\ngot: %v\n", v.ExpectedQuery, rurl.Params.Encode())
 		}
 	}
 }
