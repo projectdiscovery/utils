@@ -1,16 +1,19 @@
 package urlutil
 
 import (
+	"os"
 	"strings"
+
+	errorutil "github.com/projectdiscovery/utils/errors"
 )
 
 // AutoMergeRelPaths merges two relative paths including parameters and returns final string
 func AutoMergeRelPaths(path1 string, path2 string) (string, error) {
-	u1, err1 := Parse(path1)
+	u1, err1 := parseURLAllowEmpty(path1, true, true)
 	if err1 != nil {
 		return "", err1
 	}
-	u2, err2 := Parse(path2)
+	u2, err2 := parseURLAllowEmpty(path2, true, true)
 	if err2 != nil {
 		return "", err2
 	}
@@ -76,4 +79,10 @@ func shouldEscape(ss string) bool {
 		}
 	}
 	return false
+}
+
+func init() {
+	if os.Getenv("DEBUG") != "" {
+		errorutil.ShowStackTrace = true
+	}
 }

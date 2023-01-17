@@ -83,6 +83,7 @@ func TestMergeWithParams(t *testing.T) {
 		{"https://scanme.sh?admin=true", "/%20test%0a", "https://scanme.sh/%20test%0a?admin=true"},
 		{"scanme.sh", "/path", "scanme.sh/path"},
 		{"scanme.sh?wp=false", "/path?yes=true&admin=false", "scanme.sh/path?admin=false&wp=false&yes=true"},
+		{"https://scanme.sh", "?user=true&pass=yes", "https://scanme.sh?pass=yes&user=true"},
 	}
 	for _, v := range testcase {
 		rurl, err := ParseURL(v.url, false)
@@ -109,6 +110,7 @@ func TestAutoMergePaths(t *testing.T) {
 		{"/", "/path/scan?param=yes", "/path/scan?param=yes"},
 		{"/admin/?param=path", "profile?show=true", "/admin/profile?param=path&show=true"},
 		{"/?admin=true", "/%20test%0a", "/%20test%0a?admin=true"},
+		{"?admin=true", "?param=true", "?admin=true&param=true"}, // should allow empty paths
 	}
 
 	for _, v := range testcase {

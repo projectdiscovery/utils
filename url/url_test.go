@@ -66,3 +66,13 @@ func TestClone(t *testing.T) {
 	cloned = U.Clone()
 	require.Equal(t, U, cloned)
 }
+
+func TestPortUpdate(t *testing.T) {
+	expected := "http://localhost:8000/test"
+	urlx, err := Parse("http://localhost:53/test")
+	require.Nil(t, err)
+	urlx.UpdatePort("8000")
+	if urlx.String() != expected {
+		t.Errorf("expected %v but got %v", expected, urlx.String())
+	}
+}

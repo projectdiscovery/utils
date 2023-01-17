@@ -27,7 +27,7 @@ type URL struct {
 
 // mergepath merges given relative path
 func (u *URL) MergePath(newrelpath string, unsafe bool) error {
-	ux, err := ParseURL(newrelpath, unsafe)
+	ux, err := parseURLAllowEmpty(newrelpath, unsafe, true)
 	if err != nil {
 		return err
 	}
@@ -130,6 +130,7 @@ func (u *URL) GetRelativePath() string {
 func (u *URL) UpdatePort(newport string) {
 	if u.URL.Port() != "" {
 		u.Host = strings.Replace(u.Host, u.Port(), newport, 1)
+		return
 	}
 	u.Host += ":" + newport
 }
@@ -181,8 +182,18 @@ func (u *URL) fetchParams() {
 	u.Update()
 }
 
+// ParseURL
+func Parse(inputURL string) (*URL, error) {
+	return ParseURL(inputURL, false)
+}
+
 // Parse and return URL
 func ParseURL(inputURL string, unsafe bool) (*URL, error) {
+	return parseURLAllowEmpty(inputURL, unsafe, false)
+}
+
+// Parse and return URL but also allows empty urls
+func parseURLAllowEmpty(inputURL string, unsafe bool, allowempty bool) (*URL, error) {
 	u := &URL{
 		URL:      &url.URL{},
 		Original: inputURL,
@@ -192,6 +203,10 @@ func ParseURL(inputURL string, unsafe bool) (*URL, error) {
 	// filter out fragments and parameters only then parse path
 	inputURL = u.Original
 	if inputURL == "" {
+		if allowempty {
+			u.IsRelative = true
+			return u, nil
+		}
 		return nil, errorutil.NewWithTag("urlutil", "failed to parse url got empty input")
 	}
 
@@ -263,11 +278,6 @@ func ParseURL(inputURL string, unsafe bool) (*URL, error) {
 	// edgecase where path contains percent encoded chars ex: /%20test%0a
 	u.parseRelativePath()
 	return u, nil
-}
-
-// ParseURL
-func Parse(inputURL string) (*URL, error) {
-	return ParseURL(inputURL, false)
 }
 
 // copy parsed data from src to dst this does not include fragment or params
