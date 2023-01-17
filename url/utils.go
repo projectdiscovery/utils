@@ -14,9 +14,9 @@ func AutoMergeRelPaths(path1 string, path2 string) (string, error) {
 	if err2 != nil {
 		return "", err2
 	}
-	u1.MergePath(u2.Path, false)
 	u1.Params.Merge(u2.Params)
-	return u1.GetRelativePath(), nil
+	err := u1.MergePath(u2.Path, false)
+	return u1.GetRelativePath(), err
 }
 
 // mergePaths merges two relative paths

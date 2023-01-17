@@ -58,7 +58,10 @@ func TestMergeUnsafePaths(t *testing.T) {
 			t.Errorf(err.Error())
 			continue
 		}
-		rurl.MergePath(v.Path2, true)
+		err = rurl.MergePath(v.Path2, true)
+		if err != nil {
+			t.Error(err)
+		}
 		if rurl.GetRelativePath() != v.Expected {
 			t.Errorf("expected %v but got %v", v.Expected, rurl.GetRelativePath())
 		}
@@ -87,7 +90,10 @@ func TestMergeWithParams(t *testing.T) {
 			t.Errorf(err.Error())
 			continue
 		}
-		rurl.MergePath(v.Path2, true)
+		err = rurl.MergePath(v.Path2, true)
+		if err != nil {
+			t.Error(err)
+		}
 		if v.Expected != rurl.String() {
 			t.Errorf("expected %v but got %v", v.Expected, rurl.String())
 		}
