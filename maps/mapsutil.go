@@ -253,3 +253,12 @@ func SliceToMap[T comparable](s []T, dflt T) map[T]T {
 func IsEmpty[K comparable, V any](m map[K]V) bool {
 	return len(m) == 0
 }
+
+// MapKeysToSliceInt is a function that takes in a map with int
+// keys and an empty struct value, and returns a slice of the map's keys.
+func MapKeysToSliceInt(m map[int]struct{}) (s []int) {
+	for k := range m {
+		s = append(s, k)
+	}
+	return
+}
