@@ -440,3 +440,32 @@ func CountLineLogic(separator, filename string, skipEmptyLines bool) (uint64, er
 
 	return lineCount, nil
 }
+
+type FileInfo struct {
+	Filename  string
+	LineCount uint64
+}
+
+func CountLinesInMultipleFiles(filenames []string) ([]FileInfo, error) {
+	var fileInfos []FileInfo
+	for _, filename := range filenames {
+		lineCount, err := CountLine(filename)
+		if err != nil {
+			return nil, err
+		}
+		fileInfos = append(fileInfos, FileInfo{Filename: filename, LineCount: lineCount})
+	}
+	return fileInfos, nil
+}
+
+func CountTotalLinesInMultipleFiles(filenames []string) (uint64, error) {
+	var totalLines uint64
+	for _, filename := range filenames {
+		lineCount, err := CountLine(filename)
+		if err != nil {
+			return 0, err
+		}
+		totalLines += lineCount
+	}
+	return totalLines, nil
+}
