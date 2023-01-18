@@ -397,3 +397,26 @@ func HasPermission(fileName string, permission int) (bool, error) {
 
 	return true, nil
 }
+
+// CountLine function takes in a filename as a string, it returns
+// the number of lines in the file and any error that might have occurred.
+func CountLine(filename string) (uint64, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return 0, err
+	}
+	defer file.Close()
+
+	var lineCount uint64
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		lineCount++
+	}
+
+	if err := scanner.Err(); err != nil {
+		return 0, err
+	}
+
+	return lineCount, nil
+}
