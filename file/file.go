@@ -398,56 +398,6 @@ func HasPermission(fileName string, permission int) (bool, error) {
 	return true, nil
 }
 
-func CountLine1(filename string) (uint64, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return 0, err
-	}
-	defer file.Close()
-
-	var lineCount uint64
-	scanner := bufio.NewScanner(file)
-	scanner.Split(bufio.ScanLines)
-	for scanner.Scan() {
-		lineCount++
-	}
-
-	if err := scanner.Err(); err != nil {
-		return 0, err
-	}
-
-	return lineCount, nil
-}
-
-func CountLineWithSeparator1(separator, filename string) (uint64, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return 0, err
-	}
-	defer file.Close()
-
-	var lineCount uint64
-	scanner := bufio.NewScanner(file)
-	if separator != "" {
-		scanner.Split(bufio.ScanLines)
-	}
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		if separator != "" {
-			lineCount += uint64(len(regexp.MustCompile(separator).Split(line, -1)))
-		} else {
-			lineCount++
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		return 0, err
-	}
-
-	return lineCount, nil
-}
-
 func CountLine(filename string) (uint64, error) {
 	return CountLineLogic("\n", filename, true)
 }
