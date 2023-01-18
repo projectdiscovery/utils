@@ -406,7 +406,7 @@ func CountLineWithSeparator(separator, filename string) (uint64, error) {
 	return CountLineLogic(separator, filename, true)
 }
 
-// CountLineLogic function takes in a separator and a filename as a string, opens the file, and uses a scanner to read through the file.
+// CountLineLogic function takes in a separator and a filename as a string, opens the file, and uses a bufio.Reader to read through the file.
 // It splits the file using the provided separator, and if skipEmptyLines is true, it skips empty lines.
 // It returns the number of lines in the file and any error that might have occurred.
 func CountLineLogic(separator, filename string, skipEmptyLines bool) (uint64, error) {
@@ -416,25 +416,23 @@ func CountLineLogic(separator, filename string, skipEmptyLines bool) (uint64, er
 	}
 	defer file.Close()
 
-	var lineCount uint64
-	scanner := bufio.NewScanner(file)
-	if separator != "" {
-		scanner.Split(bufio.ScanLines)
-	}
+	reader := bufio.NewReader(file)
 
-	for scanner.Scan() {
-		line := scanner.Text()
+	var lineCount uint64
+	separatorRegexp := regexp.MustCompile(separator)
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			break
+		}
+		line = strings.TrimRight(line, "\n")
 		if skipEmptyLines && line == "" {
 			continue
 		}
-		if separator != "" {
-			lineCount += uint64(len(regexp.MustCompile(separator).Split(line, -1)))
-		} else {
-			lineCount++
-		}
+		lineCount += uint64(len(separatorRegexp.Split(line, -1)))
 	}
 
-	if err := scanner.Err(); err != nil {
+	if err != nil {
 		return 0, err
 	}
 
