@@ -420,3 +420,35 @@ func CountLine(filename string) (uint64, error) {
 
 	return lineCount, nil
 }
+
+// CountLineWithSeparator function takes in a separator and a filename as a string.
+// It splits the file using the provided separator and returns the number of lines
+// in the file and any error that might have occurred.
+func CountLineWithSeparator(separator, filename string) (uint64, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return 0, err
+	}
+	defer file.Close()
+
+	var lineCount uint64
+	scanner := bufio.NewScanner(file)
+	if separator != "" {
+		scanner.Split(bufio.ScanLines)
+	}
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		if separator != "" {
+			lineCount += uint64(len(regexp.MustCompile(separator).Split(line, -1)))
+		} else {
+			lineCount++
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return 0, err
+	}
+
+	return lineCount, nil
+}
