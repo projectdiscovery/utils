@@ -398,9 +398,7 @@ func HasPermission(fileName string, permission int) (bool, error) {
 	return true, nil
 }
 
-// CountLine function takes in a filename as a string, it returns
-// the number of lines in the file and any error that might have occurred.
-func CountLine(filename string) (uint64, error) {
+func CountLine1(filename string) (uint64, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return 0, err
@@ -421,10 +419,7 @@ func CountLine(filename string) (uint64, error) {
 	return lineCount, nil
 }
 
-// CountLineWithSeparator function takes in a separator and a filename as a string.
-// It splits the file using the provided separator and returns the number of lines
-// in the file and any error that might have occurred.
-func CountLineWithSeparator(separator, filename string) (uint64, error) {
+func CountLineWithSeparator1(separator, filename string) (uint64, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return 0, err
@@ -439,6 +434,49 @@ func CountLineWithSeparator(separator, filename string) (uint64, error) {
 
 	for scanner.Scan() {
 		line := scanner.Text()
+		if separator != "" {
+			lineCount += uint64(len(regexp.MustCompile(separator).Split(line, -1)))
+		} else {
+			lineCount++
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return 0, err
+	}
+
+	return lineCount, nil
+}
+
+func CountLine(filename string) (uint64, error) {
+	return CountLineLogic("\n", filename, true)
+}
+
+func CountLineWithSeparator(separator, filename string) (uint64, error) {
+	return CountLineLogic(separator, filename, true)
+}
+
+// CountLineLogic function takes in a separator and a filename as a string, opens the file, and uses a scanner to read through the file.
+// It splits the file using the provided separator, and if skipEmptyLines is true, it skips empty lines.
+// It returns the number of lines in the file and any error that might have occurred.
+func CountLineLogic(separator, filename string, skipEmptyLines bool) (uint64, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return 0, err
+	}
+	defer file.Close()
+
+	var lineCount uint64
+	scanner := bufio.NewScanner(file)
+	if separator != "" {
+		scanner.Split(bufio.ScanLines)
+	}
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		if skipEmptyLines && line == "" {
+			continue
+		}
 		if separator != "" {
 			lineCount += uint64(len(regexp.MustCompile(separator).Split(line, -1)))
 		} else {
