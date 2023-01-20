@@ -429,3 +429,88 @@ func TestRemoveAll(t *testing.T) {
 	errs := RemoveAll(tmpdir)
 	require.Equal(t, 0, len(errs), "couldn't remove folder: %s", errs)
 }
+
+func TestCountLineSuccess(t *testing.T) {
+	fileContent := "test\ntest1\ntest2\ntest3\ntest4\n"
+	f, err := os.CreateTemp("", "output")
+	require.Nil(t, err, "couldn't create file: %s", err)
+	fname := f.Name()
+	_, _ = f.Write([]byte(fileContent))
+	f.Close()
+	defer os.Remove(fname)
+	f, err = os.Open(fname)
+	require.Nil(t, err, "couldn't create file: %s", err)
+
+	lines, err := CountLine(f.Name())
+	require.Nil(t, err, err)
+	require.NotNil(t, lines)
+	require.Equal(t, uint64(5), lines)
+}
+
+func TestCountLineEmptyLinesSuccess(t *testing.T) {
+	fileContent := "test\ntest1\n\n\n\n\n\ntest2\ntest3\n\n\n\n\n\ntest4\n"
+	f, err := os.CreateTemp("", "output")
+	require.Nil(t, err, "couldn't create file: %s", err)
+	fname := f.Name()
+	_, _ = f.Write([]byte(fileContent))
+	f.Close()
+	defer os.Remove(fname)
+	f, err = os.Open(fname)
+	require.Nil(t, err, "couldn't create file: %s", err)
+
+	lines, err := CountLine(f.Name())
+	require.Nil(t, err, err)
+	require.NotNil(t, lines)
+	require.Equal(t, uint64(5), lines)
+}
+
+func TestCountLineFailed(t *testing.T) {
+	fileContent := "test\ntest1\ntest2\ntest3\ntest4\n"
+	f, err := os.CreateTemp("", "output")
+	require.Nil(t, err, "couldn't create file: %s", err)
+	fname := f.Name()
+	_, _ = f.Write([]byte(fileContent))
+	f.Close()
+	defer os.Remove(fname)
+	f, err = os.Open(fname)
+	require.Nil(t, err, "couldn't create file: %s", err)
+
+	lines, err := CountLine(f.Name())
+	require.Nil(t, err, err)
+	require.NotNil(t, lines)
+	require.NotEqual(t, uint64(100), lines)
+}
+
+func TestCountLineWithSeparatorSuccess(t *testing.T) {
+	fileContent := "test|test1|test2|test3|test4\n"
+	f, err := os.CreateTemp("", "output")
+	require.Nil(t, err, "couldn't create file: %s", err)
+	fname := f.Name()
+	_, _ = f.Write([]byte(fileContent))
+	f.Close()
+	defer os.Remove(fname)
+	f, err = os.Open(fname)
+	require.Nil(t, err, "couldn't create file: %s", err)
+
+	lines, err := CountLineWithSeparator("|", f.Name())
+	require.Nil(t, err, err)
+	require.NotNil(t, lines)
+	require.Equal(t, uint64(4), lines)
+}
+
+func TestCountLineWithSeparatorFail(t *testing.T) {
+	fileContent := "test|test1|test2|test3|test4\n"
+	f, err := os.CreateTemp("", "output")
+	require.Nil(t, err, "couldn't create file: %s", err)
+	fname := f.Name()
+	_, _ = f.Write([]byte(fileContent))
+	f.Close()
+	defer os.Remove(fname)
+	f, err = os.Open(fname)
+	require.Nil(t, err, "couldn't create file: %s", err)
+
+	lines, err := CountLineWithSeparator("|", f.Name())
+	require.Nil(t, err, err)
+	require.NotNil(t, lines)
+	require.NotEqual(t, uint64(100), lines)
+}
