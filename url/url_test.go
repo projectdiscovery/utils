@@ -72,7 +72,5 @@ func TestPortUpdate(t *testing.T) {
 	urlx, err := Parse("http://localhost:53/test")
 	require.Nil(t, err)
 	urlx.UpdatePort("8000")
-	if urlx.String() != expected {
-		t.Errorf("expected %v but got %v", expected, urlx.String())
-	}
+	require.Equalf(t, urlx.String(), expected, "expected %v but got %v", expected, urlx.String())
 }

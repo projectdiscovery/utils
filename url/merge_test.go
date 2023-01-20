@@ -3,6 +3,8 @@ package urlutil
 import (
 	"path"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestSimplePaths(t *testing.T) {
@@ -28,16 +30,12 @@ func TestSimplePaths(t *testing.T) {
 	for _, v := range testcase1 {
 		pathtest := path.Join(v.Path1, v.Path2)
 		mergetest := mergePaths(v.Path1, v.Path2)
-		if pathtest != mergetest {
-			t.Errorf("merge failure expected %v but got %v", pathtest, mergetest)
-		}
+		require.Equalf(t, pathtest, mergetest, "merge failure expected %v but got %v", pathtest, mergetest)
 	}
 }
 
 func TestMergeUnsafePaths(t *testing.T) {
-	/*
-		Merge Examples with payloads and unsafe characters
-	*/
+	//	Merge Examples with payloads and unsafe characters
 	testcase2 := []struct {
 		url      string // can also be a relative path
 		Path2    string
@@ -54,17 +52,10 @@ func TestMergeUnsafePaths(t *testing.T) {
 
 	for _, v := range testcase2 {
 		rurl, err := ParseURL(v.url, false)
-		if err != nil {
-			t.Errorf(err.Error())
-			continue
-		}
+		require.Nil(t, err)
 		err = rurl.MergePath(v.Path2, true)
-		if err != nil {
-			t.Error(err)
-		}
-		if rurl.GetRelativePath() != v.Expected {
-			t.Errorf("expected %v but got %v", v.Expected, rurl.GetRelativePath())
-		}
+		require.Nil(t, err)
+		require.Equalf(t, rurl.GetRelativePath(), v.Expected, "expected %v but got %v", v.Expected, rurl.GetRelativePath())
 	}
 }
 
@@ -87,17 +78,10 @@ func TestMergeWithParams(t *testing.T) {
 	}
 	for _, v := range testcase {
 		rurl, err := ParseURL(v.url, false)
-		if err != nil {
-			t.Errorf(err.Error())
-			continue
-		}
+		require.Nil(t, err)
 		err = rurl.MergePath(v.Path2, true)
-		if err != nil {
-			t.Error(err)
-		}
-		if v.Expected != rurl.String() {
-			t.Errorf("expected %v but got %v", v.Expected, rurl.String())
-		}
+		require.Nil(t, err)
+		require.Equalf(t, v.Expected, rurl.String(), "expected %v but got %v", v.Expected, rurl.String())
 	}
 }
 
@@ -115,12 +99,8 @@ func TestAutoMergePaths(t *testing.T) {
 
 	for _, v := range testcase {
 		got, err := AutoMergeRelPaths(v.path1, v.Path2)
-		if err != nil {
-			t.Errorf("%v failed to merge paths", err)
-		}
-		if v.Expected != got {
-			t.Errorf("expected %v but got %v", v.Expected, got)
-		}
+		require.Nilf(t, err, "failed to merge paths")
+		require.Equal(t, got, v.Expected, "expected %v but got %v", v.Expected, got)
 	}
 }
 
@@ -135,12 +115,7 @@ func TestParameterParsing(t *testing.T) {
 	}
 	for _, v := range testcases {
 		rurl, err := ParseURL(v.URL, false)
-		if err != nil {
-			t.Error(err)
-			continue
-		}
-		if v.ExpectedQuery != rurl.Params.Encode() {
-			t.Errorf("expected: %v\ngot: %v\n", v.ExpectedQuery, rurl.Params.Encode())
-		}
+		require.Nil(t, err)
+		require.Equalf(t, v.ExpectedQuery, rurl.Params.Encode(), "expected: %v\ngot: %v\n", v.ExpectedQuery, rurl.Params.Encode())
 	}
 }

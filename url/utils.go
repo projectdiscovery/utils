@@ -7,6 +7,14 @@ import (
 	errorutil "github.com/projectdiscovery/utils/errors"
 )
 
+const (
+	HTTP             = "http"
+	HTTPS            = "https"
+	schemeSeparator  = "://"
+	DefaultHTTPPort  = "80"
+	DefaultHTTPSPort = "443"
+)
+
 // AutoMergeRelPaths merges two relative paths including parameters and returns final string
 func AutoMergeRelPaths(path1 string, path2 string) (string, error) {
 	u1, err1 := parseURLAllowEmpty(path1, true, true)
@@ -41,14 +49,12 @@ func mergePaths(elem1 string, elem2 string) string {
 	}
 
 	// Do not normalize but combibe paths same as path.join
-	/*
-		Merge Examples (Same as path.Join)
-		/blog   /admin => /blog/admin
-		/blog/wp /wp-content  => /blog/wp/wp-content
-		/blog/admin /blog/admin/profile => /blog/admin/profile
-		/blog/admin /blog => /blog/admin/blog
-		/blog /blog/ => /blog/
-	*/
+	// Merge Examples (Same as path.Join)
+	// /blog   /admin => /blog/admin
+	// /blog/wp /wp-content  => /blog/wp/wp-content
+	// /blog/admin /blog/admin/profile => /blog/admin/profile
+	// /blog/admin /blog => /blog/admin/blog
+	// /blog /blog/ => /blog/
 
 	if elem1 == elem2 {
 		return elem1

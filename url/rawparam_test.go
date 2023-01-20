@@ -5,15 +5,15 @@ import (
 	"net/http"
 	"net/url"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestUTF8URLEncoding(t *testing.T) {
 	exstring := '上'
 	expected := `e4%b8%8a`
 	val := getutf8hex(exstring)
-	if val != expected {
-		t.Errorf("failed to url encode utf char expected %v but got %v", expected, val)
-	}
+	require.Equalf(t, val, expected, "failed to url encode utf char expected %v but got %v", expected, val)
 }
 
 func TestParamEncoding(t *testing.T) {
@@ -26,9 +26,7 @@ func TestParamEncoding(t *testing.T) {
 	}
 	for _, v := range testcases {
 		val := ParamEncode(v.Payload)
-		if val != v.Expected {
-			t.Errorf("failed to url encode payload expected %v got %v", v.Expected, val)
-		}
+		require.Equalf(t, val, v.Expected, "failed to url encode payload expected %v got %v", v.Expected, val)
 	}
 }
 
@@ -40,9 +38,7 @@ func TestRawParam(t *testing.T) {
 	p.Add("jsprotocol", "javascript://alert(1)")
 	// Note keys are sorted
 	expected := "jsprotocol=javascript://alert(1)&sqli=1+AND+(SELECT+*+FROM+(SELECT(SLEEP(12)))nQIP)&xss=<script>alert('XSS')</script>&xssiwthspace=<svg+id=alert(1)+onload=eval(id)>"
-	if p.Encode() != expected {
-		t.Errorf("failed to encode parameters expected %v but got %v", expected, p.Encode())
-	}
+	require.Equalf(t, p.Encode(), expected, "failed to encode parameters expected %v but got %v", expected, p.Encode())
 }
 
 func TestParamIntegration(t *testing.T) {
@@ -67,12 +63,8 @@ func TestParamIntegration(t *testing.T) {
 	url, _ := url.Parse("http://localhost:9000/params")
 	url.RawQuery = p.Encode()
 	_, err := http.Get(url.String())
-	if err != nil {
-		panic(err)
-	}
-	if routerErr != nil {
-		t.Errorf(routerErr.Error())
-	}
+	require.Nil(t, err)
+	require.Nil(t, routerErr)
 }
 
 func TestPercentEncoding(t *testing.T) {
@@ -80,9 +72,7 @@ func TestPercentEncoding(t *testing.T) {
 	expected := "%74%65%73%74%20%26%23%20%28%29%20%70%65%72%63%65%6e%74%20%5b%5d%7c%2a%20%65%6e%63%6f%64%69%6e%67"
 	payload := "test &# () percent []|* encoding"
 	value := PercentEncoding(payload)
-	if value != expected {
-		t.Errorf("expected percentencoding to be %v but got %v", expected, payload)
-	}
+	require.Equalf(t, value, expected, "expected percentencoding to be %v but got %v", expected, payload)
 }
 
 func TestGetParams(t *testing.T) {
@@ -90,13 +80,7 @@ func TestGetParams(t *testing.T) {
 	values.Add("sqli", "1+AND+(SELECT+*+FROM+(SELECT(SLEEP(12)))nQIP)")
 	values.Add("xss", "<script>alert('XSS')</script>")
 	p := GetParams(values)
-	if p == nil {
-		t.Errorf("expected params but got nil")
-	}
-	if p.Get("sqli") != values.Get("sqli") {
-		t.Errorf("malformed or missing value for param sqli expected %v but got %v", values.Get("sqli"), p.Get("sqli"))
-	}
-	if p.Get("xss") != values.Get("xss") {
-		t.Errorf("malformed or missing value for param xss expected %v but got %v", values.Get("xss"), p.Get("xss"))
-	}
+	require.NotNilf(t, p, "expected params but got nil")
+	require.Equalf(t, p.Get("sqli"), values.Get("sqli"), "malformed or missing value for param sqli expected %v but got %v", values.Get("sqli"), p.Get("sqli"))
+	require.Equalf(t, p.Get("xss"), values.Get("xss"), "malformed or missing value for param xss expected %v but got %v", values.Get("xss"), p.Get("xss"))
 }
