@@ -262,7 +262,10 @@ func parseURLAllowEmpty(inputURL string, unsafe bool, allowempty bool) (*URL, er
 			// this is unexpected case return err
 			return nil, errorutil.NewWithTag("urlutil", "failed to parse url %v got empty host", inputURL)
 		}
-		if !strings.Contains(u.Host, ".") && !strings.Contains(u.Host, ":") {
+		// TODO: should use a proper regex to validate hostname/ip
+		// currently domain names without (.) are not considered as valid and autocorrected
+		// if DisableAutoCorrect is false
+		if !strings.Contains(u.Host, ".") && !strings.Contains(u.Host, ":") && u.Host != "localhost" {
 			// this does not look like a valid domain , ipv4 or ipv6
 			// consider it as relative
 			if !DisableAutoCorrect {
