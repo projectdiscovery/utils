@@ -14,7 +14,7 @@ func WithValues(ctx context.Context, keyValue ...string) (context.Context, error
 	}
 
 	for i := 0; i < len(keyValue)-1; i++ {
-		ctx = context.WithValue(ctx, keyValue[i], keyValue[i+1])
+		ctx = context.WithValue(ctx, keyValue[i], keyValue[i+1]) //nolint
 	}
 	return ctx, nil
 }
