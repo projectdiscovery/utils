@@ -519,7 +519,7 @@ func TestCountLineFailed(t *testing.T) {
 			filename:       "nonexistent.txt",
 			separator:      "\n",
 			skipEmptyLines: false,
-			expectedError:  "couldn't open file: open nonexistent.txt: no such file or directory",
+			expectedError:  "couldn't open file: nonexistent.txt",
 		},
 		{
 			filename:       "test.txt",

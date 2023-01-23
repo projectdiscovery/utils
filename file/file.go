@@ -416,7 +416,7 @@ func CountLineLogic(separator, filename string, skipEmptyLines bool) (uint64, er
 	}
 	file, err := os.Open(filename)
 	if err != nil {
-		return 0, fmt.Errorf("couldn't open file: %s", err)
+		return 0, fmt.Errorf("couldn't open file: %s", filename)
 	}
 	defer file.Close()
 
