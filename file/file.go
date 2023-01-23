@@ -419,21 +419,20 @@ func CountLineLogic(separator, filename string, skipEmptyLines bool) (uint64, er
 	reader := bufio.NewReader(file)
 
 	var lineCount uint64
-	separatorRegexp := regexp.MustCompile(separator)
 	for {
-		line, err := reader.ReadString('\n')
+		line, err := reader.ReadBytes([]byte(separator)[0])
 		if err != nil {
-			break
+			if err == io.EOF {
+				break
+			} else {
+				return 0, err
+			}
 		}
-		line = strings.TrimRight(line, "\n")
-		if skipEmptyLines && line == "" {
+		line = bytes.TrimSpace(line[:len(line)-1])
+		if skipEmptyLines && len(line) == 0 {
 			continue
 		}
-		lineCount += uint64(len(separatorRegexp.Split(line, -1)))
-	}
-
-	if err != nil {
-		return 0, err
+		lineCount++
 	}
 
 	return lineCount, nil
