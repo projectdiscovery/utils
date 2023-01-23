@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"debug/elf"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/fs"
 	"net/http"
@@ -410,9 +411,12 @@ func CountLineWithSeparator(separator, filename string) (uint64, error) {
 // It splits the file using the provided separator, and if skipEmptyLines is true, it skips empty lines.
 // It returns the number of lines in the file and any error that might have occurred.
 func CountLineLogic(separator, filename string, skipEmptyLines bool) (uint64, error) {
+	if separator == "" {
+		return 0, fmt.Errorf("invalid separator")
+	}
 	file, err := os.Open(filename)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("couldn't open file: %s", err)
 	}
 	defer file.Close()
 
