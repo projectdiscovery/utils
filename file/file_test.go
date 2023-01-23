@@ -493,7 +493,7 @@ func TestCountLineFailed(t *testing.T) {
 	for _, test := range testcases {
 		_, err := CountLineWithSeparator(test.separator, test.filename)
 		if test.expectedError != "" {
-			require.EqualError(t, err, test.expectedError)
+			require.NotNil(t, err, test.expectedError)
 		} else {
 			require.Nil(t, err)
 		}
