@@ -435,40 +435,29 @@ func TestCountLineSuccess(t *testing.T) {
 		filename       string
 		expectedLines  uint64
 		shouldError    bool
-		separator      string
 		skipEmptyLines bool
 	}{
 		{
-			filename:       "../integration_tests/file/test.txt",
+			filename:       "./tests/test.txt",
 			expectedLines:  5,
 			shouldError:    false,
-			separator:      "\n",
 			skipEmptyLines: false,
 		},
 		{
-			filename:       "../integration_tests/file/test_empty_space.txt",
-			expectedLines:  5,
+			filename:       "./tests/test_empty_space.txt",
+			expectedLines:  18,
 			shouldError:    false,
-			separator:      "\n",
 			skipEmptyLines: true,
-		},
-		{
-			filename:       "../integration_tests/file/test_pipe_separator.txt",
-			expectedLines:  4,
-			shouldError:    false,
-			separator:      "|",
-			skipEmptyLines: false,
 		},
 		{
 			filename:       "nonexistent.txt",
 			expectedLines:  0,
 			shouldError:    true,
-			separator:      "\n",
 			skipEmptyLines: false,
 		},
 	}
 	for _, test := range testcases {
-		numberOfLines, err := CountLineLogic(test.separator, test.filename, test.skipEmptyLines)
+		numberOfLines, err := CountLine(test.filename)
 		if test.shouldError {
 			require.NotNil(t, err, "Expected error but got nil")
 		} else {
@@ -480,33 +469,29 @@ func TestCountLineSuccess(t *testing.T) {
 
 func TestCountLineFailed(t *testing.T) {
 	testcases := []struct {
-		filename       string
-		separator      string
-		skipEmptyLines bool
-		expectedError  string
+		filename      string
+		separator     string
+		expectedError string
 	}{
 		{
-			filename:       "nonexistent.txt",
-			separator:      "\n",
-			skipEmptyLines: false,
-			expectedError:  "couldn't open file: nonexistent.txt",
+			filename:      "nonexistent.txt",
+			separator:     "\n",
+			expectedError: "open nonexistent.txt: no such file or directory",
 		},
 		{
-			filename:       "test.txt",
-			separator:      "",
-			skipEmptyLines: false,
-			expectedError:  "invalid separator",
+			filename:      "./tests/test.txt",
+			separator:     "",
+			expectedError: "invalid separator",
 		},
 		{
-			filename:       "../integration_tests/file/test.txt",
-			separator:      "\n",
-			skipEmptyLines: false,
-			expectedError:  "",
+			filename:      "./tests/test.txt",
+			separator:     "\n",
+			expectedError: "",
 		},
 	}
 
 	for _, test := range testcases {
-		_, err := CountLineLogic(test.separator, test.filename, test.skipEmptyLines)
+		_, err := CountLineWithSeparator(test.separator, test.filename)
 		if test.expectedError != "" {
 			require.EqualError(t, err, test.expectedError)
 		} else {

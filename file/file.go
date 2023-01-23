@@ -6,7 +6,6 @@ import (
 	"crypto/tls"
 	"debug/elf"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/fs"
 	"net/http"
@@ -400,46 +399,61 @@ func HasPermission(fileName string, permission int) (bool, error) {
 }
 
 func CountLine(filename string) (uint64, error) {
-	return CountLineLogic("\n", filename, true)
-}
-
-func CountLineWithSeparator(separator, filename string) (uint64, error) {
-	return CountLineLogic(separator, filename, true)
-}
-
-// CountLineLogic function takes in a separator and a filename as a string, opens the file, and uses a bufio.Reader to read through the file.
-// It splits the file using the provided separator, and if skipEmptyLines is true, it skips empty lines.
-// It returns the number of lines in the file and any error that might have occurred.
-func CountLineLogic(separator, filename string, skipEmptyLines bool) (uint64, error) {
-	if separator == "" {
-		return 0, fmt.Errorf("invalid separator")
-	}
 	file, err := os.Open(filename)
 	if err != nil {
-		return 0, fmt.Errorf("couldn't open file: %s", filename)
+		return 0, err
 	}
 	defer file.Close()
 
-	reader := bufio.NewReader(file)
-
+	scanner := bufio.NewScanner(file)
 	var lineCount uint64
-	for {
-		line, err := reader.ReadBytes([]byte(separator)[0])
-		if err != nil {
-			if err == io.EOF {
-				break
-			} else {
-				return 0, err
-			}
-		}
-		line = bytes.TrimSpace(line[:len(line)-1])
-		if skipEmptyLines && len(line) == 0 {
-			continue
-		}
+	for scanner.Scan() {
 		lineCount++
 	}
 
+	if err := scanner.Err(); err != nil {
+		return 0, err
+	}
 	return lineCount, nil
+}
+
+func CountLineWithSeparator(separator, filename string) (uint64, error) {
+	if separator == "" || len(separator) > 1 {
+		return 0, errors.New("invalid separator")
+	}
+	file, err := os.Open(filename)
+	if err != nil {
+		return 0, err
+	}
+	defer file.Close()
+
+	searchBytes := []byte(separator)
+	searchLen := len(searchBytes)
+
+	scanner := bufio.NewScanner(file)
+	scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+		dataLen := len(data)
+		// Return nothing if at end of file and no data passed
+		if atEOF && dataLen == 0 {
+			return 0, nil, nil
+		}
+		// Find next separator and return token
+		if i := bytes.Index(data, searchBytes); i >= 0 {
+			return i + searchLen, data[0:i], nil
+		}
+		// If we're at EOF, we have a final, non-terminated line. Return it.
+		if atEOF {
+			return dataLen, data, nil
+		}
+		// Request more data.
+		return 0, nil, nil
+	})
+
+	var count uint64
+	for scanner.Scan() {
+		count++
+	}
+	return count, scanner.Err()
 }
 
 type FileInfo struct {
