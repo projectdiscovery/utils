@@ -3,6 +3,8 @@ package urlutil
 import (
 	"path"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestSimplePaths(t *testing.T) {
@@ -28,40 +30,32 @@ func TestSimplePaths(t *testing.T) {
 	for _, v := range testcase1 {
 		pathtest := path.Join(v.Path1, v.Path2)
 		mergetest := mergePaths(v.Path1, v.Path2)
-		if pathtest != mergetest {
-			t.Errorf("merge failure expected %v but got %v", pathtest, mergetest)
-		}
+		require.Equalf(t, pathtest, mergetest, "merge failure expected %v but got %v", pathtest, mergetest)
 	}
 }
 
 func TestMergeUnsafePaths(t *testing.T) {
-	/*
-		Merge Examples with payloads and unsafe characters
-	*/
+	//	Merge Examples with payloads and unsafe characters
 	testcase2 := []struct {
 		url      string // can also be a relative path
 		Path2    string
 		Expected string //Path
 	}{
 		{"/admin", "/%20test%0a", "/admin/%20test%0a"},
-		{"scanme.sh", "%20test%0a", "%20test%0a"},
+		{"scanme.sh", "%20test%0a", "/%20test%0a"},
 		{"https://scanme.sh", "/%20test%0a", "/%20test%0a"},
-		{"/?admin=true", "/path?yes=true", "/path"},
-		{"scanme.sh", "../../../etc/passwd", "../../../etc/passwd"},
+		{"/?admin=true", "/path?yes=true", "/path?admin=true&yes=true"},
+		{"scanme.sh", "../../../etc/passwd", "/../../etc/passwd"},
 		{"//scanme.sh", "/..%252F..%252F..%252F..%252F..%252F", "/..%252F..%252F..%252F..%252F..%252F"},
-		// {"/?user=true", "/profile", "/profile?user=true"},
+		{"/?user=true", "/profile", "/profile?user=true"},
 	}
 
 	for _, v := range testcase2 {
 		rurl, err := ParseURL(v.url, false)
-		if err != nil {
-			t.Errorf(err.Error())
-			continue
-		}
-		rurl.MergePath(v.Path2, true)
-		if rurl.Path != v.Expected {
-			t.Errorf("expected %v but got %v", v.Expected, rurl.Path)
-		}
+		require.Nil(t, err)
+		err = rurl.MergePath(v.Path2, true)
+		require.Nil(t, err)
+		require.Equalf(t, rurl.GetRelativePath(), v.Expected, "expected %v but got %v", v.Expected, rurl.GetRelativePath())
 	}
 }
 
@@ -80,17 +74,14 @@ func TestMergeWithParams(t *testing.T) {
 		{"https://scanme.sh?admin=true", "/%20test%0a", "https://scanme.sh/%20test%0a?admin=true"},
 		{"scanme.sh", "/path", "scanme.sh/path"},
 		{"scanme.sh?wp=false", "/path?yes=true&admin=false", "scanme.sh/path?admin=false&wp=false&yes=true"},
+		{"https://scanme.sh", "?user=true&pass=yes", "https://scanme.sh?pass=yes&user=true"},
 	}
 	for _, v := range testcase {
 		rurl, err := ParseURL(v.url, false)
-		if err != nil {
-			t.Errorf(err.Error())
-			continue
-		}
-		rurl.MergePath(v.Path2, true)
-		if v.Expected != rurl.String() {
-			t.Errorf("expected %v but got %v", v.Expected, rurl.String())
-		}
+		require.Nil(t, err)
+		err = rurl.MergePath(v.Path2, true)
+		require.Nil(t, err)
+		require.Equalf(t, v.Expected, rurl.String(), "expected %v but got %v", v.Expected, rurl.String())
 	}
 }
 
@@ -103,13 +94,13 @@ func TestAutoMergePaths(t *testing.T) {
 		{"/", "/path/scan?param=yes", "/path/scan?param=yes"},
 		{"/admin/?param=path", "profile?show=true", "/admin/profile?param=path&show=true"},
 		{"/?admin=true", "/%20test%0a", "/%20test%0a?admin=true"},
+		{"?admin=true", "?param=true", "?admin=true&param=true"}, // should allow empty paths
 	}
 
 	for _, v := range testcase {
-		got := AutoMergePaths(v.path1, v.Path2)
-		if v.Expected != got {
-			t.Errorf("expected %v but got %v", v.Expected, got)
-		}
+		got, err := AutoMergeRelPaths(v.path1, v.Path2)
+		require.Nilf(t, err, "failed to merge paths")
+		require.Equal(t, got, v.Expected, "expected %v but got %v", v.Expected, got)
 	}
 }
 
@@ -124,12 +115,7 @@ func TestParameterParsing(t *testing.T) {
 	}
 	for _, v := range testcases {
 		rurl, err := ParseURL(v.URL, false)
-		if err != nil {
-			t.Error(err)
-			continue
-		}
-		if v.ExpectedQuery != rurl.params.Encode() {
-			t.Errorf("expected: %v\ngot: %v\n", v.ExpectedQuery, rurl.params.Encode())
-		}
+		require.Nil(t, err)
+		require.Equalf(t, v.ExpectedQuery, rurl.Params.Encode(), "expected: %v\ngot: %v\n", v.ExpectedQuery, rurl.Params.Encode())
 	}
 }
