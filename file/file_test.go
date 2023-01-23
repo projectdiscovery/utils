@@ -430,34 +430,7 @@ func TestRemoveAll(t *testing.T) {
 	require.Equal(t, 0, len(errs), "couldn't remove folder: %s", errs)
 }
 
-func createTempFile(fileContent string) (*os.File, string, error) {
-	f, err := os.CreateTemp("", "output")
-	if err != nil {
-		return nil, "", fmt.Errorf("couldn't create file: %s", err)
-	}
-	_, _ = f.Write([]byte(fileContent))
-	f.Close()
-	fileName := f.Name()
-	f, err = os.Open(fileName)
-	if err != nil {
-		return nil, "", fmt.Errorf("couldn't create file: %s", err)
-	}
-	return f, fileName, nil
-}
-
 func TestCountLineSuccess(t *testing.T) {
-	fTest, fileNameTest, err := createTempFile("test\ntest1\ntest2\ntest3\ntest4\n")
-	require.Nil(t, err, err)
-	defer os.Remove(fileNameTest)
-
-	fEmptySpace, fileNameEmptySpace, err := createTempFile("test\ntest1\n\n\n\n\n\ntest2\ntest3\n\n\n\n\n\ntest4\n")
-	require.Nil(t, err, err)
-	defer os.Remove(fileNameEmptySpace)
-
-	fSeparator, fileNameSeparator, err := createTempFile("test|test1|test2|test3|test4\n")
-	require.Nil(t, err, err)
-	defer os.Remove(fileNameSeparator)
-
 	testcases := []struct {
 		filename       string
 		expectedLines  uint64
@@ -466,21 +439,21 @@ func TestCountLineSuccess(t *testing.T) {
 		skipEmptyLines bool
 	}{
 		{
-			filename:       fTest.Name(),
+			filename:       "../integration_tests/file/test.txt",
 			expectedLines:  5,
 			shouldError:    false,
 			separator:      "\n",
 			skipEmptyLines: false,
 		},
 		{
-			filename:       fEmptySpace.Name(),
+			filename:       "../integration_tests/file/test_empty_space.txt",
 			expectedLines:  5,
 			shouldError:    false,
 			separator:      "\n",
 			skipEmptyLines: true,
 		},
 		{
-			filename:       fSeparator.Name(),
+			filename:       "../integration_tests/file/test_pipe_separator.txt",
 			expectedLines:  4,
 			shouldError:    false,
 			separator:      "|",
@@ -506,9 +479,6 @@ func TestCountLineSuccess(t *testing.T) {
 }
 
 func TestCountLineFailed(t *testing.T) {
-	fTest, fileNameTest, err := createTempFile("test\ntest1\ntest2\ntest3\ntest4\n")
-	require.Nil(t, err, err)
-	defer os.Remove(fileNameTest)
 	testcases := []struct {
 		filename       string
 		separator      string
@@ -528,7 +498,7 @@ func TestCountLineFailed(t *testing.T) {
 			expectedError:  "invalid separator",
 		},
 		{
-			filename:       fTest.Name(),
+			filename:       "../integration_tests/file/test.txt",
 			separator:      "\n",
 			skipEmptyLines: false,
 			expectedError:  "",
