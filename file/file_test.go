@@ -438,13 +438,13 @@ func TestCountLineSuccess(t *testing.T) {
 		skipEmptyLines bool
 	}{
 		{
-			filename:       "./tests/test.txt",
+			filename:       "tests/test.txt",
 			expectedLines:  5,
 			shouldError:    false,
 			skipEmptyLines: false,
 		},
 		{
-			filename:       "./tests/test_empty_space.txt",
+			filename:       "tests/test_empty_space.txt",
 			expectedLines:  18,
 			shouldError:    false,
 			skipEmptyLines: true,
@@ -457,12 +457,12 @@ func TestCountLineSuccess(t *testing.T) {
 		},
 	}
 	for _, test := range testcases {
-		numberOfLines, err := CountLine(test.filename)
+		filenameInfo, err := CountLines(test.filename)
 		if test.shouldError {
 			require.NotNil(t, err, "Expected error but got nil")
 		} else {
 			require.Nil(t, err, err)
-			require.Equal(t, test.expectedLines, numberOfLines)
+			require.Equal(t, test.expectedLines, filenameInfo[0].LineCount)
 		}
 	}
 }
@@ -479,19 +479,19 @@ func TestCountLineFailed(t *testing.T) {
 			expectedError: "open nonexistent.txt: no such file or directory",
 		},
 		{
-			filename:      "./tests/test.txt",
+			filename:      "tests/test.txt",
 			separator:     "",
 			expectedError: "invalid separator",
 		},
 		{
-			filename:      "./tests/test.txt",
+			filename:      "tests/test.txt",
 			separator:     "\n",
 			expectedError: "",
 		},
 	}
 
 	for _, test := range testcases {
-		_, err := CountLineWithSeparator(test.separator, test.filename)
+		_, err := CountLinesWithSeparator([]byte(test.separator), test.filename)
 		if test.expectedError != "" {
 			require.NotNil(t, err, test.expectedError)
 		} else {
