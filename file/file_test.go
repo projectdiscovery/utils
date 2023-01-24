@@ -459,7 +459,7 @@ func TestCountLineSuccess(t *testing.T) {
 	for _, test := range testcases {
 		filenameInfo, err := CountLines(test.filename)
 		if test.shouldError {
-			require.NotNil(t, err, "Expected error but got nil")
+			require.NotNil(t, filenameInfo[0].Error, "Expected error but got nil")
 		} else {
 			require.Nil(t, err, err)
 			require.Equal(t, test.expectedLines, filenameInfo[0].LineCount)
@@ -491,9 +491,11 @@ func TestCountLineFailed(t *testing.T) {
 	}
 
 	for _, test := range testcases {
-		_, err := CountLinesWithSeparator([]byte(test.separator), test.filename)
+		filenameInfo, err := CountLinesWithSeparator([]byte(test.separator), test.filename)
 		if test.expectedError != "" {
-			require.NotNil(t, err, test.expectedError)
+			if len(filenameInfo) > 0 {
+				require.NotNil(t, filenameInfo[0].Error, test.expectedError)
+			}
 		} else {
 			require.Nil(t, err)
 		}

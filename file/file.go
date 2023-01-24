@@ -401,6 +401,7 @@ func HasPermission(fileName string, permission int) (bool, error) {
 type FileInfo struct {
 	Filename  string
 	LineCount uint64
+	Error     error
 }
 
 func CountLines(filenames ...string) ([]FileInfo, error) {
@@ -408,7 +409,8 @@ func CountLines(filenames ...string) ([]FileInfo, error) {
 	for _, filename := range filenames {
 		file, err := os.Open(filename)
 		if err != nil {
-			return []FileInfo{}, err
+			fileInfos = append(fileInfos, FileInfo{Filename: filename, Error: err})
+			continue
 		}
 		defer file.Close()
 
@@ -419,7 +421,8 @@ func CountLines(filenames ...string) ([]FileInfo, error) {
 		}
 
 		if err := scanner.Err(); err != nil {
-			return []FileInfo{}, err
+			fileInfos = append(fileInfos, FileInfo{Filename: filename, Error: err})
+			continue
 		}
 		fileInfos = append(fileInfos, FileInfo{Filename: filename, LineCount: lineCount})
 	}
@@ -435,7 +438,8 @@ func CountLinesWithSeparator(separator []byte, filenames ...string) ([]FileInfo,
 	for _, filename := range filenames {
 		file, err := os.Open(filename)
 		if err != nil {
-			return []FileInfo{}, err
+			fileInfos = append(fileInfos, FileInfo{Filename: filename, Error: err})
+			continue
 		}
 		defer file.Close()
 
@@ -459,7 +463,8 @@ func CountLinesWithSeparator(separator []byte, filenames ...string) ([]FileInfo,
 			count++
 		}
 		if err := scanner.Err(); err != nil {
-			return []FileInfo{}, err
+			fileInfos = append(fileInfos, FileInfo{Filename: filename, Error: err})
+			continue
 		}
 		fileInfos = append(fileInfos, FileInfo{Filename: filename, LineCount: count})
 	}
