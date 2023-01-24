@@ -430,7 +430,7 @@ func CountLines(filenames ...string) ([]FileInfo, error) {
 }
 
 func CountLinesWithSeparator(separator []byte, filenames ...string) ([]FileInfo, error) {
-	if separator == nil || len(separator) == 0 {
+	if len(separator) == 0 {
 		return nil, errors.New("invalid separator")
 	}
 
