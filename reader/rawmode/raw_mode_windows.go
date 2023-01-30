@@ -3,6 +3,7 @@
 package rawmode
 
 import (
+	"errors"
 	"os"
 	"syscall"
 	"unsafe"
@@ -30,6 +31,32 @@ const (
 	enableProcessedOutput = 1
 	enableWrapAtEolOutput = 2
 )
+
+func init() {
+	GetMode = func(std *os.File) (interface{}, error) {
+		return getMode(std)
+	}
+
+	SetMode = func(std *os.File, mode interface{}) error {
+		m, ok := mode.(uint32)
+		if !ok {
+			return errors.New("invalid syscall.Termios")
+		}
+		return setMode(std, m)
+	}
+
+	SetRawMode = func(std *os.File, mode interface{}) error {
+		m, ok := mode.(uint32)
+		if !ok {
+			return errors.New("invalid syscall.Termios")
+		}
+		return setRawMode(std, m)
+	}
+
+	Read = func(std *os.File, buf []byte) (int, error) {
+		return read(std, buf)
+	}
+}
 
 func getTermMode(fd uintptr) (uint32, error) {
 	var mode uint32
@@ -59,22 +86,22 @@ func setTermMode(fd uintptr, mode uint32) error {
 }
 
 // GetMode from file descriptor
-func GetMode(std *os.File) (uint32, error) {
+func getMode(std *os.File) (uint32, error) {
 	return getTermMode(os.Stdin.Fd())
 }
 
 // SetMode to file descriptor
-func SetMode(std *os.File, mode uint32) error {
+func setMode(std *os.File, mode uint32) error {
 	return setTermMode(os.Stdin.Fd(), mode)
 }
 
 // SetRawMode to file descriptor enriching existign mode with raw console flags
-func SetRawMode(std *os.File, mode uint32) error {
+func setRawMode(std *os.File, mode uint32) error {
 	mode &^= (enableEchoInput | enableProcessedInput | enableLineInput | enableProcessedOutput)
 	return SetMode(std, mode)
 }
 
 // Read from file descriptor to buffer
-func Read(std *os.File, buf []byte) (int, error) {
+func read(std *os.File, buf []byte) (int, error) {
 	return syscall.Read(syscall.Handle(os.Stdin.Fd()), buf)
 }
