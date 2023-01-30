@@ -4,29 +4,29 @@ import (
 	"context"
 	"os"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/projectdiscovery/utils/reader/rawmode"
 )
 
 type KeyPressReader struct {
-	mode     uint32
-	Timeout  time.Duration
-	datachan chan []byte
-	Once     *sync.Once
+	originalMode interface{}
+	Timeout      time.Duration
+	datachan     chan []byte
+	Once         *sync.Once
 }
 
 func (reader *KeyPressReader) Start() error {
 	reader.Once.Do(func() {
 		go reader.read()
-		reader.mode, _ = rawmode.GetMode(os.Stdin)
+		reader.originalMode, _ = rawmode.GetMode(os.Stdin)
 	})
-	return rawmode.SetRawMode(os.Stdin, reader.mode)
+	mode, _ := rawmode.GetMode(os.Stdin)
+	return rawmode.SetRawMode(os.Stdin, mode)
 }
 
 func (reader *KeyPressReader) Stop() error {
-	return rawmode.SetMode(os.Stdin, reader.mode)
+	return rawmode.SetMode(os.Stdin, reader.originalMode)
 }
 
 func (reader *KeyPressReader) read() {
@@ -35,7 +35,7 @@ func (reader *KeyPressReader) read() {
 	}
 	for {
 		r := make([]byte, 1)
-		n, err := syscall.Read(syscall.Handle(os.Stdin.Fd()), r)
+		n, err := rawmode.Read(os.Stdin, r)
 		if n > 0 && err == nil {
 			reader.datachan <- r
 		}

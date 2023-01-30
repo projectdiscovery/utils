@@ -1,12 +1,39 @@
-//go:build darwin || linux
+//go:build linux
 
-package main
+package rawmode
 
 import (
+	"errors"
 	"os"
 	"syscall"
 	"unsafe"
 )
+
+func init() {
+	GetMode = func(std *os.File) (interface{}, error) {
+		return getMode(std)
+	}
+
+	SetMode = func(std *os.File, mode interface{}) error {
+		m, ok := mode.(*syscall.Termios)
+		if !ok {
+			return errors.New("invalid syscall.Termios")
+		}
+		return setMode(std, m)
+	}
+
+	SetRawMode = func(std *os.File, mode interface{}) error {
+		m, ok := mode.(*syscall.Termios)
+		if !ok {
+			return errors.New("invalid syscall.Termios")
+		}
+		return setRawMode(std, m)
+	}
+
+	Read = func(std *os.File, buf []byte) (int, error) {
+		return read(std, buf)
+	}
+}
 
 func getTermios(fd uintptr) (*syscall.Termios, error) {
 	var t syscall.Termios
@@ -42,15 +69,19 @@ func setRaw(term *syscall.Termios) {
 	term.Cc[syscall.VTIME] = 0
 }
 
-func GetMode(std *os.File) (*syscall.Termios, error) {
+func getMode(std *os.File) (*syscall.Termios, error) {
 	return getTermios(os.Stdin.Fd())
 }
 
-func SetMode(std *os.File, mode *syscall.Termios) error {
-	return setTermMode(os.Stdin.Fd(), mode)
+func setMode(std *os.File, mode *syscall.Termios) error {
+	return setTermios(os.Stdin.Fd(), mode)
 }
 
-func SetRawMode(std *os.File, mode *syscall.Termios) error {
+func setRawMode(std *os.File, mode *syscall.Termios) error {
 	setRaw(mode)
 	return SetMode(std, mode)
+}
+
+func read(std *os.File, buf []byte) (int, error) {
+	return syscall.Read(int(os.Stdin.Fd()), buf)
 }
