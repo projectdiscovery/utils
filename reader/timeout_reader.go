@@ -2,12 +2,9 @@ package reader
 
 import (
 	"context"
-	"errors"
 	"io"
 	"time"
 )
-
-var ErrTimeout = errors.New("Timeout")
 
 // TimeoutReader is a reader wrapper that stops waiting after Timeout
 type TimeoutReader struct {
