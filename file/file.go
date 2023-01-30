@@ -404,31 +404,13 @@ type FileInfo struct {
 	Error     error
 }
 
+// CountLines takes a list of filenames and returns a list of FileInfo objects.
 func CountLines(filenames ...string) ([]FileInfo, error) {
-	var fileInfos []FileInfo
-	for _, filename := range filenames {
-		file, err := os.Open(filename)
-		if err != nil {
-			fileInfos = append(fileInfos, FileInfo{Filename: filename, Error: err})
-			continue
-		}
-		defer file.Close()
-
-		scanner := bufio.NewScanner(file)
-		var lineCount uint64
-		for scanner.Scan() {
-			lineCount++
-		}
-
-		if err := scanner.Err(); err != nil {
-			fileInfos = append(fileInfos, FileInfo{Filename: filename, Error: err})
-			continue
-		}
-		fileInfos = append(fileInfos, FileInfo{Filename: filename, LineCount: lineCount})
-	}
-	return fileInfos, nil
+	return CountLinesWithSeparator([]byte("\n"), filenames...)
 }
 
+// CountLinesWithSeparator takes a byte array (separator) and a list of filenames and returns a list of FileInfo objects.
+// It will count the number of lines in each file, using the given separator to split the lines.
 func CountLinesWithSeparator(separator []byte, filenames ...string) ([]FileInfo, error) {
 	if len(separator) == 0 {
 		return nil, errors.New("invalid separator")
