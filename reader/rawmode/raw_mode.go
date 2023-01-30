@@ -13,4 +13,7 @@ var (
 	SetRawMode func(std *os.File, mode interface{}) error
 	// Read from file descriptor to buffer
 	Read func(std *os.File, buf []byte) (int, error)
+
+	TCSETS uintptr
+	TCGETS uintptr
 )

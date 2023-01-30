@@ -1,4 +1,4 @@
-//go:build linux
+//go:build darwin || linux
 
 package rawmode
 
@@ -40,7 +40,7 @@ func getTermios(fd uintptr) (*syscall.Termios, error) {
 	_, _, err := syscall.Syscall6(
 		syscall.SYS_IOCTL,
 		os.Stdin.Fd(),
-		syscall.TCGETS,
+		TCGETS,
 		uintptr(unsafe.Pointer(&t)),
 		0, 0, 0)
 
@@ -51,7 +51,7 @@ func setTermios(fd uintptr, term *syscall.Termios) error {
 	_, _, err := syscall.Syscall6(
 		syscall.SYS_IOCTL,
 		os.Stdin.Fd(),
-		syscall.TCSETS,
+		TCSETS,
 		uintptr(unsafe.Pointer(term)),
 		0, 0, 0)
 	return err
