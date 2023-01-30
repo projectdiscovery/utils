@@ -73,3 +73,8 @@ func SetRawMode(std *os.File, mode uint32) error {
 	mode &^= (enableEchoInput | enableProcessedInput | enableLineInput | enableProcessedOutput)
 	return SetMode(std, mode)
 }
+
+// Read from file descriptor to buffer
+func Read(std *os.File, buf []byte) (int, error) {
+	return syscall.Read(syscall.Handle(os.Stdin.Fd()), buf)
+}
