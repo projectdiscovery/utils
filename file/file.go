@@ -398,6 +398,8 @@ func HasPermission(fileName string, permission int) (bool, error) {
 	return true, nil
 }
 
+var ErrInvalidSeparator = errors.New("invalid separator")
+
 type FileInfo struct {
 	Filename  string
 	LineCount uint64
@@ -405,22 +407,25 @@ type FileInfo struct {
 }
 
 // CountLines takes a list of filenames and returns a list of FileInfo objects.
-func CountLines(filenames ...string) ([]FileInfo, error) {
+func CountLines(filenames ...string) []FileInfo {
 	return CountLinesWithSeparator([]byte("\n"), filenames...)
 }
 
 // CountLinesWithSeparator takes a byte array (separator) and a list of filenames and returns a list of FileInfo objects.
 // It will count the number of lines in each file, using the given separator to split the lines.
-func CountLinesWithSeparator(separator []byte, filenames ...string) ([]FileInfo, error) {
-	if len(separator) == 0 {
-		return nil, errors.New("invalid separator")
-	}
-
+func CountLinesWithSeparator(separator []byte, filenames ...string) []FileInfo {
 	var fileInfos []FileInfo
 	for _, filename := range filenames {
+		fileInfo := FileInfo{Filename: filename}
+		if len(separator) == 0 {
+			fileInfo.Error = ErrInvalidSeparator
+			fileInfos = append(fileInfos, fileInfo)
+			continue
+		}
 		file, err := os.Open(filename)
 		if err != nil {
-			fileInfos = append(fileInfos, FileInfo{Filename: filename, Error: err})
+			fileInfo.Error = err
+			fileInfos = append(fileInfos, fileInfo)
 			continue
 		}
 		defer file.Close()
@@ -444,11 +449,10 @@ func CountLinesWithSeparator(separator []byte, filenames ...string) ([]FileInfo,
 		for scanner.Scan() {
 			count++
 		}
-		if err := scanner.Err(); err != nil {
-			fileInfos = append(fileInfos, FileInfo{Filename: filename, Error: err})
-			continue
-		}
-		fileInfos = append(fileInfos, FileInfo{Filename: filename, LineCount: count})
+		fileInfo.Error = scanner.Err()
+		fileInfo.LineCount = count
+
+		fileInfos = append(fileInfos, fileInfo)
 	}
-	return fileInfos, nil
+	return fileInfos
 }
