@@ -10,7 +10,7 @@ import (
 const (
 	HTTP             = "http"
 	HTTPS            = "https"
-	schemeSeparator  = "://"
+	SchemeSeparator  = "://"
 	DefaultHTTPPort  = "80"
 	DefaultHTTPSPort = "443"
 )

@@ -22,14 +22,14 @@ const (
 	enableLineInput       = 2
 	enableEchoInput       = 4
 	enableProcessedInput  = 1
-	enableWindowInput     = 8
-	enableMouseInput      = 16
-	enableInsertMode      = 32
-	enableQuickEditMode   = 64
-	enableExtendedFlags   = 128
-	enableAutoPosition    = 256
-	enableProcessedOutput = 1
-	enableWrapAtEolOutput = 2
+	enableWindowInput     = 8   //nolint
+	enableMouseInput      = 16  //nolint
+	enableInsertMode      = 32  //nolint
+	enableQuickEditMode   = 64  //nolint
+	enableExtendedFlags   = 128 //nolint
+	enableAutoPosition    = 256 //nolint
+	enableProcessedOutput = 1   //nolint
+	enableWrapAtEolOutput = 2   //nolint
 )
 
 func init() {
@@ -60,9 +60,8 @@ func init() {
 
 func getTermMode(fd uintptr) (uint32, error) {
 	var mode uint32
-	_, _, err := syscall.Syscall(
+	_, _, err := syscall.SyscallN(
 		procGetConsoleMode.Addr(),
-		2,
 		fd,
 		uintptr(unsafe.Pointer(&mode)),
 		0)
@@ -73,9 +72,8 @@ func getTermMode(fd uintptr) (uint32, error) {
 }
 
 func setTermMode(fd uintptr, mode uint32) error {
-	_, _, err := syscall.Syscall(
+	_, _, err := syscall.SyscallN(
 		procSetConsoleMode.Addr(),
-		2,
 		fd,
 		uintptr(mode),
 		0)

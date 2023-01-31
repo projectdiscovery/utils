@@ -13,6 +13,7 @@ func main() {
 	stdr := reader.KeyPressReader{
 		Timeout: time.Duration(5 * time.Second),
 		Once:    &sync.Once{},
+		Raw:     true,
 	}
 
 	stdr.Start()

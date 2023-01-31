@@ -14,28 +14,57 @@ type KeyPressReader struct {
 	Timeout      time.Duration
 	datachan     chan []byte
 	Once         *sync.Once
+	Raw          bool
+	BufferSize   int
 }
 
 func (reader *KeyPressReader) Start() error {
 	reader.Once.Do(func() {
 		go reader.read()
 		reader.originalMode, _ = rawmode.GetMode(os.Stdin)
+		if reader.Raw {
+			reader.BufferSize = 1
+		} else {
+			reader.BufferSize = 512
+		}
 	})
-	mode, _ := rawmode.GetMode(os.Stdin)
-	return rawmode.SetRawMode(os.Stdin, mode)
+	// set raw mode
+	if reader.Raw {
+		mode, _ := rawmode.GetMode(os.Stdin)
+		return rawmode.SetRawMode(os.Stdin, mode)
+	}
+
+	// proceed with buffered input - only new lines are detected
+	return nil
 }
 
 func (reader *KeyPressReader) Stop() error {
-	return rawmode.SetMode(os.Stdin, reader.originalMode)
+	// disable raw mode
+	if reader.Raw {
+		return rawmode.SetMode(os.Stdin, reader.originalMode)
+	}
+
+	// nop
+	return nil
 }
 
 func (reader *KeyPressReader) read() {
 	if reader.datachan == nil {
 		reader.datachan = make(chan []byte)
 	}
+
 	for {
-		r := make([]byte, 1)
-		n, err := rawmode.Read(os.Stdin, r)
+		var (
+			n   int
+			err error
+			r   = make([]byte, reader.BufferSize)
+		)
+
+		if reader.Raw {
+			n, err = rawmode.Read(os.Stdin, r)
+		} else {
+			n, err = os.Stdin.Read(r)
+		}
 		if n > 0 && err == nil {
 			reader.datachan <- r
 		}
