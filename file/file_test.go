@@ -3,6 +3,7 @@ package fileutil
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -428,4 +429,58 @@ func TestRemoveAll(t *testing.T) {
 	f.Close()
 	errs := RemoveAll(tmpdir)
 	require.Equal(t, 0, len(errs), "couldn't remove folder: %s", errs)
+}
+
+func TestCountLineWithSeparator(t *testing.T) {
+	testcases := []struct {
+		filename       string
+		expectedLines  uint64
+		shouldError    bool
+		expectedError  string
+		skipEmptyLines bool
+		separator      string
+	}{
+		{
+			filename:      "tests/test.txt",
+			expectedLines: 5,
+			separator:     "\n",
+		},
+		{
+			filename:       "tests/test_empty_space.txt",
+			expectedLines:  18,
+			skipEmptyLines: true,
+			separator:      "\n",
+		},
+		{
+			filename:       "tests/test_pipe_separator.txt",
+			expectedLines:  5,
+			skipEmptyLines: true,
+			separator:      "|",
+		},
+		{
+			filename:      "nonexistent.txt",
+			expectedLines: 0,
+			shouldError:   true,
+			separator:     "\n",
+		},
+		{
+			filename:      "tests/test.txt",
+			separator:     "",
+			shouldError:   true,
+			expectedError: "invalid separator",
+		},
+	}
+	for _, test := range testcases {
+		filenameInfo := CountLinesWithSeparator([]byte(test.separator), test.filename)
+		log.Println(filenameInfo)
+		if test.shouldError {
+			require.NotNil(t, filenameInfo[0].Error)
+			if test.expectedError != "" {
+				require.EqualError(t, filenameInfo[0].Error, test.expectedError)
+			}
+		} else {
+			require.Nil(t, filenameInfo[0].Error)
+			require.Equal(t, test.expectedLines, filenameInfo[0].LineCount)
+		}
+	}
 }

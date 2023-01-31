@@ -397,3 +397,62 @@ func HasPermission(fileName string, permission int) (bool, error) {
 
 	return true, nil
 }
+
+var ErrInvalidSeparator = errors.New("invalid separator")
+
+type FileInfo struct {
+	Filename  string
+	LineCount uint64
+	Error     error
+}
+
+// CountLines takes a list of filenames and returns a list of FileInfo objects.
+func CountLines(filenames ...string) []FileInfo {
+	return CountLinesWithSeparator([]byte("\n"), filenames...)
+}
+
+// CountLinesWithSeparator takes a byte array (separator) and a list of filenames and returns a list of FileInfo objects.
+// It will count the number of lines in each file, using the given separator to split the lines.
+func CountLinesWithSeparator(separator []byte, filenames ...string) []FileInfo {
+	var fileInfos []FileInfo
+	for _, filename := range filenames {
+		fileInfo := FileInfo{Filename: filename}
+		if len(separator) == 0 {
+			fileInfo.Error = ErrInvalidSeparator
+			fileInfos = append(fileInfos, fileInfo)
+			continue
+		}
+		file, err := os.Open(filename)
+		if err != nil {
+			fileInfo.Error = err
+			fileInfos = append(fileInfos, fileInfo)
+			continue
+		}
+		defer file.Close()
+
+		scanner := bufio.NewScanner(file)
+		scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+			dataLen := len(data)
+			if atEOF && dataLen == 0 {
+				return 0, nil, nil
+			}
+			if i := bytes.Index(data, separator); i >= 0 {
+				return i + len(separator), data[0:i], nil
+			}
+			if atEOF {
+				return dataLen, data, nil
+			}
+			return 0, nil, nil
+		})
+
+		var count uint64
+		for scanner.Scan() {
+			count++
+		}
+		fileInfo.Error = scanner.Err()
+		fileInfo.LineCount = count
+
+		fileInfos = append(fileInfos, fileInfo)
+	}
+	return fileInfos
+}
