@@ -3,7 +3,6 @@ package fileutil
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -434,53 +433,50 @@ func TestRemoveAll(t *testing.T) {
 func TestCountLineWithSeparator(t *testing.T) {
 	testcases := []struct {
 		filename       string
-		expectedLines  uint64
+		expectedLines  uint
 		shouldError    bool
 		expectedError  string
 		skipEmptyLines bool
 		separator      string
 	}{
 		{
-			filename:      "tests/test.txt",
+			filename:      "tests/standard.txt",
 			expectedLines: 5,
 			separator:     "\n",
 		},
 		{
-			filename:       "tests/test_empty_space.txt",
-			expectedLines:  18,
-			skipEmptyLines: true,
-			separator:      "\n",
-		},
-		{
-			filename:       "tests/test_pipe_separator.txt",
-			expectedLines:  5,
-			skipEmptyLines: true,
-			separator:      "|",
-		},
-		{
-			filename:      "nonexistent.txt",
-			expectedLines: 0,
-			shouldError:   true,
+			filename:      "tests/empty_lines.txt",
+			expectedLines: 18,
 			separator:     "\n",
 		},
 		{
-			filename:      "tests/test.txt",
+			filename:      "tests/pipe_separator.txt",
+			expectedLines: 5,
+			separator:     "|",
+		},
+		{
+			filename:      "nonexistent.txt",
+			shouldError:   true,
+			expectedLines: 0,
+			separator:     "\n",
+		},
+		{
+			filename:      "tests/standard.txt",
 			separator:     "",
 			shouldError:   true,
 			expectedError: "invalid separator",
 		},
 	}
 	for _, test := range testcases {
-		filenameInfo := CountLinesWithSeparator([]byte(test.separator), test.filename)
-		log.Println(filenameInfo)
+		linesCount, err := CountLinesWithSeparator([]byte(test.separator), test.filename)
 		if test.shouldError {
-			require.NotNil(t, filenameInfo[0].Error)
+			require.NotNil(t, err)
 			if test.expectedError != "" {
-				require.EqualError(t, filenameInfo[0].Error, test.expectedError)
+				require.EqualError(t, err, test.expectedError)
 			}
 		} else {
-			require.Nil(t, filenameInfo[0].Error)
-			require.Equal(t, test.expectedLines, filenameInfo[0].LineCount)
+			require.Nil(t, err)
+			require.Equal(t, test.expectedLines, linesCount)
 		}
 	}
 }
