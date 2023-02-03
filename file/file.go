@@ -400,59 +400,57 @@ func HasPermission(fileName string, permission int) (bool, error) {
 
 var ErrInvalidSeparator = errors.New("invalid separator")
 
-type FileInfo struct {
-	Filename  string
-	LineCount uint64
-	Error     error
+var SkipEmptyLine = func(line []byte) bool {
+	return len(line) > 0
 }
 
-// CountLines takes a list of filenames and returns a list of FileInfo objects.
-func CountLines(filenames ...string) []FileInfo {
-	return CountLinesWithSeparator([]byte("\n"), filenames...)
+// CountLines counts the lines in a file
+func CountLines(filename string) (uint, error) {
+	return CountLinesWithSeparator([]byte("\n"), filename)
 }
 
-// CountLinesWithSeparator takes a byte array (separator) and a list of filenames and returns a list of FileInfo objects.
-// It will count the number of lines in each file, using the given separator to split the lines.
-func CountLinesWithSeparator(separator []byte, filenames ...string) []FileInfo {
-	var fileInfos []FileInfo
-	for _, filename := range filenames {
-		fileInfo := FileInfo{Filename: filename}
-		if len(separator) == 0 {
-			fileInfo.Error = ErrInvalidSeparator
-			fileInfos = append(fileInfos, fileInfo)
-			continue
-		}
-		file, err := os.Open(filename)
-		if err != nil {
-			fileInfo.Error = err
-			fileInfos = append(fileInfos, fileInfo)
-			continue
-		}
-		defer file.Close()
+// CountLinesWithSeparator of a file
+func CountLinesWithSeparator(separator []byte, filename string) (uint, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return 0, err
+	}
 
-		scanner := bufio.NewScanner(file)
-		scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-			dataLen := len(data)
-			if atEOF && dataLen == 0 {
-				return 0, nil, nil
-			}
-			if i := bytes.Index(data, separator); i >= 0 {
-				return i + len(separator), data[0:i], nil
-			}
-			if atEOF {
-				return dataLen, data, nil
-			}
+	defer file.Close()
+	if len(separator) == 0 {
+		return 0, ErrInvalidSeparator
+	}
+
+	return CountLinesWithOptions(file, separator, nil)
+}
+
+// IsNotEmpty determines if a data chunk is empty
+var IsNotEmpty = func(data []byte) bool {
+	return len(data) > 0
+}
+
+// CountLinesWithOptions from a reader and custom filter function
+func CountLinesWithOptions(reader io.Reader, separator []byte, filter func([]byte) bool) (uint, error) {
+	scanner := bufio.NewScanner(reader)
+	scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+		dataLen := len(data)
+		if atEOF && dataLen == 0 {
 			return 0, nil, nil
-		})
+		}
+		if i := bytes.Index(data, separator); i >= 0 {
+			return i + len(separator), data[0:i], nil
+		}
+		if atEOF {
+			return dataLen, data, nil
+		}
+		return 0, nil, nil
+	})
 
-		var count uint64
-		for scanner.Scan() {
+	var count uint
+	for scanner.Scan() {
+		if filter == nil || filter(scanner.Bytes()) {
 			count++
 		}
-		fileInfo.Error = scanner.Err()
-		fileInfo.LineCount = count
-
-		fileInfos = append(fileInfos, fileInfo)
 	}
-	return fileInfos
+	return count, scanner.Err()
 }
