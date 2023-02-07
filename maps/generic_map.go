@@ -12,8 +12,8 @@ func (m Map[K, V]) Has(key K) bool {
 // GetKeys from the map as a slice
 func (m Map[K, V]) GetKeys(keys ...K) []V {
 	values := make([]V, len(keys))
-	for _, key := range keys {
-		values = append(values, m[key])
+	for i, key := range keys {
+		values[i] = m[key]
 	}
 	return values
 }
