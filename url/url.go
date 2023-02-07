@@ -2,6 +2,7 @@ package urlutil
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"net/url"
 	"strings"
@@ -234,6 +235,7 @@ func parseURLAllowEmpty(inputURL string, unsafe bool, allowempty bool) (*URL, er
 		return nil, errorutil.NewWithTag("urlutil", "failed to parse url got empty input")
 	}
 
+	// Note: we consider //scanme.sh as valid  (since all browsers accept this <script src="//ajax.googleapis.com/ajax/xx">)
 	if strings.HasPrefix(inputURL, "/") && !strings.HasPrefix(inputURL, "//") {
 		// this is definitely a relative path
 		u.IsRelative = true
@@ -245,7 +247,16 @@ func parseURLAllowEmpty(inputURL string, unsafe bool, allowempty bool) (*URL, er
 		u.IsRelative = false
 		urlparse, parseErr := url.Parse(inputURL)
 		if parseErr != nil {
-			return nil, errorutil.NewWithErr(parseErr).Msgf("failed to parse url")
+			// for parse errors in unsafe way try parsing again
+			if unsafe {
+				urlparse = parseUnsafeFullURL(inputURL)
+				if urlparse != nil {
+					parseErr = nil
+				}
+			}
+			if parseErr != nil {
+				return nil, errorutil.NewWithErr(parseErr).Msgf("failed to parse url")
+			}
 		}
 		copy(u.URL, urlparse)
 	} else {
@@ -305,6 +316,36 @@ func parseURLAllowEmpty(inputURL string, unsafe bool, allowempty bool) (*URL, er
 	// edgecase where path contains percent encoded chars ex: /%20test%0a
 	u.parseRelativePath()
 	return u, nil
+}
+
+// parseUnsafeFullURL parses invalid(unsafe) urls (ex: https://scanme.sh/%invalid)
+// this is not supported as per RFC and url.Parse fails
+func parseUnsafeFullURL(urlx string) *url.URL {
+	// we only allow unsupported chars in path
+	// since url.Parse() returns error there isn't any standard way to do this
+	// Current methodology
+	// 1. temp replace `//` schema seperator to avoid collisions
+	// 2. get first index of `/` i.e path seperator (if none skip any furthur preprocessing)
+	// 3. if found split urls into base and path (i.e https://scanme.sh/%invalid => `https://scanme.sh`+`/%invalid`)
+	// 4. Host part is parsed by net/url.URL and path is parsed manually
+	temp := strings.Replace(urlx, "//", "", 1)
+	index := strings.IndexRune(temp, '/')
+	if index == -1 {
+		return nil
+	}
+	urlPath := temp[index:]
+	urlHost := strings.TrimSuffix(urlx, urlPath)
+	parseURL, parseErr := url.Parse(urlHost)
+	if parseErr != nil {
+		return nil
+	}
+	if relpath, err := parseURLAllowEmpty(urlPath, true, true); err == nil {
+		parseURL.Path = relpath.Path
+		return parseURL
+	} else {
+		fmt.Println(err)
+	}
+	return nil
 }
 
 // copy parsed data from src to dst this does not include fragment or params

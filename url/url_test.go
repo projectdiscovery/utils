@@ -84,3 +84,16 @@ func TestUpdateRelPath(t *testing.T) {
 	require.Nil(t, err)
 	require.Equalf(t, urlx.Path, "/newpath/", "failed to update relative path")
 }
+
+func TestInvalidURLs(t *testing.T) {
+	testcases := []string{
+		"https://scanme.sh/%invalid",
+		"https://scanme.sh/%invalid2/and/path",
+		"https://scanme.sh",
+		"https://scanme.sh/%invalid?with=param",
+	}
+	for _, v := range testcases {
+		_, err := ParseURL(v, true)
+		require.Nilf(t, err, "got error for url %v", v)
+	}
+}
