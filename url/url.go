@@ -39,6 +39,12 @@ func (u *URL) MergePath(newrelpath string, unsafe bool) error {
 	return nil
 }
 
+// UpdateRelPath updates relative path with new path (existing params are not removed)
+func (u *URL) UpdateRelPath(newrelpath string, unsafe bool) {
+	u.Path = ""
+	u.MergePath(newrelpath, unsafe)
+}
+
 // Updates internal wrapped url.URL with any changes done to Query Parameters
 func (u *URL) Update() {
 	// This is a hot patch for url.URL
@@ -106,6 +112,16 @@ func (u *URL) String() string {
 	return buff.String()
 }
 
+// EscapedString returns a string that can be used as filename (i.e stripped of / and params etc)
+func (u *URL) EscapedString() string {
+	var buff bytes.Buffer
+	buff.WriteString(u.Host)
+	if u.Path != "" && u.Path != "/" {
+		buff.WriteString("_" + strings.ReplaceAll(u.Path, "/", "_"))
+	}
+	return buff.String()
+}
+
 // GetRelativePath ex: /some/path?param=true#fragment
 func (u *URL) GetRelativePath() string {
 	var buff bytes.Buffer
@@ -128,11 +144,19 @@ func (u *URL) GetRelativePath() string {
 
 // Updates port
 func (u *URL) UpdatePort(newport string) {
+	if newport == "" {
+		return
+	}
 	if u.URL.Port() != "" {
 		u.Host = strings.Replace(u.Host, u.Port(), newport, 1)
 		return
 	}
 	u.Host += ":" + newport
+}
+
+// TrimPort if any
+func (u *URL) TrimPort() {
+	u.URL.Host = u.Hostname()
 }
 
 // parseRelativePath parses relative path from Original Path without relying on
