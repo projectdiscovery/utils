@@ -40,9 +40,9 @@ func (u *URL) MergePath(newrelpath string, unsafe bool) error {
 }
 
 // UpdateRelPath updates relative path with new path (existing params are not removed)
-func (u *URL) UpdateRelPath(newrelpath string, unsafe bool) {
+func (u *URL) UpdateRelPath(newrelpath string, unsafe bool) error {
 	u.Path = ""
-	u.MergePath(newrelpath, unsafe)
+	return u.MergePath(newrelpath, unsafe)
 }
 
 // Updates internal wrapped url.URL with any changes done to Query Parameters

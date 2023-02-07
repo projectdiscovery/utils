@@ -74,3 +74,13 @@ func TestPortUpdate(t *testing.T) {
 	urlx.UpdatePort("8000")
 	require.Equalf(t, urlx.String(), expected, "expected %v but got %v", expected, urlx.String())
 }
+
+func TestUpdateRelPath(t *testing.T) {
+	// updates existing relative path with new one
+	exURL := "https://scanme.sh/somepath/abc?key=true"
+	urlx, err := Parse(exURL)
+	require.Nil(t, err)
+	err = urlx.UpdateRelPath("/newpath/?with=params", true)
+	require.Nil(t, err)
+	require.Equalf(t, urlx.Path, "/newpath/", "failed to update relative path")
+}
