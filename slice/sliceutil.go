@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	// initialize seed once (ref. https://stackoverflow.com/a/12321192/8155097)
+	//todo:this is automatic with go1.20
 	rand.Seed(time.Now().UnixNano())
 }
 
