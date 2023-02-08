@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"unsafe"
 )
 
 type ToMapKey func(string) string
@@ -64,4 +65,32 @@ func ToMap(v interface{}, tomapkey ToMapKey, unexported bool) (map[string]interf
 // we are not particularly interested to preserve the type, so just return the value as string
 func getUnexportedField(field reflect.Value) interface{} {
 	return fmt.Sprint(field)
+}
+
+// GetStructField obtains a reference to a field of a pointer to a struct
+func GetStructField(structInstance interface{}, fieldname string) reflect.Value {
+	return reflect.ValueOf(structInstance).Elem().FieldByName(fieldname)
+}
+
+// GetUnexportedField unwraps an unexported field with pointer to struct and field name
+func GetUnexportedField(structInstance interface{}, fieldname string) interface{} {
+	field := GetStructField(structInstance, fieldname)
+	return UnwrapUnexportedField(field)
+}
+
+// UnwrapUnexportedField unwraps an unexported field
+func UnwrapUnexportedField(field reflect.Value) interface{} {
+	return reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).Elem().Interface()
+}
+
+// SetUnexportedField sets (pointer to) struct's field with the specified value
+func SetUnexportedField(structInstance interface{}, fieldname string, value interface{}) {
+	field := GetStructField(structInstance, fieldname)
+	setUnexportedField(field, value)
+}
+
+func setUnexportedField(field reflect.Value, value interface{}) {
+	reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).
+		Elem().
+		Set(reflect.ValueOf(value))
 }
