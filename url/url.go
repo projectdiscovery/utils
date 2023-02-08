@@ -2,8 +2,6 @@ package urlutil
 
 import (
 	"bytes"
-	"fmt"
-	"log"
 	"net/url"
 	"strings"
 
@@ -28,7 +26,10 @@ type URL struct {
 
 // mergepath merges given relative path
 func (u *URL) MergePath(newrelpath string, unsafe bool) error {
-	ux, err := parseURLAllowEmpty(newrelpath, unsafe, true)
+	if newrelpath == "" {
+		return nil
+	}
+	ux, err := ParseRelativePath(newrelpath, unsafe)
 	if err != nil {
 		return err
 	}
@@ -162,25 +163,29 @@ func (u *URL) TrimPort() {
 
 // parseRelativePath parses relative path from Original Path without relying on
 // net/url.URL
-func (u *URL) parseRelativePath() {
+func (u *URL) parseUnsafeRelativePath() {
 	// url.Parse discards %0a or any percent encoded characters from path
 	// to avoid this if given url is not relative but has encoded chars
 	// parse the path manually regardless if it is unsafe
 	// ex: /%20test%0a =?
 
+	// check path integrity
+	// url.parse() normalizes ../../ detect such cases are revert them
+	if u.Original != u.Path {
+		// params and fragements are removed from Original in Parsexx() therefore they can be compared
+		u.Path = u.Original
+	}
+
 	// percent encoding in path
 	if u.Host == "" || len(u.Host) < 4 {
 		if shouldEscape(u.Original) {
-			// we assume it as relative url
-			u.IsRelative = true
 			u.Path = u.Original
 		}
 		return
 	}
 	expectedPath := strings.SplitN(u.Original, u.Host, 2)
 	if len(expectedPath) != 2 {
-		// something went wrong
-		log.Printf("[urlutil] failed to extract path from input url.falling back to defaults..")
+		// something went wrong fail silently
 		return
 	}
 	u.Path = expectedPath[1]
@@ -214,11 +219,6 @@ func Parse(inputURL string) (*URL, error) {
 
 // Parse and return URL
 func ParseURL(inputURL string, unsafe bool) (*URL, error) {
-	return parseURLAllowEmpty(inputURL, unsafe, false)
-}
-
-// Parse and return URL but also allows empty urls
-func parseURLAllowEmpty(inputURL string, unsafe bool, allowempty bool) (*URL, error) {
 	u := &URL{
 		URL:      &url.URL{},
 		Original: inputURL,
@@ -228,10 +228,6 @@ func parseURLAllowEmpty(inputURL string, unsafe bool, allowempty bool) (*URL, er
 	// filter out fragments and parameters only then parse path
 	inputURL = u.Original
 	if inputURL == "" {
-		if allowempty {
-			u.IsRelative = true
-			return u, nil
-		}
 		return nil, errorutil.NewWithTag("urlutil", "failed to parse url got empty input")
 	}
 
@@ -274,23 +270,9 @@ func parseURLAllowEmpty(inputURL string, unsafe bool, allowempty bool) (*URL, er
 	}
 
 	// try parsing path
-	if u.IsRelative {
-		urlparse, parseErr := url.Parse(inputURL)
-		if parseErr != nil {
-			if !unsafe {
-				// should return error if not unsafe url
-				return nil, errorutil.NewWithErr(parseErr).WithTag("urlutil").Msgf("failed to parse input url")
-			} else {
-				// if unsafe do not rely on net/url.Parse
-				u.Path = inputURL
-			}
-		}
-		if urlparse != nil {
-			copy(u.URL, urlparse)
-		}
-	} else {
+	if !u.IsRelative {
 		// if parsing is successful validate and autocorrect
-		//ex: when inputURL is admin url.parse considers admin as Host with parsed with https://
+		//ex: when inputURL is admin `url.Parse()` considers admin as Host with parsed with https://
 		// i.e https://admin which is not valid/accepted domain
 		//TODO: Properly Validate using regex
 		if u.Host == "" {
@@ -313,8 +295,35 @@ func parseURLAllowEmpty(inputURL string, unsafe bool, allowempty bool) (*URL, er
 	if !u.IsRelative && u.Host == "" {
 		return nil, errorutil.NewWithTag("urlutil", "failed to parse url `%v`", inputURL).Msgf("got empty host when url is not relative")
 	}
-	// edgecase where path contains percent encoded chars ex: /%20test%0a
-	u.parseRelativePath()
+	if u.IsRelative {
+		return ParseRelativePath(inputURL, unsafe)
+	}
+	return u, nil
+}
+
+// ParseRelativePath parses and returns relative path
+func ParseRelativePath(inputURL string, unsafe bool) (*URL, error) {
+	u := &URL{
+		URL:        &url.URL{},
+		Original:   inputURL,
+		Unsafe:     unsafe,
+		IsRelative: true,
+	}
+	u.fetchParams()
+	urlparse, parseErr := url.Parse(inputURL)
+	if parseErr != nil {
+		if !unsafe {
+			// should return error if not unsafe url
+			return nil, errorutil.NewWithErr(parseErr).WithTag("urlutil").Msgf("failed to parse input url")
+		} else {
+			// if unsafe do not rely on net/url.Parse
+			u.Path = inputURL
+		}
+	}
+	if urlparse != nil {
+		copy(u.URL, urlparse)
+	}
+	u.parseUnsafeRelativePath()
 	return u, nil
 }
 
@@ -339,11 +348,9 @@ func parseUnsafeFullURL(urlx string) *url.URL {
 	if parseErr != nil {
 		return nil
 	}
-	if relpath, err := parseURLAllowEmpty(urlPath, true, true); err == nil {
+	if relpath, err := ParseRelativePath(urlx, true); err == nil {
 		parseURL.Path = relpath.Path
 		return parseURL
-	} else {
-		fmt.Println(err)
 	}
 	return nil
 }
