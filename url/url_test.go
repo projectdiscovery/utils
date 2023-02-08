@@ -74,3 +74,27 @@ func TestPortUpdate(t *testing.T) {
 	urlx.UpdatePort("8000")
 	require.Equalf(t, urlx.String(), expected, "expected %v but got %v", expected, urlx.String())
 }
+
+func TestUpdateRelPath(t *testing.T) {
+	// updates existing relative path with new one
+	exURL := "https://scanme.sh/somepath/abc?key=true"
+	urlx, err := Parse(exURL)
+	require.Nil(t, err)
+	err = urlx.UpdateRelPath("/newpath/?with=params", true)
+	require.Nil(t, err)
+	require.Equalf(t, urlx.Path, "/newpath/", "failed to update relative path")
+}
+
+func TestInvalidURLs(t *testing.T) {
+	testcases := []string{
+		"https://scanme.sh/%invalid",
+		"https://scanme.sh/%invalid2/and/path",
+		"https://scanme.sh",
+		"https://scanme.sh/%invalid?with=param",
+		"https://127.0.0.1:52272/%invalid",
+	}
+	for _, v := range testcases {
+		_, err := ParseURL(v, true)
+		require.Nilf(t, err, "got error for url %v", v)
+	}
+}
