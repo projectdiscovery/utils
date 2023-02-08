@@ -1,5 +1,5 @@
 package tests
 
 type Test struct {
-	unexported string
+	unexported string //nolint
 }
