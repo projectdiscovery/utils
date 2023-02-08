@@ -168,6 +168,12 @@ func (u *URL) parseUnsafeRelativePath() {
 	// to avoid this if given url is not relative but has encoded chars
 	// parse the path manually regardless if it is unsafe
 	// ex: /%20test%0a =?
+	// autocorrect if prefix is missing
+	defer func() {
+		if !strings.HasPrefix(u.Path, "/") && u.Path != "" {
+			u.Path = "/" + u.Path
+		}
+	}()
 
 	// check path integrity
 	// url.parse() normalizes ../../ detect such cases are revert them
