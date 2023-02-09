@@ -73,6 +73,9 @@ func TestPercentEncoding(t *testing.T) {
 	payload := "test &# () percent []|* encoding"
 	value := PercentEncoding(payload)
 	require.Equalf(t, value, expected, "expected percentencoding to be %v but got %v", expected, value)
+	decoded, err := url.QueryUnescape(value)
+	require.Nil(t, err)
+	require.Equal(t, payload, decoded)
 }
 
 func TestGetParams(t *testing.T) {
