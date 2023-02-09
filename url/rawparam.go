@@ -163,16 +163,15 @@ func ParamEncode(data string) string {
 func URLEncodeWithEscapes(data string, charset ...rune) string {
 	mustescape := getrunemap(charset)
 	var buff bytes.Buffer
-	totallen := len(data)
 	// In any case
-	buff.Grow(totallen)
+	buff.Grow(len(data))
 
 	for _, r := range data {
-		switch true {
+		switch {
 		case r < rune(20):
 			// control character
 			buff.WriteRune('%')
-			buff.WriteString(strconv.FormatInt(int64(r), 16)) // 2 digit hex
+			buff.WriteString(getasciihex(r)) // 2 digit hex
 		case r == ' ':
 			// prefer using + when space
 			buff.WriteRune('+')
@@ -181,7 +180,7 @@ func URLEncodeWithEscapes(data string, charset ...rune) string {
 			if _, ok := mustescape[r]; ok {
 				// reserved char must escape
 				buff.WriteRune('%')
-				buff.WriteString(strconv.FormatInt(int64(r), 16))
+				buff.WriteString(getasciihex(r))
 			} else {
 				// do not percent encode
 				buff.WriteRune(r)
@@ -189,7 +188,7 @@ func URLEncodeWithEscapes(data string, charset ...rune) string {
 		case r == rune(127):
 			// [DEL] char should be encoded
 			buff.WriteRune('%')
-			buff.WriteString(strconv.FormatInt(int64(r), 16))
+			buff.WriteString(getasciihex(r))
 		case r > rune(128):
 			// non-ascii characters i.e chinese chars or any other utf-8
 			buff.WriteRune('%')
@@ -209,7 +208,7 @@ func PercentEncoding(data string) string {
 		buff.WriteRune('%')
 		if r <= rune(127) {
 			// these are all ascii characters
-			buff.WriteString(strconv.FormatInt(int64(r), 16))
+			buff.WriteString(getasciihex(r))
 		} else {
 			// unicode characters
 			buff.WriteString(getutf8hex(r))
@@ -238,6 +237,7 @@ func getrunemap(runes []rune) map[rune]struct{} {
 	return x
 }
 
+// returns hex value of utf-8 non-ascii char
 func getutf8hex(r rune) string {
 	// Percent Encoding is only done in hexadecimal values and in ASCII Range only
 	// other UTF-8 chars (chinese etc) can be used by utf-8 encoding and byte conversion
@@ -252,4 +252,14 @@ func getutf8hex(r rune) string {
 		buff.WriteRune(v)
 	}
 	return buff.String()
+}
+
+// returns hex value of ascii char
+func getasciihex(r rune) string {
+	val := strconv.FormatInt(int64(r), 16)
+	if len(val) == 1 {
+		// append 0 formatInt skips it by default
+		val = "0" + val
+	}
+	return strings.ToUpper(val)
 }
