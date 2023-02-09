@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/projectdiscovery/utils/reflect/tests"
 	"github.com/stretchr/testify/require"
 )
 
@@ -39,4 +40,12 @@ func TestToMap(t *testing.T) {
 	require.Nilf(t, err, "error while parsing: %s", err)
 	m = map[string]interface{}{"firstoption": "test", "secondoption": 10}
 	require.EqualValues(t, m, tomap, "objects are not equal")
+}
+
+func TestUnexportedField(t *testing.T) {
+	// create a pointer instance to a struct with an "unexported" field
+	testStruct := &tests.Test{}
+	SetUnexportedField(testStruct, "unexported", "test")
+	value := GetUnexportedField(testStruct, "unexported")
+	require.Equal(t, value, "test")
 }
