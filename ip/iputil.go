@@ -315,3 +315,23 @@ func GetBindableAddress(port int, ips ...string) (string, error) {
 
 	return "", errs
 }
+
+// ToFQDN performs a reverse PTR using default system resolvers
+func ToFQDN(target string) ([]string, error) {
+	if !IsIP(target) {
+		return []string{target}, fmt.Errorf("%s is not an IP", target)
+	}
+	names, err := net.LookupAddr(target)
+	if err != nil {
+		return nil, err
+	}
+	if len(names) == 0 {
+		return names, fmt.Errorf("no names found for ip: %s", target)
+	}
+
+	for i, name := range names {
+		names[i] = stringsutil.TrimSuffixAny(name, ".")
+	}
+
+	return names, nil
+}

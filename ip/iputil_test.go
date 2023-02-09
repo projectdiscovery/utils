@@ -101,3 +101,18 @@ func TestAsIPV6IpNet(t *testing.T) {
 		}
 	}
 }
+
+func TestWhatsMyIP(t *testing.T) {
+	// we can't compare the ip with local interfaces as it might be the external gateway one
+	// so we just verify we can contact the api endpoint
+	_, err := WhatsMyIP()
+	require.Nil(t, err, "couldn't retrieve ip")
+}
+
+func TestToFQDN(t *testing.T) {
+	// we can't compare the ip with local interfaces as it might be the external gateway one
+	// so we just verify we can contact the api endpoint
+	fqdns, err := ToFQDN("1.1.1.1")
+	require.Nil(t, err, "couldn't retrieve ip")
+	require.NotNil(t, fqdns)
+}
