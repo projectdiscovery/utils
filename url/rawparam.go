@@ -163,12 +163,11 @@ func ParamEncode(data string) string {
 func URLEncodeWithEscapes(data string, charset ...rune) string {
 	mustescape := getrunemap(charset)
 	var buff bytes.Buffer
-	totallen := len(data)
 	// In any case
-	buff.Grow(totallen)
+	buff.Grow(len(data))
 
 	for _, r := range data {
-		switch true {
+		switch {
 		case r < rune(20):
 			// control character
 			buff.WriteRune('%')
