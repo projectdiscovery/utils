@@ -288,3 +288,24 @@ func TestLongestRepeatingSequence(t *testing.T) {
 		require.Equalf(t, test.expected, result.Sequence, "test: %s, expected %q, got: %s", test.s, test.expected, result.Sequence)
 	}
 }
+
+
+type truncatetest struct{
+	MaxSize int
+	Result interface{}
+}
+
+func TestTruncate(t *testing.T) {
+	tests := map[string]truncatetest{
+		"abcd": 		  {MaxSize: 0, Result: "abcd"},
+		"abcde":          {MaxSize: 3, Result: "abc"},
+		"abcdef":         {MaxSize: 8, Result: "abcdef"},
+		"abcdefg":        {MaxSize: 6, Result: "abcdef"},
+	}
+
+	for str, test := range tests {
+		res := Truncate(str, test.MaxSize)
+		require.Equalf(t, test.Result, res, "test:%s maxsize: %d result: %s", str, test.MaxSize, res)
+	}
+
+}
