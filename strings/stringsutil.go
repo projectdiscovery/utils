@@ -246,9 +246,9 @@ func LongestRepeatingSequence(s string) LongestSequence {
 	return LongestSequence{Sequence: res, Count: resCount}
 }
 
-//Truncate a string to max length
+// Truncate a string to max length
 func Truncate(data string, maxSize int) string {
-	if maxSize > 0 && len(data) > maxSize {
+	if maxSize >= 0 && len(data) > maxSize {
 		return data[:maxSize]
 	}
 	return data

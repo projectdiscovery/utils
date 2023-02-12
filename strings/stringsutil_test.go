@@ -289,23 +289,25 @@ func TestLongestRepeatingSequence(t *testing.T) {
 	}
 }
 
-
-type truncatetest struct{
-	MaxSize int
-	Result interface{}
+type truncaTeest struct {
+	test    string
+	maxSize int
+	result  string
 }
 
 func TestTruncate(t *testing.T) {
-	tests := map[string]truncatetest{
-		"abcd": 		  {MaxSize: 0, Result: "abcd"},
-		"abcde":          {MaxSize: 3, Result: "abc"},
-		"abcdef":         {MaxSize: 8, Result: "abcdef"},
-		"abcdefg":        {MaxSize: 6, Result: "abcdef"},
+	tests := []truncaTeest{
+		{test: "abcd", maxSize: -1, result: "abcd"},
+		{test: "abcd", maxSize: 0, result: ""},
+		{test: "abcde", maxSize: 3, result: "abc"},
+		{test: "abcdef", maxSize: 8, result: "abcdef"},
+		{test: "abcdefg", maxSize: 6, result: "abcdef"},
+		{test: "aaaa", maxSize: 20, result: "aaaa"},
+		{test: "aaaa", maxSize: 4, result: "aaaa"},
 	}
 
-	for str, test := range tests {
-		res := Truncate(str, test.MaxSize)
-		require.Equalf(t, test.Result, res, "test:%s maxsize: %d result: %s", str, test.MaxSize, res)
+	for _, test := range tests {
+		res := Truncate(test.test, test.maxSize)
+		require.Equalf(t, test.result, res, "test:%s maxsize: %d result: %s", test.test, test.maxSize, res)
 	}
-
 }
