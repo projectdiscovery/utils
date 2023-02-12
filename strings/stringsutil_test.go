@@ -289,14 +289,14 @@ func TestLongestRepeatingSequence(t *testing.T) {
 	}
 }
 
-type truncaTeest struct {
+type truncateTest struct {
 	test    string
 	maxSize int
 	result  string
 }
 
 func TestTruncate(t *testing.T) {
-	tests := []truncaTeest{
+	tests := []truncateTest{
 		{test: "abcd", maxSize: -1, result: "abcd"},
 		{test: "abcd", maxSize: 0, result: ""},
 		{test: "abcde", maxSize: 3, result: "abc"},
