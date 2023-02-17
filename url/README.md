@@ -5,7 +5,7 @@ The package contains various helpers to interact with URLs
 
 - `url.URL` caters to variety of urls and for that reason its parsing is not that accurate under various conditions
 - `utils/url/URL` is a wrapper around `url.URL` that handles below edgecases and is able to parse complex (i.e non-RFC compilant urls but required in infosec) url edgecases.
-
+- `url.URL` allows `u.Path` without `/` but it is not allowed in `utils/url/URL` and is autocorrected
 
 - Parsing URLs without `scheme`
 
