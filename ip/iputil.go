@@ -75,6 +75,12 @@ func IsIP(str string) bool {
 	parts := strings.Split(str, ".")
 	numParts := len(parts)
 
+	// try to parse ip first
+	ipParsed := net.ParseIP(str)
+	if ipParsed != nil {
+		return true
+	}
+
 	if numParts < 1 || numParts > 4 {
 		return false
 	}
