@@ -98,3 +98,17 @@ func TestInvalidURLs(t *testing.T) {
 		require.Nilf(t, err, "got error for url %v", v)
 	}
 }
+
+func TestGetHostname(t *testing.T) {
+	testcases := []string{
+		"https://scanme.sh/",
+		"https://scanme.sh/something/",
+		"https://scanme.sh/something?with=param",
+		"http://scanme.sh/",
+	}
+	for _, v := range testcases {
+		hostname, err := GetHostname(v)
+		require.Nil(t, err, err)
+		require.Equal(t, "scanme.sh", hostname, v)
+	}
+}
