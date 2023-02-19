@@ -7,9 +7,78 @@ import (
 )
 
 func TestIsIP(t *testing.T) {
-	require.True(t, IsIP("127.0.0.1"), "valid ip not recognized")
-	require.False(t, IsIP("127.0.0.0/24"), "cidr recognized as ip")
-	require.False(t, IsIP("test"), "string recognized as ip")
+	type test struct {
+		Ip           string
+		Expected     bool
+		MessageError string
+	}
+
+	validIpsTest := []test{
+		{
+			Ip:           "35.1",
+			Expected:     true,
+			MessageError: "valid ip not recognized",
+		},
+		{
+			Ip:           "35.1.124",
+			Expected:     true,
+			MessageError: "valid ip not recognized",
+		},
+		{
+			Ip:           "35.1.1.124",
+			Expected:     true,
+			MessageError: "valid ip not recognized",
+		},
+		{
+			Ip:           "127.1",
+			Expected:     true,
+			MessageError: "valid ip not recognized",
+		},
+		{
+			Ip:           "127.1.1",
+			Expected:     true,
+			MessageError: "valid ip not recognized",
+		},
+		{
+			Ip:           "::1",
+			Expected:     true,
+			MessageError: "valid ip not recognized",
+		},
+		{
+			Ip:           "001:0db8::1",
+			Expected:     true,
+			MessageError: "valid ip not recognized",
+		},
+		{
+			Ip:           "::a00:27ff:fef3:7d56",
+			Expected:     true,
+			MessageError: "valid ip not recognized",
+		},
+		{
+			Ip:           "fe80::a00:27ff:fef3:7d56",
+			Expected:     true,
+			MessageError: "valid ip not recognized",
+		},
+		{
+			Ip:           "2607:f0d0:1002:0051:0000:0000:0000:0004",
+			Expected:     true,
+			MessageError: "valid ip not recognized",
+		},
+		{
+			Ip:           "127.0.0.1/24",
+			Expected:     false,
+			MessageError: "cidr reconized as ip",
+		},
+		{
+			Ip:           "test",
+			Expected:     false,
+			MessageError: "string reconized as ip",
+		},
+	}
+
+	for _, ip := range validIpsTest {
+		require.Equal(t, ip.Expected, IsIP(ip.Ip), ip.MessageError)
+	}
 }
 
 func TestIsInternalIPv4(t *testing.T) {
