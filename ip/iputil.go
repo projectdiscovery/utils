@@ -72,7 +72,29 @@ func init() {
 
 // IsIP checks if a string is either IP version 4 or 6. Alias for `net.ParseIP`
 func IsIP(str string) bool {
-	return net.ParseIP(str) != nil
+	parts := strings.Split(str, ".")
+	numParts := len(parts)
+
+	if numParts < 1 || numParts > 4 {
+		return false
+	}
+
+	// fill in missing parts with zeroes
+	for i := 0; i < 4-numParts; i++ {
+		parts = append(parts, "0")
+	}
+
+	if numParts == 2 {
+		parts[1], parts[3] = parts[3], parts[1]
+	}
+	if numParts == 3 {
+		parts[2], parts[3] = parts[3], parts[2]
+	}
+
+	// parse the complete IPv4 address
+	ip := net.ParseIP(strings.Join(parts, "."))
+
+	return ip != nil
 }
 
 // IsPort checks if a string represents a valid port
