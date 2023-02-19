@@ -124,8 +124,9 @@ func IsIPv4(ips ...interface{}) bool {
 
 		// parse the complete IPv4 address
 		ip := net.ParseIP(strings.Join(parts, "."))
-
-		return ip != nil
+		if ip == nil {
+			return false
+		}
 	}
 
 	return true
