@@ -371,3 +371,13 @@ func copy(dst *url.URL, src *url.URL) {
 	dst.Scheme = src.Scheme
 	dst.User = src.User
 }
+
+// given an input url, returns the output hostname
+// example: https://example.com => example.com
+func GetHostname(URL string) (string, error) {
+	parsedURL, err := url.Parse(URL)
+	if err != nil {
+		return "", err
+	}
+	return parsedURL.Hostname(), nil
+}
