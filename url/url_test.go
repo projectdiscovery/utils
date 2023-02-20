@@ -94,8 +94,8 @@ func TestInvalidURLs(t *testing.T) {
 		"https://127.0.0.1:52272/%invalid",
 	}
 	for _, v := range testcases {
-		xyz, err := ParseURL(v, true)
+		urlx, err := ParseURL(v, true)
 		require.Nilf(t, err, "got error for url %v", v)
-		require.Equal(t, xyz.String(), v)
+		require.Equal(t, urlx.String(), v)
 	}
 }
