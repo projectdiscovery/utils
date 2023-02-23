@@ -87,14 +87,15 @@ func TestUpdateRelPath(t *testing.T) {
 
 func TestInvalidURLs(t *testing.T) {
 	testcases := []string{
-		"https://scanme.sh/%invalid",
+		"https://scanme.sh/%invalid/%0D%0A",
 		"https://scanme.sh/%invalid2/and/path",
 		"https://scanme.sh",
 		"https://scanme.sh/%invalid?with=param",
 		"https://127.0.0.1:52272/%invalid",
 	}
 	for _, v := range testcases {
-		_, err := ParseURL(v, true)
+		urlx, err := ParseURL(v, true)
 		require.Nilf(t, err, "got error for url %v", v)
+		require.Equal(t, urlx.String(), v)
 	}
 }

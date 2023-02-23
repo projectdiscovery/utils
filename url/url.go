@@ -354,7 +354,7 @@ func parseUnsafeFullURL(urlx string) *url.URL {
 	if parseErr != nil {
 		return nil
 	}
-	if relpath, err := ParseRelativePath(urlx, true); err == nil {
+	if relpath, err := ParseRelativePath(urlPath, true); err == nil {
 		parseURL.Path = relpath.Path
 		return parseURL
 	}
