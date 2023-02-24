@@ -52,3 +52,14 @@ func WrapwithNil(err error, errx ...error) Error {
 	ee := NewWithErr(err)
 	return ee.Wrap(errx...)
 }
+
+// EqualsAll checks if a base value of type T is equal to all of the
+// other values of type T provided as arguments.
+func EqualsAll[T comparable](base T, all ...T) bool {
+	for _, v := range all {
+		if v != base {
+			return false
+		}
+	}
+	return true
+}
