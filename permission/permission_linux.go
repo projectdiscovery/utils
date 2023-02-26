@@ -1,4 +1,4 @@
-//go:build linux || unix
+//go:build linux
 
 package permissionutil
 
