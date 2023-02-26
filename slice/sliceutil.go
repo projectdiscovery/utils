@@ -166,6 +166,7 @@ func MergeItems[V comparable](items ...V) []V {
 // if a non-zero element was found or not.
 func FirstNonZero[T comparable](inputs []T) (T, bool) {
 	var zero T
+
 	for _, v := range inputs {
 		if v != zero {
 			return v, true
