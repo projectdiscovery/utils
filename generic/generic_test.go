@@ -67,7 +67,7 @@ func TestEqualsAllString(t *testing.T) {
 	}{
 		{"test", []string{"test", "test", "test", "test"}, true},
 		{"test", []string{"test", "test1", "test2", "test3"}, false},
-		{"", []string{}, true},
+		{"", []string{}, false},
 	}
 
 	for _, tc := range testCases {
