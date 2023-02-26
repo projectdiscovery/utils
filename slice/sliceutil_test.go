@@ -145,3 +145,103 @@ func TestMergeItems(t *testing.T) {
 	}
 
 }
+
+func TestFirstNonZeroInt(t *testing.T) {
+	testCases := []struct {
+		Input          []int
+		ExpectedOutput interface{}
+		ExpectedFound  bool
+	}{
+		{
+			Input:          []int{0, 0, 3, 5, 10},
+			ExpectedOutput: 3,
+			ExpectedFound:  true,
+		},
+		{
+			Input:          []int{},
+			ExpectedOutput: 0,
+			ExpectedFound:  false,
+		},
+	}
+
+	for _, tc := range testCases {
+		output, found := FirstNonZero(tc.Input)
+		require.Equal(t, tc.ExpectedOutput, output)
+		require.Equal(t, tc.ExpectedFound, found)
+	}
+}
+
+func TestFirstNonZeroString(t *testing.T) {
+	testCases := []struct {
+		Input          []string
+		ExpectedOutput interface{}
+		ExpectedFound  bool
+	}{
+		{
+			Input:          []string{"", "foo", "test"},
+			ExpectedOutput: "foo",
+			ExpectedFound:  true,
+		},
+		{
+			Input:          []string{},
+			ExpectedOutput: "",
+			ExpectedFound:  false,
+		},
+	}
+
+	for _, tc := range testCases {
+		output, found := FirstNonZero(tc.Input)
+		require.Equal(t, tc.ExpectedOutput, output)
+		require.Equal(t, tc.ExpectedFound, found)
+	}
+}
+
+func TestFirstNonZeroFloat(t *testing.T) {
+	testCases := []struct {
+		Input          []float64
+		ExpectedOutput interface{}
+		ExpectedFound  bool
+	}{
+		{
+			Input:          []float64{0.0, 0.0, 0.0, 1.2, 3.4},
+			ExpectedOutput: 1.2,
+			ExpectedFound:  true,
+		},
+		{
+			Input:          []float64{},
+			ExpectedOutput: 0.0,
+			ExpectedFound:  false,
+		},
+	}
+
+	for _, tc := range testCases {
+		output, found := FirstNonZero(tc.Input)
+		require.Equal(t, tc.ExpectedOutput, output)
+		require.Equal(t, tc.ExpectedFound, found)
+	}
+}
+
+func TestFirstNonZeroBool(t *testing.T) {
+	testCases := []struct {
+		Input          []bool
+		ExpectedOutput interface{}
+		ExpectedFound  bool
+	}{
+		{
+			Input:          []bool{false, false, false},
+			ExpectedOutput: false,
+			ExpectedFound:  false,
+		},
+		{
+			Input:          []bool{},
+			ExpectedOutput: false,
+			ExpectedFound:  false,
+		},
+	}
+
+	for _, tc := range testCases {
+		output, found := FirstNonZero(tc.Input)
+		require.Equal(t, tc.ExpectedOutput, output)
+		require.Equal(t, tc.ExpectedFound, found)
+	}
+}
