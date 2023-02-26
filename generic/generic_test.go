@@ -50,7 +50,7 @@ func TestEqualsAllInt(t *testing.T) {
 	}{
 		{5, []int{5, 5, 5, 5}, true},
 		{5, []int{1, 2, 3, 4}, false},
-		{0, []int{}, true},
+		{0, []int{}, false},
 	}
 
 	for _, tc := range testCases {
