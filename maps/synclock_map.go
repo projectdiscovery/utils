@@ -11,7 +11,7 @@ var (
 )
 
 // SyncLock adds sync and lock capabilities to generic map
-type SyncLockMap[K comparable, V any] struct {
+type SyncLockMap[K, V comparable] struct {
 	ReadOnly atomic.Bool
 	mu       sync.RWMutex
 	Map      Map[K, V]
