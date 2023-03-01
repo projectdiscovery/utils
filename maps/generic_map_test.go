@@ -3,6 +3,8 @@ package mapsutil
 import (
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestMapHas(t *testing.T) {
@@ -64,5 +66,55 @@ func TestMapMerge(t *testing.T) {
 	expected := Map[string, int]{"foo": 1, "bar": 2, "baz": 3, "qux": 4}
 	if !reflect.DeepEqual(m, expected) {
 		t.Errorf("Merge(%v) = %v, expected %v", n, m, expected)
+	}
+}
+
+func TestMap_GetKeyWithValue(t *testing.T) {
+	type testCase[K, V comparable] struct {
+		InputMap    Map[K, V]
+		Value       V
+		ExpectedKey K
+		ExpectedOk  bool
+	}
+
+	genericMap := Map[string, string]{"a": "a", "b": "b", "c": "c"}
+
+	testCases := []testCase[string, string]{
+		{
+			InputMap:    genericMap,
+			Value:       "b",
+			ExpectedKey: "b",
+			ExpectedOk:  true,
+		},
+		{
+			InputMap:    genericMap,
+			Value:       "d",
+			ExpectedKey: "",
+			ExpectedOk:  false,
+		},
+		{
+			InputMap:    genericMap,
+			Value:       "b",
+			ExpectedKey: "b",
+			ExpectedOk:  true,
+		},
+		{
+			InputMap:    genericMap,
+			Value:       "d",
+			ExpectedKey: "",
+			ExpectedOk:  false,
+		},
+		{
+			InputMap:    genericMap,
+			Value:       "value",
+			ExpectedKey: "",
+			ExpectedOk:  false,
+		},
+	}
+
+	for _, tc := range testCases {
+		key, ok := tc.InputMap.GetKeyWithValue(tc.Value)
+		require.Equal(t, tc.ExpectedKey, key)
+		require.Equal(t, tc.ExpectedOk, ok)
 	}
 }
