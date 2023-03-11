@@ -17,11 +17,15 @@ const (
 
 // AutoMergeRelPaths merges two relative paths including parameters and returns final string
 func AutoMergeRelPaths(path1 string, path2 string) (string, error) {
-	u1, err1 := parseURLAllowEmpty(path1, true, true)
+	if path1 == "" || path2 == "" {
+		// no need to parse
+		return mergePaths(path1, path2), nil
+	}
+	u1, err1 := ParseRelativePath(path1, true)
 	if err1 != nil {
 		return "", err1
 	}
-	u2, err2 := parseURLAllowEmpty(path2, true, true)
+	u2, err2 := ParseRelativePath(path2, true)
 	if err2 != nil {
 		return "", err2
 	}

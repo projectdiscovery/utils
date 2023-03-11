@@ -69,10 +69,13 @@ func TestParamIntegration(t *testing.T) {
 
 func TestPercentEncoding(t *testing.T) {
 	// From Burpsuite
-	expected := "%74%65%73%74%20%26%23%20%28%29%20%70%65%72%63%65%6e%74%20%5b%5d%7c%2a%20%65%6e%63%6f%64%69%6e%67"
+	expected := "%74%65%73%74%20%26%23%20%28%29%20%70%65%72%63%65%6E%74%20%5B%5D%7C%2A%20%65%6E%63%6F%64%69%6E%67"
 	payload := "test &# () percent []|* encoding"
 	value := PercentEncoding(payload)
-	require.Equalf(t, value, expected, "expected percentencoding to be %v but got %v", expected, payload)
+	require.Equalf(t, value, expected, "expected percentencoding to be %v but got %v", expected, value)
+	decoded, err := url.QueryUnescape(value)
+	require.Nil(t, err)
+	require.Equal(t, payload, decoded)
 }
 
 func TestGetParams(t *testing.T) {
@@ -83,4 +86,17 @@ func TestGetParams(t *testing.T) {
 	require.NotNilf(t, p, "expected params but got nil")
 	require.Equalf(t, p.Get("sqli"), values.Get("sqli"), "malformed or missing value for param sqli expected %v but got %v", values.Get("sqli"), p.Get("sqli"))
 	require.Equalf(t, p.Get("xss"), values.Get("xss"), "malformed or missing value for param xss expected %v but got %v", values.Get("xss"), p.Get("xss"))
+}
+
+func TestURLEncode(t *testing.T) {
+	example := "\r\n"
+	got := URLEncodeWithEscapes(example)
+	require.Equalf(t, "%0D%0A", got, "failed to url encode characters")
+
+	// verify with stdlib
+	for r := 0; r < 20; r++ {
+		expected := url.QueryEscape(string(rune(r)))
+		got := URLEncodeWithEscapes(string(rune(r)))
+		require.Equalf(t, expected, got, "url encoding mismatch for non-printable char with ascii val:%v", r)
+	}
 }

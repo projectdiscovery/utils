@@ -322,3 +322,26 @@ func TestIsCTRLC(t *testing.T) {
 		require.Equalf(t, test.expected, result, "test: %s, expected %q, got: %s", test.s, test.expected, result)
 	}
 }
+
+type truncateTest struct {
+	test    string
+	maxSize int
+	result  string
+}
+
+func TestTruncate(t *testing.T) {
+	tests := []truncateTest{
+		{test: "abcd", maxSize: -1, result: "abcd"},
+		{test: "abcd", maxSize: 0, result: ""},
+		{test: "abcde", maxSize: 3, result: "abc"},
+		{test: "abcdef", maxSize: 8, result: "abcdef"},
+		{test: "abcdefg", maxSize: 6, result: "abcdef"},
+		{test: "aaaa", maxSize: 20, result: "aaaa"},
+		{test: "aaaa", maxSize: 4, result: "aaaa"},
+	}
+
+	for _, test := range tests {
+		res := Truncate(test.test, test.maxSize)
+		require.Equalf(t, test.result, res, "test:%s maxsize: %d result: %s", test.test, test.maxSize, res)
+	}
+}

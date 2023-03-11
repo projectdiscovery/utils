@@ -263,3 +263,11 @@ func IsPrintable(s string) bool {
 func IsCTRLC(s string) bool {
 	return len(s) == 1 && s[0] == '\x03'
 }
+
+// Truncate a string to max length
+func Truncate(data string, maxSize int) string {
+	if maxSize >= 0 && len(data) > maxSize {
+		return data[:maxSize]
+	}
+	return data
+}

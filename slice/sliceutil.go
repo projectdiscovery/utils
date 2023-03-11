@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	// initialize seed once (ref. https://stackoverflow.com/a/12321192/8155097)
+	//todo:this is automatic with go1.20
 	rand.Seed(time.Now().UnixNano())
 }
 
@@ -159,4 +159,19 @@ func Merge[V comparable](ss ...[]V) []V {
 // Merge and dedupe multiple items into a
 func MergeItems[V comparable](items ...V) []V {
 	return Dedupe(items)
+}
+
+// FirstNonZero function takes a slice of comparable type inputs, and returns
+// the first non-zero element in the slice along with a boolean value indicating
+// if a non-zero element was found or not.
+func FirstNonZero[T comparable](inputs []T) (T, bool) {
+	var zero T
+
+	for _, v := range inputs {
+		if v != zero {
+			return v, true
+		}
+	}
+
+	return zero, false
 }

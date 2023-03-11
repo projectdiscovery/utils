@@ -45,7 +45,7 @@ func TestMergeUnsafePaths(t *testing.T) {
 		{"scanme.sh", "%20test%0a", "/%20test%0a"},
 		{"https://scanme.sh", "/%20test%0a", "/%20test%0a"},
 		{"/?admin=true", "/path?yes=true", "/path?admin=true&yes=true"},
-		{"scanme.sh", "../../../etc/passwd", "/../../etc/passwd"},
+		{"scanme.sh", "../../../etc/passwd", "/../../../etc/passwd"},
 		{"//scanme.sh", "/..%252F..%252F..%252F..%252F..%252F", "/..%252F..%252F..%252F..%252F..%252F"},
 		{"/?user=true", "/profile", "/profile?user=true"},
 	}
@@ -55,7 +55,7 @@ func TestMergeUnsafePaths(t *testing.T) {
 		require.Nil(t, err)
 		err = rurl.MergePath(v.Path2, true)
 		require.Nil(t, err)
-		require.Equalf(t, rurl.GetRelativePath(), v.Expected, "expected %v but got %v", v.Expected, rurl.GetRelativePath())
+		require.Equalf(t, v.Expected, rurl.GetRelativePath(), "expected %v but got %v", v.Expected, rurl.GetRelativePath())
 	}
 }
 
@@ -75,6 +75,7 @@ func TestMergeWithParams(t *testing.T) {
 		{"scanme.sh", "/path", "scanme.sh/path"},
 		{"scanme.sh?wp=false", "/path?yes=true&admin=false", "scanme.sh/path?admin=false&wp=false&yes=true"},
 		{"https://scanme.sh", "?user=true&pass=yes", "https://scanme.sh?pass=yes&user=true"},
+		{"scanme.sh", "favicon.ico", "scanme.sh/favicon.ico"},
 	}
 	for _, v := range testcase {
 		rurl, err := ParseURL(v.url, false)
