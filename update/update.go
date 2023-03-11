@@ -34,6 +34,7 @@ func GetUpdateToolCallback(toolName, version string) func() {
 		}
 		if !latestVersion.GreaterThan(currentVersion) {
 			log.Printf("updater: %v is already updated to latest version", toolName)
+			os.Exit(0)
 		}
 		// check permissions before downloading release
 		updateOpts := selfupdate.Options{}
