@@ -13,21 +13,16 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/cheggaaa/pb/v3"
 	"github.com/google/go-github/v30/github"
 	errorutil "github.com/projectdiscovery/utils/errors"
 	"golang.org/x/oauth2"
 )
 
-var extIfFound = ".exe"
-
-type AssetFormat uint
-
-const (
-	Zip AssetFormat = iota
-	Tar
+var (
+	extIfFound      = ".exe"
+	ErrNoAssetFound = errorutil.NewWithFmt("update: could not find release asset for your platform (%s/%s)")
 )
-
-var ErrNoAssetFound = errorutil.NewWithFmt("update: could not find release asset for your platform (%s/%s)")
 
 // GHReleaseDownloader fetches and reads release of a gh repo
 type GHReleaseDownloader struct {
@@ -40,11 +35,13 @@ type GHReleaseDownloader struct {
 
 // NewghReleaseDownloader instance
 func NewghReleaseDownloader(toolName string) *GHReleaseDownloader {
-	var httpclient *http.Client
 	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
-		httpclient = oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))
+		DefaultHttpClient = oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))
 	}
-	return &GHReleaseDownloader{client: github.NewClient(httpclient), ToolName: toolName}
+	if DefaultHttpClient != nil {
+		DefaultHttpClient.Timeout = DownloadUpdateTimeout
+	}
+	return &GHReleaseDownloader{client: github.NewClient(DefaultHttpClient), ToolName: toolName}
 }
 
 // getLatestRelease returns latest release of error
@@ -119,6 +116,14 @@ func (d *GHReleaseDownloader) DownloadAssetFromID() (*bytes.Buffer, error) {
 		return nil, errorutil.New("something went wrong got response without body")
 	}
 	defer resp.Body.Close()
+
+	if !HideProgressBar {
+		bar := pb.New64(resp.ContentLength).SetMaxWidth(100)
+		bar.Start()
+		resp.Body = bar.NewProxyReader(resp.Body)
+		defer bar.Finish()
+	}
+
 	bin, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, errorutil.NewWithErr(err).Msgf("failed to read response body")
