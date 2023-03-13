@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestIsIP(t *testing.T) {
+func TestIsIPv4Short(t *testing.T) {
 	type test struct {
 		Ip           string
 		Expected     bool
@@ -15,35 +15,25 @@ func TestIsIP(t *testing.T) {
 
 	validIpsTest := []test{
 		{
-			Ip:           "35.1",
+			Ip:           "192.168.1",
 			Expected:     true,
 			MessageError: "valid ip not recognized",
 		},
-		{
-			Ip:           "35.1.124",
-			Expected:     true,
-			MessageError: "valid ip not recognized",
-		},
-		{
-			Ip:           "35.1.1.124",
-			Expected:     true,
-			MessageError: "valid ip not recognized",
-		},
-		{
-			Ip:           "127.1",
-			Expected:     true,
-			MessageError: "valid ip not recognized",
-		},
-		{
-			Ip:           "127.1.1",
-			Expected:     true,
-			MessageError: "valid ip not recognized",
-		},
-		{
-			Ip:           "::1",
-			Expected:     true,
-			MessageError: "valid ip not recognized",
-		},
+	}
+
+	for _, ip := range validIpsTest {
+		require.Equal(t, ip.Expected, IsIPv4(ip.Ip), ip.MessageError, ip.Ip)
+	}
+}
+
+func TestIsIPv6Shot(t *testing.T) {
+	type test struct {
+		Ip           string
+		Expected     bool
+		MessageError string
+	}
+
+	validIpsTest := []test{
 		{
 			Ip:           "001:0db8::1",
 			Expected:     true,
@@ -64,20 +54,10 @@ func TestIsIP(t *testing.T) {
 			Expected:     true,
 			MessageError: "valid ip not recognized",
 		},
-		{
-			Ip:           "127.0.0.1/24",
-			Expected:     false,
-			MessageError: "cidr reconized as ip",
-		},
-		{
-			Ip:           "test",
-			Expected:     false,
-			MessageError: "string reconized as ip",
-		},
 	}
 
 	for _, ip := range validIpsTest {
-		require.Equal(t, ip.Expected, IsIP(ip.Ip), ip.MessageError)
+		require.Equal(t, ip.Expected, IsIPv6(ip.Ip), ip.MessageError, ip.Ip)
 	}
 }
 

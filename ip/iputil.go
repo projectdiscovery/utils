@@ -72,14 +72,7 @@ func init() {
 
 // IsIP checks if a string is either IP version 4 or 6. Alias for `net.ParseIP`
 func IsIP(str string) bool {
-	// try to parse ip first
-	ipParsed := net.ParseIP(str)
-	if ipParsed != nil {
-		return true
-	}
-
-	// try to parse as IPv4 or IPv6
-	return IsIPv4(str) || IsIPv6(str)
+	return net.ParseIP(str) != nil
 }
 
 // IsPort checks if a string represents a valid port
@@ -93,39 +86,26 @@ func IsPort(str string) bool {
 // IsIPv4 checks if the string is an IP version 4.
 func IsIPv4(ips ...interface{}) bool {
 	for _, ip := range ips {
-		var processedIp string
 		switch ipv := ip.(type) {
 		case string:
-			processedIp = ipv
+			conn, err := net.Dial("tcp", ipv+":80")
+			if err != nil {
+				return false
+			}
+			defer conn.Close()
+
+			fullIP := strings.Split(conn.RemoteAddr().String(), ":")
+
+			parsedIP := net.ParseIP(fullIP[0])
+			isIP4 := parsedIP != nil && parsedIP.To4() != nil && stringsutil.ContainsAny(ipv, ".")
+			if !isIP4 {
+				return false
+			}
 		case net.IP:
-			processedIp = ipv.String()
-		default:
-			return false
-		}
-
-		parts := strings.Split(processedIp, ".")
-		numParts := len(parts)
-
-		if numParts < 1 || numParts > 4 {
-			return false
-		}
-
-		// fill in missing parts with zeroes
-		for i := 0; i < 4-numParts; i++ {
-			parts = append(parts, "0")
-		}
-
-		if numParts == 2 {
-			parts[1], parts[3] = parts[3], parts[1]
-		}
-		if numParts == 3 {
-			parts[2], parts[3] = parts[3], parts[2]
-		}
-
-		// parse the complete IPv4 address
-		ip := net.ParseIP(strings.Join(parts, "."))
-		if ip == nil {
-			return false
+			isIP4 := ipv != nil && ipv.To4() != nil && stringsutil.ContainsAny(ipv.String(), ".")
+			if !isIP4 {
+				return false
+			}
 		}
 	}
 
