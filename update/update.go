@@ -31,7 +31,8 @@ var (
 	HideProgressBar       = false
 	VersionCheckTimeout   = time.Duration(5) * time.Second
 	DownloadUpdateTimeout = time.Duration(30) * time.Second
-	DefaultHttpClient     *http.Client
+	// Note: DefaultHttpClient is only used in VersionCheck Callback
+	DefaultHttpClient *http.Client
 )
 
 // GetUpdateToolCallback returns a callback function
@@ -147,7 +148,8 @@ func init() {
 	DefaultHttpClient = &http.Client{
 		Timeout: VersionCheckTimeout,
 		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
+			Proxy:           http.ProxyFromEnvironment,
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
 	}
 }

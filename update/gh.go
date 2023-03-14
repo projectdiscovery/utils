@@ -30,18 +30,20 @@ type GHReleaseDownloader struct {
 	Format   AssetFormat
 	AssetID  int
 
-	client *github.Client
+	client     *github.Client
+	httpClient *http.Client
 }
 
 // NewghReleaseDownloader instance
 func NewghReleaseDownloader(toolName string) *GHReleaseDownloader {
+	httpClient := &http.Client{
+		Timeout:   DownloadUpdateTimeout,
+		Transport: &http.Transport{},
+	}
 	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
-		DefaultHttpClient = oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))
+		httpClient = oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))
 	}
-	if DefaultHttpClient != nil {
-		DefaultHttpClient.Timeout = DownloadUpdateTimeout
-	}
-	return &GHReleaseDownloader{client: github.NewClient(DefaultHttpClient), ToolName: toolName}
+	return &GHReleaseDownloader{client: github.NewClient(httpClient), ToolName: toolName, httpClient: httpClient}
 }
 
 // getLatestRelease returns latest release of error
@@ -104,8 +106,7 @@ func (d *GHReleaseDownloader) DownloadAssetFromID() (*bytes.Buffer, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	resp, err := http.Get(rdurl)
+	resp, err := d.httpClient.Get(rdurl)
 	if err != nil {
 		return nil, errorutil.NewWithErr(err).Msgf("failed to download release asset")
 	}
