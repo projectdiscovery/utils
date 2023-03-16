@@ -27,11 +27,12 @@ var (
 
 // GHReleaseDownloader fetches and reads release of a gh repo
 type GHReleaseDownloader struct {
-	ToolName  string // we assume toolname and ToolName are always same
-	Format    AssetFormat
-	AssetID   int
-	AssetName string
-	client    *github.Client
+	ToolName   string // we assume toolname and ToolName are always same
+	Format     AssetFormat
+	AssetID    int
+	AssetName  string
+	client     *github.Client
+	httpClient *http.Client
 }
 
 // NewghReleaseDownloader instance
@@ -43,8 +44,7 @@ func NewghReleaseDownloader(toolName string) *GHReleaseDownloader {
 	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
 		httpClient = oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))
 	}
- 
-	ghrd := GHReleaseDownloader{client: github.NewClient(DefaultHttpClient), ToolName: toolName}
+	ghrd := GHReleaseDownloader{client: github.NewClient(httpClient), ToolName: toolName, httpClient: httpClient}
 
 	if ghrd.AssetName == "" && GHAssetName != "" {
 		ghrd.AssetName = GHAssetName
