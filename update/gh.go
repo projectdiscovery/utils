@@ -38,8 +38,7 @@ type GHReleaseDownloader struct {
 // NewghReleaseDownloader instance
 func NewghReleaseDownloader(toolName string) *GHReleaseDownloader {
 	httpClient := &http.Client{
-		Timeout:   DownloadUpdateTimeout,
-		Transport: &http.Transport{},
+		Timeout: DownloadUpdateTimeout,
 	}
 	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
 		httpClient = oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))
@@ -119,7 +118,7 @@ func (d *GHReleaseDownloader) DownloadAssetFromID() (*bytes.Buffer, error) {
 	if err != nil {
 		return nil, errorutil.NewWithErr(err).Msgf("failed to download release asset")
 	}
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return nil, errorutil.New("something went wrong got %v while downloading asset, expected status 200", resp.StatusCode)
 	}
 	if resp.Body == nil {
