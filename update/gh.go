@@ -22,6 +22,7 @@ import (
 var (
 	extIfFound      = ".exe"
 	ErrNoAssetFound = errorutil.NewWithFmt("update: could not find release asset for your platform (%s/%s)")
+	GHAssetName       = ""
 )
 
 // GHReleaseDownloader fetches and reads release of a gh repo
@@ -29,7 +30,7 @@ type GHReleaseDownloader struct {
 	ToolName string // we assume toolname and ToolName are always same
 	Format   AssetFormat
 	AssetID  int
-
+	AssetName string
 	client *github.Client
 }
 
@@ -41,7 +42,11 @@ func NewghReleaseDownloader(toolName string) *GHReleaseDownloader {
 	if DefaultHttpClient != nil {
 		DefaultHttpClient.Timeout = DownloadUpdateTimeout
 	}
-	return &GHReleaseDownloader{client: github.NewClient(DefaultHttpClient), ToolName: toolName}
+	ghrd := GHReleaseDownloader{client: github.NewClient(DefaultHttpClient), ToolName: toolName}
+	if GHAssetName != "" {
+		ghrd.AssetName = GHAssetName
+	}
+	return &ghrd
 }
 
 // getLatestRelease returns latest release of error
@@ -59,7 +64,10 @@ func (d *GHReleaseDownloader) GetLatestRelease() (*github.RepositoryRelease, err
 // getAssetIDFromRelease finds AssetID from release or returns a descriptive error
 func (d *GHReleaseDownloader) GetAssetIDFromRelease(latest *github.RepositoryRelease) error {
 	builder := &strings.Builder{}
-	builder.WriteString(d.ToolName)
+	if d.AssetName == "" {
+		d.AssetName = d.ToolName
+	}
+	builder.WriteString(d.AssetName)
 	builder.WriteString("_")
 	builder.WriteString(strings.TrimPrefix(*latest.TagName, "v"))
 	builder.WriteString("_")
