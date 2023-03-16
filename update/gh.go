@@ -22,16 +22,16 @@ import (
 var (
 	extIfFound      = ".exe"
 	ErrNoAssetFound = errorutil.NewWithFmt("update: could not find release asset for your platform (%s/%s)")
-	GHAssetName       = ""
+	GHAssetName     = ""
 )
 
 // GHReleaseDownloader fetches and reads release of a gh repo
 type GHReleaseDownloader struct {
-	ToolName string // we assume toolname and ToolName are always same
-	Format   AssetFormat
-	AssetID  int
+	ToolName  string // we assume toolname and ToolName are always same
+	Format    AssetFormat
+	AssetID   int
 	AssetName string
-	client *github.Client
+	client    *github.Client
 }
 
 // NewghReleaseDownloader instance
@@ -43,8 +43,12 @@ func NewghReleaseDownloader(toolName string) *GHReleaseDownloader {
 		DefaultHttpClient.Timeout = DownloadUpdateTimeout
 	}
 	ghrd := GHReleaseDownloader{client: github.NewClient(DefaultHttpClient), ToolName: toolName}
-	if GHAssetName != "" {
+
+	if ghrd.AssetName == "" && GHAssetName != "" {
 		ghrd.AssetName = GHAssetName
+	}
+	if ghrd.AssetName == "" {
+		ghrd.AssetName = ghrd.ToolName
 	}
 	return &ghrd
 }
@@ -64,9 +68,6 @@ func (d *GHReleaseDownloader) GetLatestRelease() (*github.RepositoryRelease, err
 // getAssetIDFromRelease finds AssetID from release or returns a descriptive error
 func (d *GHReleaseDownloader) GetAssetIDFromRelease(latest *github.RepositoryRelease) error {
 	builder := &strings.Builder{}
-	if d.AssetName == "" {
-		d.AssetName = d.ToolName
-	}
 	builder.WriteString(d.AssetName)
 	builder.WriteString("_")
 	builder.WriteString(strings.TrimPrefix(*latest.TagName, "v"))
@@ -151,7 +152,7 @@ func (d *GHReleaseDownloader) GetExecutableFromAsset() ([]byte, error) {
 			return nil, err
 		}
 		for _, f := range zipReader.File {
-			if !strings.EqualFold(strings.TrimSuffix(f.Name, extIfFound), d.ToolName) {
+			if !strings.EqualFold(strings.TrimSuffix(f.Name, extIfFound), d.AssetName) {
 				continue
 			}
 			fileInArchive, err := f.Open()
@@ -180,7 +181,7 @@ func (d *GHReleaseDownloader) GetExecutableFromAsset() ([]byte, error) {
 			if err != nil {
 				return nil, err
 			}
-			if !strings.EqualFold(strings.TrimSuffix(header.FileInfo().Name(), extIfFound), d.ToolName) {
+			if !strings.EqualFold(strings.TrimSuffix(header.FileInfo().Name(), extIfFound), d.AssetName) {
 				continue
 			}
 			// if the file is not a directory, extract it
