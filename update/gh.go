@@ -27,22 +27,23 @@ var (
 
 // GHReleaseDownloader fetches and reads release of a gh repo
 type GHReleaseDownloader struct {
-	ToolName  string // we assume toolname and ToolName are always same
-	Format    AssetFormat
-	AssetID   int
-	AssetName string
-	client    *github.Client
+	ToolName   string // we assume toolname and ToolName are always same
+	Format     AssetFormat
+	AssetID    int
+	AssetName  string
+	client     *github.Client
+	httpClient *http.Client
 }
 
 // NewghReleaseDownloader instance
 func NewghReleaseDownloader(toolName string) *GHReleaseDownloader {
+	httpClient := &http.Client{
+		Timeout: DownloadUpdateTimeout,
+	}
 	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
-		DefaultHttpClient = oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))
+		httpClient = oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))
 	}
-	if DefaultHttpClient != nil {
-		DefaultHttpClient.Timeout = DownloadUpdateTimeout
-	}
-	ghrd := GHReleaseDownloader{client: github.NewClient(DefaultHttpClient), ToolName: toolName}
+	ghrd := GHReleaseDownloader{client: github.NewClient(httpClient), ToolName: toolName, httpClient: httpClient}
 
 	if ghrd.AssetName == "" && GHAssetName != "" {
 		ghrd.AssetName = GHAssetName
@@ -113,12 +114,11 @@ func (d *GHReleaseDownloader) DownloadAssetFromID() (*bytes.Buffer, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	resp, err := http.Get(rdurl)
+	resp, err := d.httpClient.Get(rdurl)
 	if err != nil {
 		return nil, errorutil.NewWithErr(err).Msgf("failed to download release asset")
 	}
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return nil, errorutil.New("something went wrong got %v while downloading asset, expected status 200", resp.StatusCode)
 	}
 	if resp.Body == nil {

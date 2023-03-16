@@ -31,7 +31,8 @@ var (
 	HideProgressBar       = false
 	VersionCheckTimeout   = time.Duration(5) * time.Second
 	DownloadUpdateTimeout = time.Duration(30) * time.Second
-	DefaultHttpClient     *http.Client
+	// Note: DefaultHttpClient is only used in VersionCheck Callback
+	DefaultHttpClient *http.Client
 )
 
 // GetUpdateToolCallback returns a callback function
@@ -104,11 +105,6 @@ func GetVersionCheckCallback(toolName string) func() (string, error) {
 			DefaultHttpClient = http.DefaultClient
 			DefaultHttpClient.Timeout = VersionCheckTimeout
 		}
-		// allow cert validation in version check but not in update
-		DefaultHttpClient.Transport = &http.Transport{
-			Proxy:           http.ProxyFromEnvironment,
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		}
 		resp, err := DefaultHttpClient.Get(updateURL)
 		if err != nil {
 			return "", errorutil.NewWithErr(err).Msgf("http Get %v failed", updateURL).WithTag("updater")
@@ -147,7 +143,8 @@ func init() {
 	DefaultHttpClient = &http.Client{
 		Timeout: VersionCheckTimeout,
 		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
+			Proxy:           http.ProxyFromEnvironment,
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
 	}
 }
