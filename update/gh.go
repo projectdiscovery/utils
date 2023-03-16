@@ -70,7 +70,7 @@ func (d *GHReleaseDownloader) GetAssetIDFromRelease(latest *github.RepositoryRel
 	builder := &strings.Builder{}
 	builder.WriteString(d.AssetName)
 	builder.WriteString("_")
-	builder.WriteString(strings.TrimPrefix(*latest.TagName, "v"))
+	builder.WriteString(strings.TrimPrefix(latest.GetTagName(), "v"))
 	builder.WriteString("_")
 	if strings.EqualFold(runtime.GOOS, "darwin") {
 		builder.WriteString("macOS")
