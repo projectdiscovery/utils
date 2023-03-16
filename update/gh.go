@@ -22,16 +22,16 @@ import (
 var (
 	extIfFound      = ".exe"
 	ErrNoAssetFound = errorutil.NewWithFmt("update: could not find release asset for your platform (%s/%s)")
+	GHAssetName     = ""
 )
 
 // GHReleaseDownloader fetches and reads release of a gh repo
 type GHReleaseDownloader struct {
-	ToolName string // we assume toolname and ToolName are always same
-	Format   AssetFormat
-	AssetID  int
-
-	client     *github.Client
-	httpClient *http.Client
+	ToolName  string // we assume toolname and ToolName are always same
+	Format    AssetFormat
+	AssetID   int
+	AssetName string
+	client    *github.Client
 }
 
 // NewghReleaseDownloader instance
@@ -43,7 +43,16 @@ func NewghReleaseDownloader(toolName string) *GHReleaseDownloader {
 	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
 		httpClient = oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))
 	}
-	return &GHReleaseDownloader{client: github.NewClient(httpClient), ToolName: toolName, httpClient: httpClient}
+ 
+	ghrd := GHReleaseDownloader{client: github.NewClient(DefaultHttpClient), ToolName: toolName}
+
+	if ghrd.AssetName == "" && GHAssetName != "" {
+		ghrd.AssetName = GHAssetName
+	}
+	if ghrd.AssetName == "" {
+		ghrd.AssetName = ghrd.ToolName
+	}
+	return &ghrd
 }
 
 // getLatestRelease returns latest release of error
@@ -61,9 +70,9 @@ func (d *GHReleaseDownloader) GetLatestRelease() (*github.RepositoryRelease, err
 // getAssetIDFromRelease finds AssetID from release or returns a descriptive error
 func (d *GHReleaseDownloader) GetAssetIDFromRelease(latest *github.RepositoryRelease) error {
 	builder := &strings.Builder{}
-	builder.WriteString(d.ToolName)
+	builder.WriteString(d.AssetName)
 	builder.WriteString("_")
-	builder.WriteString(strings.TrimPrefix(*latest.TagName, "v"))
+	builder.WriteString(strings.TrimPrefix(latest.GetTagName(), "v"))
 	builder.WriteString("_")
 	if strings.EqualFold(runtime.GOOS, "darwin") {
 		builder.WriteString("macOS")
@@ -144,7 +153,7 @@ func (d *GHReleaseDownloader) GetExecutableFromAsset() ([]byte, error) {
 			return nil, err
 		}
 		for _, f := range zipReader.File {
-			if !strings.EqualFold(strings.TrimSuffix(f.Name, extIfFound), d.ToolName) {
+			if !strings.EqualFold(strings.TrimSuffix(f.Name, extIfFound), d.AssetName) {
 				continue
 			}
 			fileInArchive, err := f.Open()
@@ -173,7 +182,7 @@ func (d *GHReleaseDownloader) GetExecutableFromAsset() ([]byte, error) {
 			if err != nil {
 				return nil, err
 			}
-			if !strings.EqualFold(strings.TrimSuffix(header.FileInfo().Name(), extIfFound), d.ToolName) {
+			if !strings.EqualFold(strings.TrimSuffix(header.FileInfo().Name(), extIfFound), d.AssetName) {
 				continue
 			}
 			// if the file is not a directory, extract it
