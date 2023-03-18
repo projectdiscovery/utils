@@ -303,6 +303,40 @@ func TestLongestRepeatingSequence(t *testing.T) {
 	}
 }
 
+func TestIsPrintable(t *testing.T) {
+	tests := []struct {
+		s        string
+		expected bool
+	}{
+		{"abcdefg", true},
+		{"abcabcabc", true},
+		{"abcdefabcdef", true},
+		{"abcdefgabcdefg", true},
+		{"abcabcdefdef", true},
+		{"\x03", false},
+	}
+
+	for _, test := range tests {
+		result := IsPrintable(test.s)
+		require.Equalf(t, test.expected, result, "test: %s, expected %q, got: %s", test.s, test.expected, result)
+	}
+}
+
+func TestIsCTRLC(t *testing.T) {
+	tests := []struct {
+		s        string
+		expected bool
+	}{
+		{"aaa", false},
+		{"\x03", true},
+	}
+
+	for _, test := range tests {
+		result := IsCTRLC(test.s)
+		require.Equalf(t, test.expected, result, "test: %s, expected %q, got: %s", test.s, test.expected, result)
+	}
+}
+
 type truncateTest struct {
 	test    string
 	maxSize int

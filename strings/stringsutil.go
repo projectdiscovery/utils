@@ -3,6 +3,7 @@ package stringsutil
 import (
 	"fmt"
 	"strings"
+	"unicode"
 )
 
 // https://www.dotnetperls.com/between-before-after-go
@@ -255,6 +256,23 @@ func LongestRepeatingSequence(s string) LongestSequence {
 		resCount = strings.Count(s, res)
 	}
 	return LongestSequence{Sequence: res, Count: resCount}
+}
+
+// IsPrintable checks if the strings is made only of printable characters
+func IsPrintable(s string) bool {
+	sWithOnlyPrintable := strings.Map(func(r rune) rune {
+		if unicode.IsPrint(r) {
+			return r
+		}
+		return -1
+	}, s)
+
+	return EqualFoldAny(s, sWithOnlyPrintable)
+}
+
+// IsCTRLC checks if the string is CTRL+C
+func IsCTRLC(s string) bool {
+	return len(s) == 1 && s[0] == '\x03'
 }
 
 // Truncate a string to max length
