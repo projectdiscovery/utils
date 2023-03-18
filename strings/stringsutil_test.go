@@ -204,6 +204,7 @@ func TestContainsAnyI(t *testing.T) {
 		"abc":    {Items: []string{"A", "b"}, Result: true},
 		"abcd":   {Items: []string{"X", "b"}, Result: true},
 		"A b C":  {Items: []string{"X"}, Result: false},
+		"aaa":    {Items: []string{"A"}, Result: true},
 		"Hello!": {Items: []string{"hELLO", "world"}, Result: true},
 	}
 	for str, test := range tests {
