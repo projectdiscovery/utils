@@ -130,10 +130,21 @@ func Reverse(s string) string {
 	return string(rune)
 }
 
-// ContainsAny returns true is s contains any specified substring
+// ContainsAny returns true if s contains any specified substring.
 func ContainsAny(s string, ss ...string) bool {
 	for _, sss := range ss {
 		if strings.Contains(s, sss) {
+			return true
+		}
+	}
+	return false
+}
+
+// ContainsAnyI returns true if s contains any specified substring (case-insensitive).
+func ContainsAnyI(s string, ss ...string) bool {
+	s = strings.ToLower(s)
+	for _, sss := range ss {
+		if strings.Contains(s, strings.ToLower(sss)) {
 			return true
 		}
 	}
