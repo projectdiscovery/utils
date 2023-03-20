@@ -83,32 +83,36 @@ func IsPort(str string) bool {
 	return false
 }
 
+func isValidShortIP(ip string) bool {
+	splitIP := strings.Split(ip, ".")
+	if len(splitIP) < 2 || len(splitIP) > 4 {
+		return false
+	}
+	for _, octet := range splitIP {
+		num, err := strconv.Atoi(octet)
+		if err != nil || num < 0 || num > 255 {
+			return false
+		}
+	}
+	return true
+}
+
 // IsIPv4 checks if the string is an IP version 4.
 func IsIPv4(ips ...interface{}) bool {
 	for _, ip := range ips {
 		var isIP4 bool
 		switch ipv := ip.(type) {
 		case string:
-			tcpAddr, err := net.ResolveTCPAddr("tcp", ipv+":80")
-			if err != nil {
-				return false
-			}
-
-			parsedIP := tcpAddr.IP
-			isIP4 = parsedIP != nil && parsedIP.To4() != nil && ipv == parsedIP.String()
-			if !isIP4 {
-				// Check if it's a valid short IP
-				splitIP := strings.Split(ipv, ".")
-				if len(splitIP) >= 2 && len(splitIP) <= 4 {
-					isIP4 = true
-					for _, octet := range splitIP {
-						num, err := strconv.Atoi(octet)
-						if err != nil || num < 0 || num > 255 {
-							isIP4 = false
-							break
-						}
-					}
+			if isValidShortIP(ipv) {
+				isIP4 = true
+			} else {
+				tcpAddr, err := net.ResolveTCPAddr("tcp", ipv+":80")
+				if err != nil {
+					return false
 				}
+
+				parsedIP := tcpAddr.IP
+				isIP4 = parsedIP != nil && parsedIP.To4() != nil && ipv == parsedIP.String()
 			}
 		case net.IP:
 			isIP4 = ipv != nil && ipv.To4() != nil && stringsutil.ContainsAny(ipv.String(), ".")
