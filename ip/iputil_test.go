@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestIsIPv4Short(t *testing.T) {
+func TestIsShortIPv4(t *testing.T) {
 	type test struct {
 		Ip           string
 		Expected     bool
@@ -32,7 +32,7 @@ func TestIsIPv4Short(t *testing.T) {
 	}
 
 	for _, ip := range validIpsTest {
-		require.Equal(t, ip.Expected, IsIPv4(ip.Ip), ip.MessageError, ip.Ip)
+		require.Equal(t, ip.Expected, IsShortIPv4(ip.Ip), ip.MessageError, ip.Ip)
 	}
 }
 
