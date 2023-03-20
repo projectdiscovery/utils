@@ -7,10 +7,11 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"runtime"
 	"strconv"
 	"strings"
 
+	"github.com/projectdiscovery/utils/consts"
+	osutil "github.com/projectdiscovery/utils/os"
 	stringsutil "github.com/projectdiscovery/utils/strings"
 	"go.uber.org/multierr"
 )
@@ -84,25 +85,31 @@ func IsPort(str string) bool {
 	return false
 }
 
-func IsShortIPv4(ips ...string) bool {
-	if runtime.GOOS == "windows" {
-		panic("not supported")
+const ExtendIPDefaultPort = "80"
+
+// TryRealIP attemps to extend a host (ip, short ip, hostname) to its extended ip version
+func TryExtendIP(host string) (net.IP, error) {
+	if osutil.IsWindows() {
+		return nil, consts.ErrNotSupported
+	}
+	if _, _, err := net.SplitHostPort(host); err != nil {
+		host = net.JoinHostPort(host, ExtendIPDefaultPort)
+	}
+	tcpAddr, err := net.ResolveTCPAddr("tcp", host)
+	if err != nil {
+		return nil, err
 	}
 
-	for _, ip := range ips {
-		var isIP4 bool
-		tcpAddr, err := net.ResolveTCPAddr("tcp", ip+":80")
-		if err != nil {
-			return false
-		}
+	return tcpAddr.IP, nil
+}
 
-		parsedIP := tcpAddr.IP
-		isIP4 = parsedIP != nil && parsedIP.To4() != nil && strings.Contains(ip, ".")
-		if !isIP4 {
+// CanExtend determines if the provided hosts (ip,short ip, hostname) can be extended to ip
+func CanExtend(hosts ...string) bool {
+	for _, ip := range hosts {
+		if _, err := TryExtendIP(ip); err != nil {
 			return false
 		}
 	}
-
 	return true
 }
 

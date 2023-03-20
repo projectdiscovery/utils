@@ -1,47 +1,82 @@
 package iputil
 
 import (
-	"runtime"
+	"net"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-func TestIsShortIPv4(t *testing.T) {
-	type test struct {
-		Ip           string
-		Expected     bool
-		MessageError string
+func TestTryExtendIP(t *testing.T) {
+	type extendIPTestCase struct {
+		input         string
+		expectedIP    net.IP
+		expectedError error
 	}
 
-	validIpsTest := []test{
+	testCases := []extendIPTestCase{
 		{
-			Ip:           "35.1",
-			Expected:     true,
-			MessageError: "valid ip not recognized",
+			input:         "127.0.0.1:80",
+			expectedIP:    net.ParseIP("127.0.0.1"),
+			expectedError: nil,
 		},
 		{
-			Ip:           "35.1.124",
-			Expected:     true,
-			MessageError: "valid ip not recognized",
+			input:         "localhost:1",
+			expectedIP:    net.ParseIP("127.0.0.1"),
+			expectedError: nil,
 		},
 		{
-			Ip:           "192.168.1",
-			Expected:     true,
-			MessageError: "valid ip not recognized",
+			input:         "invalid-ip:80",
+			expectedIP:    nil,
+			expectedError: &net.DNSError{Err: "no such host", Name: "invalid-ip", Server: "", IsTimeout: false, IsTemporary: false, IsNotFound: true},
+		},
+		{
+			input:         "35.1",
+			expectedIP:    net.ParseIP("35.0.0.1"),
+			expectedError: nil,
+		},
+		{
+			input:         "35.1.124",
+			expectedIP:    net.ParseIP("35.1.0.124"),
+			expectedError: nil,
+		},
+		{
+			input:         "192.168.1",
+			expectedIP:    net.ParseIP("192.168.0.1"),
+			expectedError: nil,
 		},
 	}
 
-	if runtime.GOOS == "windows" {
-		require.PanicsWithValue(t, "not supported", func() { IsShortIPv4("192.168.1") }, "Function should panic with 'not supported' on Windows")
-	}
-
-	for _, ip := range validIpsTest {
-		require.Equal(t, ip.Expected, IsShortIPv4(ip.Ip), ip.MessageError, ip.Ip)
+	for _, tc := range testCases {
+		ip, err := TryExtendIP(tc.input)
+		require.Equal(t, tc.expectedError, err, "Expected error: %v, got: %v", tc.expectedError, err)
+		require.True(t, ip.Equal(tc.expectedIP), "Expected IP: %v, got: %v", tc.expectedIP, ip)
 	}
 }
 
-func TestIsIPv6Shot(t *testing.T) {
+func TestCanExtend(t *testing.T) {
+	tests := map[string]bool{
+		"35.1":          true,
+		"0":             true,
+		"1":             true,
+		"199":           true,
+		"zippo":         false,
+		"-1":            false,
+		"1 1":           false,
+		"localhost":     true,
+		"192.168.1.1":   true,
+		"192.168.1.547": false,
+		"192.168.1.258": false,
+		"192.168.256.1": false,
+		"1.1.1.1.1":     false,
+	}
+	for item, expected := range tests {
+		got := CanExtend(item)
+		require.Equal(t, expected, got, "Expected: %v, got: %v => %v", expected, got, item)
+	}
+}
+
+func TestIsIPv6Short(t *testing.T) {
 	type test struct {
 		Ip           string
 		Expected     bool
