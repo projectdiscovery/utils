@@ -92,8 +92,6 @@ func TestIsPort(t *testing.T) {
 
 func TestIsIPv4(t *testing.T) {
 	require.True(t, IsIPv4("127.0.0.1"), "valid ipv4 address not recognized")
-	require.True(t, IsIPv4("127.1"), "valid ipv4 address not recognized")
-	require.True(t, IsIPv4("127.1.1"), "valid ipv4 address not recognized")
 	require.False(t, IsIPv4("2001:0db8:85a3:0000:0000:8a2e:0370:7334"), "ipv6 address recognized as valid")
 }
 

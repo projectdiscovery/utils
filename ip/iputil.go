@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -84,20 +85,20 @@ func IsPort(str string) bool {
 }
 
 func IsShortIPv4(ips ...string) bool {
+	if runtime.GOOS == "windows" {
+		panic("not supported")
+	}
+
 	for _, ip := range ips {
-		splitIP := strings.Split(ip, ".")
-		if len(splitIP) < 2 || len(splitIP) > 4 {
+		var isIP4 bool
+		tcpAddr, err := net.ResolveTCPAddr("tcp", ip+":80")
+		if err != nil {
 			return false
 		}
-		for _, octet := range splitIP {
-			num, err := strconv.Atoi(octet)
-			if err != nil || num < 0 || num > 255 {
-				return false
-			}
-		}
 
-		_, err := net.ResolveTCPAddr("tcp", ip+":80")
-		if err != nil {
+		parsedIP := tcpAddr.IP
+		isIP4 = parsedIP != nil && parsedIP.To4() != nil && strings.HasPrefix(parsedIP.String(), ip)
+		if !isIP4 {
 			return false
 		}
 	}
