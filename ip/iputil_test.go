@@ -1,6 +1,7 @@
 package iputil
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -29,6 +30,10 @@ func TestIsShortIPv4(t *testing.T) {
 			Expected:     true,
 			MessageError: "valid ip not recognized",
 		},
+	}
+
+	if runtime.GOOS == "windows" {
+		require.PanicsWithValue(t, "not supported", func() { IsShortIPv4("192.168.1") }, "Function should panic with 'not supported' on Windows")
 	}
 
 	for _, ip := range validIpsTest {
