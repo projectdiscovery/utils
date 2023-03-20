@@ -97,7 +97,7 @@ func IsShortIPv4(ips ...string) bool {
 		}
 
 		parsedIP := tcpAddr.IP
-		isIP4 = parsedIP != nil && parsedIP.To4() != nil && strings.HasPrefix(parsedIP.String(), ip)
+		isIP4 = parsedIP != nil && parsedIP.To4() != nil && strings.Contains(ip, ".")
 		if !isIP4 {
 			return false
 		}
