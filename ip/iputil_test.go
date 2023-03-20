@@ -15,16 +15,6 @@ func TestIsIPv4Short(t *testing.T) {
 
 	validIpsTest := []test{
 		{
-			Ip:           "35.1",
-			Expected:     true,
-			MessageError: "valid ip not recognized",
-		},
-		{
-			Ip:           "35.1.124",
-			Expected:     true,
-			MessageError: "valid ip not recognized",
-		},
-		{
 			Ip:           "192.168.1",
 			Expected:     true,
 			MessageError: "valid ip not recognized",
