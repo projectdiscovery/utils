@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/projectdiscovery/utils/consts"
+	osutil "github.com/projectdiscovery/utils/os"
 	stringsutil "github.com/projectdiscovery/utils/strings"
 	"go.uber.org/multierr"
 )
@@ -83,18 +85,46 @@ func IsPort(str string) bool {
 	return false
 }
 
+const ExtendIPDefaultPort = "80"
+
+// TryRealIP attemps to extend a host (ip, short ip, hostname) to its extended ip version
+func TryExtendIP(host string) (net.IP, error) {
+	if osutil.IsWindows() {
+		return nil, consts.ErrNotSupported
+	}
+	if _, _, err := net.SplitHostPort(host); err != nil {
+		host = net.JoinHostPort(host, ExtendIPDefaultPort)
+	}
+	tcpAddr, err := net.ResolveTCPAddr("tcp", host)
+	if err != nil {
+		return nil, err
+	}
+
+	return tcpAddr.IP, nil
+}
+
+// CanExtend determines if the provided hosts (ip,short ip, hostname) can be extended to ip
+func CanExtend(hosts ...string) bool {
+	for _, ip := range hosts {
+		if _, err := TryExtendIP(ip); err != nil {
+			return false
+		}
+	}
+	return true
+}
+
 // IsIPv4 checks if the string is an IP version 4.
 func IsIPv4(ips ...interface{}) bool {
 	for _, ip := range ips {
 		switch ipv := ip.(type) {
 		case string:
 			parsedIP := net.ParseIP(ipv)
-			isIP4 := parsedIP != nil && parsedIP.To4() != nil && stringsutil.ContainsAny(ipv, ".")
+			isIP4 := parsedIP != nil && parsedIP.To4() != nil && strings.Contains(ipv, ".")
 			if !isIP4 {
 				return false
 			}
 		case net.IP:
-			isIP4 := ipv != nil && ipv.To4() != nil && stringsutil.ContainsAny(ipv.String(), ".")
+			isIP4 := ipv != nil && ipv.To4() != nil && strings.Contains(ipv.String(), ".")
 			if !isIP4 {
 				return false
 			}

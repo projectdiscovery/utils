@@ -1,15 +1,127 @@
 package iputil
 
 import (
+	"net"
 	"testing"
 
+	"github.com/projectdiscovery/utils/consts"
+	osutils "github.com/projectdiscovery/utils/os"
 	"github.com/stretchr/testify/require"
 )
 
-func TestIsIP(t *testing.T) {
-	require.True(t, IsIP("127.0.0.1"), "valid ip not recognized")
-	require.False(t, IsIP("127.0.0.0/24"), "cidr recognized as ip")
-	require.False(t, IsIP("test"), "string recognized as ip")
+func TestTryExtendIP(t *testing.T) {
+	if osutils.IsWindows() {
+		i, err := TryExtendIP("localhost")
+		require.Nil(t, i)
+		require.ErrorIs(t, err, consts.ErrNotSupported)
+		return
+	}
+
+	type extendIPTestCase struct {
+		input         string
+		expectedIP    net.IP
+		expectedError bool
+	}
+
+	testCases := []extendIPTestCase{
+		{
+			input:         "127.0.0.1:80",
+			expectedIP:    net.ParseIP("127.0.0.1"),
+			expectedError: false,
+		},
+		{
+			input:         "localhost:1",
+			expectedIP:    net.ParseIP("127.0.0.1"),
+			expectedError: false,
+		},
+		{
+			input:         "invalid-ip:80",
+			expectedIP:    nil,
+			expectedError: true,
+		},
+		{
+			input:         "35.1",
+			expectedIP:    net.ParseIP("35.0.0.1"),
+			expectedError: false,
+		},
+		{
+			input:         "35.1.124",
+			expectedIP:    net.ParseIP("35.1.0.124"),
+			expectedError: false,
+		},
+		{
+			input:         "192.168.1",
+			expectedIP:    net.ParseIP("192.168.0.1"),
+			expectedError: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		ip, err := TryExtendIP(tc.input)
+		require.Equal(t, tc.expectedError, err != nil)
+		require.True(t, ip.Equal(tc.expectedIP), "Expected IP: %v, got: %v", tc.expectedIP, ip)
+	}
+}
+
+func TestCanExtend(t *testing.T) {
+	if osutils.IsWindows() {
+		return
+	}
+
+	tests := map[string]bool{
+		"35.1":          true,
+		"0":             true,
+		"1":             true,
+		"199":           true,
+		"zippo":         false,
+		"-1":            false,
+		"1 1":           false,
+		"localhost":     true,
+		"192.168.1.1":   true,
+		"192.168.1.547": false,
+		"192.168.1.258": false,
+		"192.168.256.1": false,
+		"1.1.1.1.1":     false,
+	}
+	for item, expected := range tests {
+		got := CanExtend(item)
+		require.Equal(t, expected, got, "Expected: %v, got: %v => %v", expected, got, item)
+	}
+}
+
+func TestIsIPv6Short(t *testing.T) {
+	type test struct {
+		Ip           string
+		Expected     bool
+		MessageError string
+	}
+
+	validIpsTest := []test{
+		{
+			Ip:           "001:0db8::1",
+			Expected:     true,
+			MessageError: "valid ip not recognized",
+		},
+		{
+			Ip:           "::a00:27ff:fef3:7d56",
+			Expected:     true,
+			MessageError: "valid ip not recognized",
+		},
+		{
+			Ip:           "fe80::a00:27ff:fef3:7d56",
+			Expected:     true,
+			MessageError: "valid ip not recognized",
+		},
+		{
+			Ip:           "2607:f0d0:1002:0051:0000:0000:0000:0004",
+			Expected:     true,
+			MessageError: "valid ip not recognized",
+		},
+	}
+
+	for _, ip := range validIpsTest {
+		require.Equal(t, ip.Expected, IsIPv6(ip.Ip), ip.MessageError, ip.Ip)
+	}
 }
 
 func TestIsInternalIPv4(t *testing.T) {
@@ -39,6 +151,9 @@ func TestIsIPv4(t *testing.T) {
 func TestIsIPv6(t *testing.T) {
 	require.False(t, IsIPv6("127.0.0.1"), "ipv4 address recognized as valid")
 	require.True(t, IsIPv6("2001:0db8:85a3:0000:0000:8a2e:0370:7334"), "valid ipv6 address not recognized")
+	require.True(t, IsIPv6("::a00:27ff:fef3:7d56"), "valid ipv6 address not recognized")
+	require.True(t, IsIPv6("001:0db8::1"), "valid ipv6 address not recognized")
+	require.True(t, IsIPv6("::1"), "valid ipv6 address not recognized")
 }
 
 func TestIsCIDR(t *testing.T) {
