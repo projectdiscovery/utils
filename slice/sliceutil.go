@@ -175,3 +175,10 @@ func FirstNonZero[T comparable](inputs []T) (T, bool) {
 
 	return zero, false
 }
+
+// Clone a slice through built-in copy
+func Clone[T comparable](t []T) []T {
+	newT := make([]T, len(t))
+	copy(newT, t)
+	return newT
+}
