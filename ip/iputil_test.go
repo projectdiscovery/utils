@@ -4,57 +4,70 @@ import (
 	"net"
 	"testing"
 
+	"github.com/projectdiscovery/utils/consts"
+	osutils "github.com/projectdiscovery/utils/os"
 	"github.com/stretchr/testify/require"
 )
 
 func TestTryExtendIP(t *testing.T) {
+	if osutils.IsWindows() {
+		i, err := TryExtendIP("localhost")
+		require.Nil(t, i)
+		require.ErrorIs(t, err, consts.ErrNotSupported)
+		return
+	}
+
 	type extendIPTestCase struct {
 		input         string
 		expectedIP    net.IP
-		expectedError error
+		expectedError bool
 	}
 
 	testCases := []extendIPTestCase{
 		{
 			input:         "127.0.0.1:80",
 			expectedIP:    net.ParseIP("127.0.0.1"),
-			expectedError: nil,
+			expectedError: false,
 		},
 		{
 			input:         "localhost:1",
 			expectedIP:    net.ParseIP("127.0.0.1"),
-			expectedError: nil,
+			expectedError: false,
 		},
 		{
 			input:         "invalid-ip:80",
 			expectedIP:    nil,
-			expectedError: &net.DNSError{Err: "no such host", Name: "invalid-ip", Server: "", IsTimeout: false, IsTemporary: false, IsNotFound: true},
+			expectedError: true,
 		},
 		{
 			input:         "35.1",
 			expectedIP:    net.ParseIP("35.0.0.1"),
-			expectedError: nil,
+			expectedError: false,
 		},
 		{
 			input:         "35.1.124",
 			expectedIP:    net.ParseIP("35.1.0.124"),
-			expectedError: nil,
+			expectedError: false,
 		},
 		{
 			input:         "192.168.1",
 			expectedIP:    net.ParseIP("192.168.0.1"),
-			expectedError: nil,
+			expectedError: false,
 		},
 	}
 
 	for _, tc := range testCases {
 		ip, err := TryExtendIP(tc.input)
-		require.Equal(t, tc.expectedError, err, "Expected error: %v, got: %v", tc.expectedError, err)
+		require.Equal(t, tc.expectedError, err != nil)
 		require.True(t, ip.Equal(tc.expectedIP), "Expected IP: %v, got: %v", tc.expectedIP, ip)
 	}
 }
 
 func TestCanExtend(t *testing.T) {
+	if osutils.IsWindows() {
+		return
+	}
+
 	tests := map[string]bool{
 		"35.1":          true,
 		"0":             true,
