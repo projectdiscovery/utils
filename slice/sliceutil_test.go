@@ -245,3 +245,14 @@ func TestFirstNonZeroBool(t *testing.T) {
 		require.Equal(t, tc.ExpectedFound, found)
 	}
 }
+
+func TestClone(t *testing.T) {
+	intSlice := []int{1, 2, 3}
+	require.Equal(t, intSlice, Clone(intSlice))
+
+	stringSlice := []string{"a", "b", "c"}
+	require.Equal(t, stringSlice, Clone(stringSlice))
+
+	bytesSlice := []byte{1, 2, 3}
+	require.Equal(t, bytesSlice, Clone(bytesSlice))
+}
