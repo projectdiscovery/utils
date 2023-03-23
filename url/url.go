@@ -52,7 +52,9 @@ func (u *URL) Update() {
 	// This is a hot patch for url.URL
 	// parameters are serialized when parsed with `url.Parse()` to avoid this
 	// url should be parsed without parameters and then assigned with url.RawQuery to force unserialized parameters
-	u.RawQuery = u.Params.Encode()
+	if u.Params != nil {
+		u.RawQuery = u.Params.Encode()
+	}
 }
 
 // Query returns Query Params
