@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	errorutil "github.com/projectdiscovery/utils/errors"
+	osutils "github.com/projectdiscovery/utils/os"
 	stringsutil "github.com/projectdiscovery/utils/strings"
 )
 
@@ -119,7 +120,11 @@ func (u *URL) String() string {
 // EscapedString returns a string that can be used as filename (i.e stripped of / and params etc)
 func (u *URL) EscapedString() string {
 	var buff bytes.Buffer
-	buff.WriteString(u.Host)
+	host := u.Host
+	if osutils.IsWindows() {
+		host = strings.ReplaceAll(host, ":", "_")
+	}
+	buff.WriteString(host)
 	if u.Path != "" && u.Path != "/" {
 		buff.WriteString("_" + strings.ReplaceAll(u.Path, "/", "_"))
 	}
