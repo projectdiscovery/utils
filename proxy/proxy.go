@@ -34,14 +34,13 @@ func GetAnyAliveProxy(timeoutInSec int, proxies ...string) (string, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	go func() {
-		defer close(resChan)
 		for _, v := range proxies {
 			// skip iterating if alive proxy is found
 			select {
 			case <-ctx.Done():
 				return
 			default:
-				proxy, err := getProxyURL(v)
+				proxy, err := GetProxyURL(v)
 				if err != nil {
 					resChan <- proxyResult{Error: err}
 					continue
@@ -58,6 +57,8 @@ func GetAnyAliveProxy(timeoutInSec int, proxies ...string) (string, error) {
 				}(proxy)
 			}
 		}
+		sg.Wait()
+		close(resChan)
 	}()
 
 	errstack := []string{}
@@ -69,7 +70,7 @@ func GetAnyAliveProxy(timeoutInSec int, proxies ...string) (string, error) {
 		if result.AliveProxy != "" {
 			// found alive proxy return now
 			return result.AliveProxy, nil
-		} else {
+		} else if result.Error != nil {
 			errstack = append(errstack, result.Error.Error())
 		}
 	}
@@ -90,8 +91,8 @@ func testProxyConn(proxyAddr url.URL, timeoutInSec int) proxyResult {
 	return p
 }
 
-// returns url.URL if url is valid and proxy is supported
-func getProxyURL(proxyAddr string) (url.URL, error) {
+// GetProxyURL returns a Proxy URL after validating if given proxy url is valid
+func GetProxyURL(proxyAddr string) (url.URL, error) {
 	if url, err := url.Parse(proxyAddr); err == nil && isSupportedProtocol(url.Scheme) {
 		return *url, nil
 	}
