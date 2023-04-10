@@ -13,7 +13,7 @@ require (
 	github.com/minio/selfupdate v0.6.0
 	github.com/pkg/errors v0.9.1
 	github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	github.com/zmap/zcrypto v0.0.0-20220803033029-557f3e4940be
 	go.uber.org/multierr v1.11.0
 	golang.org/x/exp v0.0.0-20221019170559-20944726eadf
