@@ -12,6 +12,7 @@ require (
 	github.com/miekg/dns v1.1.53
 	github.com/minio/selfupdate v0.6.0
 	github.com/pkg/errors v0.9.1
+	github.com/remeh/sizedwaitgroup v1.0.0
 	github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca
 	github.com/stretchr/testify v1.8.1
 	github.com/zmap/zcrypto v0.0.0-20220803033029-557f3e4940be
