@@ -15,7 +15,7 @@ require (
 	github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca
 	github.com/stretchr/testify v1.8.1
 	github.com/zmap/zcrypto v0.0.0-20220803033029-557f3e4940be
-	go.uber.org/multierr v1.8.0
+	go.uber.org/multierr v1.11.0
 	golang.org/x/exp v0.0.0-20221019170559-20944726eadf
 	golang.org/x/oauth2 v0.5.0
 	golang.org/x/sys v0.6.0
@@ -64,7 +64,6 @@ require (
 	github.com/projectdiscovery/gologger v1.1.8
 	github.com/weppos/publicsuffix-go v0.15.1-0.20220724114530-e087fba66a37 // indirect
 	github.com/zmap/rc2 v0.0.0-20131011165748-24b9757f5521 // indirect
-	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/crypto v0.7.0 // indirect
 	golang.org/x/mod v0.8.0 // indirect
 	golang.org/x/net v0.8.0 // indirect
