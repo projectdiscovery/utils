@@ -1,4 +1,4 @@
-package proxy
+package proxyutils
 
 import (
 	"bytes"
@@ -28,7 +28,7 @@ func IsBurp(proxyURL string) (bool, error) {
 	})
 }
 
-// ValidateOne returns the first valid proxy from a list of proxies
+// ValidateOne returns the first valid proxy from a list of proxies by setting up a test connection with scanme.sh
 func ValidateOne(proxies ...string) (string, error) {
 	for _, proxy := range proxies {
 		ok, err := getURLWithHTTPProxy("https://scanme.sh", proxy, func(resp *http.Response) (bool, error) {

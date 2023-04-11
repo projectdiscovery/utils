@@ -1,6 +1,6 @@
 //go:build proxy
 
-package proxy
+package proxyutils
 
 // package tests will be executed only with (running proxy is necessary):
 // go test -tags proxy
