@@ -13,7 +13,29 @@ type AssetFormat uint
 const (
 	Zip AssetFormat = iota
 	Tar
+	Unknown
 )
+
+// FileExtension of this asset format
+func (a AssetFormat) FileExtension() string {
+	if a == Zip {
+		return ".zip"
+	} else if a == Tar {
+		return ".tar.gz"
+	}
+	return ""
+}
+
+func IdentifyAssetFormat(assetName string) AssetFormat {
+	switch {
+	case strings.HasSuffix(assetName, Zip.FileExtension()):
+		return Zip
+	case strings.HasSuffix(assetName, Tar.FileExtension()):
+		return Tar
+	default:
+		return Unknown
+	}
+}
 
 // Tool
 type Tool struct {

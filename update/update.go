@@ -39,14 +39,13 @@ var (
 // that updates given tool if given version is older than latest gh release and exits
 func GetUpdateToolCallback(toolName, version string) func() {
 	return func() {
-		gh := NewghReleaseDownloader(toolName)
-		latest, err := gh.GetLatestRelease()
+		gh, err := NewghReleaseDownloader(toolName)
 		if err != nil {
-			gologger.Fatal().Label("updater").Msgf("failed to fetch latest release of %v", toolName)
+			gologger.Fatal().Label("updater").Msgf("failed to download latest release got %v", err)
 		}
-		latestVersion, err := semver.NewVersion(latest.GetTagName())
+		latestVersion, err := semver.NewVersion(gh.Latest.GetTagName())
 		if err != nil {
-			gologger.Fatal().Label("updater").Msgf("failed to parse semversion from tagname `%v` got %v", latest.GetTagName(), err)
+			gologger.Fatal().Label("updater").Msgf("failed to parse semversion from tagname `%v` got %v", gh.Latest.GetTagName(), err)
 		}
 		currentVersion, err := semver.NewVersion(version)
 		if err != nil {
@@ -61,10 +60,6 @@ func GetUpdateToolCallback(toolName, version string) func() {
 		// TODO: selfupdate(https://github.com/minio/selfupdate) has support for checksum validation , code signing verification etc. implement them after discussion
 		if err := updateOpts.CheckPermissions(); err != nil {
 			gologger.Fatal().Label("updater").Msgf("update of %v %v -> %v failed , insufficient permission detected got: %v", toolName, currentVersion.String(), latestVersion.String(), err)
-		}
-
-		if err := gh.GetAssetIDFromRelease(latest); err != nil {
-			gologger.Fatal().Label("updater").Msgf("failed to find release of %v for platform %v %v got : %v", toolName, runtime.GOOS, runtime.GOARCH, err)
 		}
 		bin, err := gh.GetExecutableFromAsset()
 		if err != nil {
@@ -83,7 +78,7 @@ func GetUpdateToolCallback(toolName, version string) func() {
 		gologger.Info().Msgf("%v sucessfully updated %v -> %v (latest)", toolName, currentVersion.String(), latestVersion.String())
 
 		if !HideReleaseNotes {
-			output := latest.GetBody()
+			output := gh.Latest.GetBody()
 			if rendered, err := glamour.Render(output, "dark"); err == nil {
 				output = rendered
 			} else {
@@ -97,6 +92,7 @@ func GetUpdateToolCallback(toolName, version string) func() {
 
 // GetVersionCheckCallback retuns a callback function
 // that returns latest version of tool
+// Deprecated: use xxx
 func GetVersionCheckCallback(toolName string) func() (string, error) {
 	return func() (string, error) {
 		updateURL := fmt.Sprintf(UpdateCheckEndpoint, toolName) + "?" + getMetaParams()
