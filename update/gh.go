@@ -37,6 +37,7 @@ type GHReleaseDownloader struct {
 	assetName     string // required assetName given as input
 	repoName      string // we assume toolname and repoName are always same
 	fullAssetName string // full asset name of asset that contains tool for this platform
+	organization  string // organization name of repo
 	Format        AssetFormat
 	AssetID       int
 	Latest        *github.RepositoryRelease
@@ -52,7 +53,24 @@ func NewghReleaseDownloader(RepoName string) (*GHReleaseDownloader, error) {
 	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
 		httpClient = oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))
 	}
-	ghrd := GHReleaseDownloader{client: github.NewClient(httpClient), repoName: RepoName, assetName: RepoName, httpClient: httpClient}
+	ghrd := GHReleaseDownloader{client: github.NewClient(httpClient), repoName: RepoName, assetName: RepoName, httpClient: httpClient, organization: Organization}
+
+	err := ghrd.getLatestRelease()
+	return &ghrd, err
+}
+
+// NewghReleaseDownloaderWithOrg returns GHRD instance with custom org
+func NewghReleaseDownloaderWithOrg(RepoName, Org string) (*GHReleaseDownloader, error) {
+	httpClient := &http.Client{
+		Timeout: DownloadUpdateTimeout,
+	}
+	if Org == "" {
+		return nil, errorutil.NewWithTag("update", "organization name cannot be empty")
+	}
+	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
+		httpClient = oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))
+	}
+	ghrd := GHReleaseDownloader{client: github.NewClient(httpClient), repoName: RepoName, assetName: RepoName, httpClient: httpClient, organization: Org}
 
 	err := ghrd.getLatestRelease()
 	return &ghrd, err
@@ -227,11 +245,11 @@ func (d *GHReleaseDownloader) DownloadSourceWithCallback(showProgressBar bool, c
 
 // getLatestRelease returns latest release of error
 func (d *GHReleaseDownloader) getLatestRelease() error {
-	release, resp, err := d.client.Repositories.GetLatestRelease(context.Background(), Organization, d.repoName)
+	release, resp, err := d.client.Repositories.GetLatestRelease(context.Background(), d.organization, d.repoName)
 	if err != nil {
 		errx := errorutil.NewWithErr(err)
 		if resp != nil && resp.StatusCode == 404 {
-			errx = errx.Msgf("repo %v/%v not found got %v", Organization, d.repoName)
+			errx = errx.Msgf("repo %v/%v not found got %v", d.organization, d.repoName)
 		} else if _, ok := err.(*github.RateLimitError); ok {
 			errx = errx.Msgf("hit github ratelimit while downloading latest release")
 		} else if resp != nil && (resp.StatusCode == 401 || resp.StatusCode == 403) {
@@ -289,7 +307,7 @@ loop:
 
 // downloadAssetwithID
 func (d *GHReleaseDownloader) downloadAssetwithID(id int64) (*http.Response, error) {
-	_, rdurl, err := d.client.Repositories.DownloadReleaseAsset(context.Background(), Organization, d.repoName, id, nil)
+	_, rdurl, err := d.client.Repositories.DownloadReleaseAsset(context.Background(), d.organization, d.repoName, id, nil)
 	if err != nil {
 		return nil, err
 	}
