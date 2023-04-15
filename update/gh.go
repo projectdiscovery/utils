@@ -202,17 +202,40 @@ func (d *GHReleaseDownloader) DownloadAssetWithName(assetname string, showProgre
 	return bytes.NewBuffer(bin), nil
 }
 
+// DownloadSourceWithCallback downloads source code of latest release and calls callback for each file in archive
+func (d *GHReleaseDownloader) DownloadSourceWithCallback(showProgressBar bool, callback AssetFileCallback) error {
+	downloadURL := d.Latest.GetZipballURL()
+
+	resp, err := d.httpClient.Get(downloadURL)
+	if err != nil {
+		return errorutil.NewWithErr(err).Msgf("failed to source of %v", d.repoName)
+	}
+	defer resp.Body.Close()
+	if showProgressBar {
+		bar := pb.New64(resp.ContentLength).SetMaxWidth(100)
+		bar.Start()
+		resp.Body = bar.NewProxyReader(resp.Body)
+		defer bar.Finish()
+	}
+
+	bin, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return errorutil.NewWithErr(err).Msgf("failed to read resp body")
+	}
+	return UnpackAssetWithCallback(Zip, bytes.NewReader(bin), callback)
+}
+
 // getLatestRelease returns latest release of error
 func (d *GHReleaseDownloader) getLatestRelease() error {
 	release, resp, err := d.client.Repositories.GetLatestRelease(context.Background(), Organization, d.repoName)
 	if err != nil {
 		errx := errorutil.NewWithErr(err)
 		if resp != nil && resp.StatusCode == 404 {
-			errx.Msgf("repo %v/%v not found got %v", Organization, d.repoName)
+			errx = errx.Msgf("repo %v/%v not found got %v", Organization, d.repoName)
 		} else if _, ok := err.(*github.RateLimitError); ok {
-			errx.Msgf("hit github ratelimit while downloading latest release")
+			errx = errx.Msgf("hit github ratelimit while downloading latest release")
 		} else if resp != nil && (resp.StatusCode == 401 || resp.StatusCode == 403) {
-			errx.Msgf("gh auth failed try unsetting GITHUB_TOKEN env variable")
+			errx = errx.Msgf("gh auth failed try unsetting GITHUB_TOKEN env variable")
 		}
 		return errx
 	}

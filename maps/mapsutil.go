@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
-	"golang.org/x/exp/maps"
 	extmaps "golang.org/x/exp/maps"
 )
 
@@ -229,7 +228,7 @@ func Walk(m map[string]any, callback func(k string, v any)) {
 // Clear the map passed as parameter
 func Clear[K comparable, V any](mm ...map[K]V) {
 	for _, m := range mm {
-		maps.Clear(m)
+		extmaps.Clear(m)
 	}
 }
 
