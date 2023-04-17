@@ -92,6 +92,8 @@ func TestInvalidURLs(t *testing.T) {
 		"https://scanme.sh",
 		"https://scanme.sh/%invalid?with=param",
 		"https://127.0.0.1:52272/%invalid",
+		"http.s3.amazonaws.com",
+		"https.s3.amazonaws.com",
 	}
 	for _, v := range testcases {
 		urlx, err := ParseURL(v, true)

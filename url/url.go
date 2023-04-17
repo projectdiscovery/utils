@@ -7,6 +7,7 @@ import (
 
 	errorutil "github.com/projectdiscovery/utils/errors"
 	osutils "github.com/projectdiscovery/utils/os"
+	stringsutil "github.com/projectdiscovery/utils/strings"
 )
 
 // disables autocorrect related to parsing
@@ -67,7 +68,7 @@ func (u *URL) Clone() *URL {
 	var userinfo *url.Userinfo
 	if u.User != nil {
 		// userinfo is immutable so this is the only way
-		tempurl := "https://" + u.User.String() + "@" + "scanme.sh/"
+		tempurl := HTTPS + SchemeSeparator + u.User.String() + "@" + "scanme.sh/"
 		turl, _ := url.Parse(tempurl)
 		if turl != nil {
 			userinfo = turl.User
@@ -251,7 +252,7 @@ func ParseURL(inputURL string, unsafe bool) (*URL, error) {
 		return u, nil
 	}
 	// Try to parse host related input
-	if strings.HasPrefix(inputURL, "//") || strings.Contains(inputURL, "://") {
+	if stringsutil.HasPrefixAny(inputURL, HTTP+SchemeSeparator, HTTPS+SchemeSeparator, "//") || strings.Contains(inputURL, "://") {
 		u.IsRelative = false
 		urlparse, parseErr := url.Parse(inputURL)
 		if parseErr != nil {
@@ -270,7 +271,7 @@ func ParseURL(inputURL string, unsafe bool) (*URL, error) {
 	} else {
 		// if no prefix try to parse it with https
 		// if failed we consider it as a relative path and not a full url
-		urlparse, parseErr := url.Parse("https://" + inputURL)
+		urlparse, parseErr := url.Parse(HTTPS + SchemeSeparator + inputURL)
 		if parseErr != nil {
 			// most likely a relativeurl
 			u.IsRelative = true
