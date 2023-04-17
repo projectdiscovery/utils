@@ -30,7 +30,7 @@ var (
 
 // AssetFileCallback function is executed on every file in unpacked asset . if returned error
 // is not nil furthur processing of asset file is stopped
-type AssetFileCallback func(fileInfo fs.FileInfo, data io.Reader) error
+type AssetFileCallback func(path string, fileInfo fs.FileInfo, data io.Reader) error
 
 // GHReleaseDownloader fetches and reads release of a gh repo
 type GHReleaseDownloader struct {
@@ -156,7 +156,7 @@ func (d *GHReleaseDownloader) GetReleaseChecksums() (map[string]string, error) {
 func (d *GHReleaseDownloader) GetExecutableFromAsset() ([]byte, error) {
 	var bin []byte
 	var err error
-	getToolCallback := func(fileInfo fs.FileInfo, data io.Reader) error {
+	getToolCallback := func(path string, fileInfo fs.FileInfo, data io.Reader) error {
 		if !strings.EqualFold(strings.TrimSuffix(fileInfo.Name(), extIfFound), d.assetName) {
 			return nil
 		}
@@ -339,7 +339,7 @@ func UnpackAssetWithCallback(format AssetFormat, data *bytes.Reader, callback As
 			if err != nil {
 				return err
 			}
-			if err := callback(f.FileInfo(), data); err != nil {
+			if err := callback(f.Name, f.FileInfo(), data); err != nil {
 				return err
 			}
 			_ = data.Close()
@@ -359,7 +359,7 @@ func UnpackAssetWithCallback(format AssetFormat, data *bytes.Reader, callback As
 			if err != nil {
 				return err
 			}
-			if err := callback(header.FileInfo(), tarReader); err != nil {
+			if err := callback(header.Name, header.FileInfo(), tarReader); err != nil {
 				return err
 			}
 		}

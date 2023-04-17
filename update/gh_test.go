@@ -25,7 +25,7 @@ func TestDownloadNucleiTemplatesFromSource(t *testing.T) {
 	gh, err := NewghReleaseDownloader("nuclei-templates")
 	require.Nil(t, err)
 	counter := 0
-	callback := func(fileInfo fs.FileInfo, data io.Reader) error {
+	callback := func(path string, fileInfo fs.FileInfo, data io.Reader) error {
 		_ = fileInfo.Name()
 		counter++
 		return nil
