@@ -7,7 +7,6 @@ import (
 
 	errorutil "github.com/projectdiscovery/utils/errors"
 	osutils "github.com/projectdiscovery/utils/os"
-	stringsutil "github.com/projectdiscovery/utils/strings"
 )
 
 // disables autocorrect related to parsing
@@ -252,7 +251,7 @@ func ParseURL(inputURL string, unsafe bool) (*URL, error) {
 		return u, nil
 	}
 	// Try to parse host related input
-	if stringsutil.HasPrefixAny(inputURL, "http", "https", "//") || strings.Contains(inputURL, "://") {
+	if strings.HasPrefix(inputURL, "//") || strings.Contains(inputURL, "://") {
 		u.IsRelative = false
 		urlparse, parseErr := url.Parse(inputURL)
 		if parseErr != nil {
