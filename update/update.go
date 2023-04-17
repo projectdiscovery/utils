@@ -102,7 +102,7 @@ func GetUpdateToolFromRepoCallback(toolName, version, repoName string) func() {
 // GetToolVersionCallback returns a callback function that checks for updates of tool
 // by sending a request to update check endpoint and returns latest version
 // if repoName is empty then tool name is considered as repoName
-func GetToolVersionCallback(toolName, version, repoName string) func() (string, error) {
+func GetToolVersionCallback(toolName, version string) func() (string, error) {
 	return func() (string, error) {
 		updateURL := fmt.Sprintf(UpdateCheckEndpoint, toolName) + "?" + getpdtmParams(version)
 		if DefaultHttpClient == nil {
@@ -147,7 +147,7 @@ func getpdtmParams(version string) string {
 
 // Deprecated: use GetToolVersionCheckCallback instead
 func GetVersionCheckCallback(toolName string) func() (string, error) {
-	return GetToolVersionCallback(toolName, "", "")
+	return GetToolVersionCallback(toolName, "")
 }
 
 func init() {
