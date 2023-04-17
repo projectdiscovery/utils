@@ -282,3 +282,13 @@ func Truncate(data string, maxSize int) string {
 	}
 	return data
 }
+
+// IndexAny returns the index of the first instance of any of the specified substrings in s, or -1 if s does not contain any of the substrings.
+func IndexAny(s string, seps ...string) (int, string) {
+	for _, sep := range seps {
+		if idx := strings.Index(s, sep); idx >= 0 {
+			return idx, sep
+		}
+	}
+	return -1, ""
+}
