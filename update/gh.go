@@ -47,30 +47,28 @@ type GHReleaseDownloader struct {
 
 // NewghReleaseDownloader returns GHRD instance
 func NewghReleaseDownloader(RepoName string) (*GHReleaseDownloader, error) {
+	var orgName, repoName string
+	if strings.Contains(RepoName, "/") {
+		arr := strings.Split(RepoName, "/")
+		if len(arr) != 2 {
+			return nil, errorutil.NewWithTag("update", "invalid repo name %v", RepoName)
+		}
+		orgName = arr[0]
+		repoName = arr[1]
+	} else {
+		orgName = Organization
+		repoName = RepoName
+	}
 	httpClient := &http.Client{
 		Timeout: DownloadUpdateTimeout,
 	}
-	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
-		httpClient = oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))
-	}
-	ghrd := GHReleaseDownloader{client: github.NewClient(httpClient), repoName: RepoName, assetName: RepoName, httpClient: httpClient, organization: Organization}
-
-	err := ghrd.getLatestRelease()
-	return &ghrd, err
-}
-
-// NewghReleaseDownloaderWithOrg returns GHRD instance with custom org
-func NewghReleaseDownloaderWithOrg(RepoName, Org string) (*GHReleaseDownloader, error) {
-	httpClient := &http.Client{
-		Timeout: DownloadUpdateTimeout,
-	}
-	if Org == "" {
+	if orgName == "" {
 		return nil, errorutil.NewWithTag("update", "organization name cannot be empty")
 	}
 	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
 		httpClient = oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))
 	}
-	ghrd := GHReleaseDownloader{client: github.NewClient(httpClient), repoName: RepoName, assetName: RepoName, httpClient: httpClient, organization: Org}
+	ghrd := GHReleaseDownloader{client: github.NewClient(httpClient), repoName: repoName, assetName: repoName, httpClient: httpClient, organization: orgName}
 
 	err := ghrd.getLatestRelease()
 	return &ghrd, err

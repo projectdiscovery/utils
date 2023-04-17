@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -31,18 +30,28 @@ var (
 	HideProgressBar       = false
 	VersionCheckTimeout   = time.Duration(5) * time.Second
 	DownloadUpdateTimeout = time.Duration(30) * time.Second
-	// Note: DefaultHttpClient is only used in VersionCheck Callback
+	// Note: DefaultHttpClient is only used in GetToolVersionCallback
 	DefaultHttpClient *http.Client
 )
 
 // GetUpdateToolCallback returns a callback function
 // that updates given tool if given version is older than latest gh release and exits
 func GetUpdateToolCallback(toolName, version string) func() {
+	return GetUpdateToolFromRepoCallback(toolName, version, "")
+}
+
+// GetUpdateToolWithRepoCallback returns a callback function that is similar to GetUpdateToolCallback
+// but it takes repoName as an argument (repoName can be either just repoName ex: `nuclei` or full repo Addr ex: `projectdiscovery/nuclei`)
+func GetUpdateToolFromRepoCallback(toolName, version, repoName string) func() {
 	return func() {
-		gh, err := NewghReleaseDownloader(toolName)
+		if repoName == "" {
+			repoName = toolName
+		}
+		gh, err := NewghReleaseDownloader(repoName)
 		if err != nil {
 			gologger.Fatal().Label("updater").Msgf("failed to download latest release got %v", err)
 		}
+		gh.SetToolName(toolName)
 		latestVersion, err := semver.NewVersion(gh.Latest.GetTagName())
 		if err != nil {
 			gologger.Fatal().Label("updater").Msgf("failed to parse semversion from tagname `%v` got %v", gh.Latest.GetTagName(), err)
@@ -67,7 +76,7 @@ func GetUpdateToolCallback(toolName, version string) func() {
 		}
 
 		if err = selfupdate.Apply(bytes.NewBuffer(bin), updateOpts); err != nil {
-			log.Printf("Error] update of %v %v -> %v failed, rolling back update", toolName, currentVersion.String(), latestVersion.String())
+			gologger.Error().Msgf("update of %v %v -> %v failed, rolling back update", toolName, currentVersion.String(), latestVersion.String())
 			if err := selfupdate.RollbackError(err); err != nil {
 				gologger.Fatal().Label("updater").Msgf("rollback of update of %v failed got %v,pls reinstall %v", toolName, err, toolName)
 			}
@@ -90,12 +99,12 @@ func GetUpdateToolCallback(toolName, version string) func() {
 	}
 }
 
-// GetVersionCheckCallback retuns a callback function
-// that returns latest version of tool
-// Deprecated: use xxx
-func GetVersionCheckCallback(toolName string) func() (string, error) {
+// GetToolVersionCallback returns a callback function that checks for updates of tool
+// by sending a request to update check endpoint and returns latest version
+// if repoName is empty then tool name is considered as repoName
+func GetToolVersionCallback(toolName, version, repoName string) func() (string, error) {
 	return func() (string, error) {
-		updateURL := fmt.Sprintf(UpdateCheckEndpoint, toolName) + "?" + getMetaParams()
+		updateURL := fmt.Sprintf(UpdateCheckEndpoint, toolName) + "?" + getpdtmParams(version)
 		if DefaultHttpClient == nil {
 			// not needed but as a precaution to avoid nil panics
 			DefaultHttpClient = http.DefaultClient
@@ -126,13 +135,19 @@ func GetVersionCheckCallback(toolName string) func() (string, error) {
 	}
 }
 
-// getMetaParams returns encoded query parameters sent to update check endpoint
-func getMetaParams() string {
+// getpdtmParams returns encoded query parameters sent to update check endpoint
+func getpdtmParams(version string) string {
 	params := &url.Values{}
 	params.Add("os", runtime.GOOS)
 	params.Add("arch", runtime.GOARCH)
 	params.Add("go_version", runtime.Version())
+	params.Add("v", version)
 	return params.Encode()
+}
+
+// Deprecated: use GetToolVersionCheckCallback instead
+func GetVersionCheckCallback(toolName string) func() (string, error) {
+	return GetToolVersionCallback(toolName, "", "")
 }
 
 func init() {
