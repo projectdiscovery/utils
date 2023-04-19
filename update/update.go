@@ -88,7 +88,12 @@ func GetUpdateToolFromRepoCallback(toolName, version, repoName string) func() {
 
 		if !HideReleaseNotes {
 			output := gh.Latest.GetBody()
-			if rendered, err := glamour.Render(output, "dark"); err == nil {
+			// adjust colors for both dark / light terminal themes
+			r, err := glamour.NewTermRenderer(glamour.WithAutoStyle())
+			if err != nil {
+				gologger.Error().Msgf("markdown rendering not supported: %v", err)
+			}
+			if rendered, err := r.Render(output); err == nil {
 				output = rendered
 			} else {
 				gologger.Error().Msg(err.Error())

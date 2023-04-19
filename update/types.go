@@ -49,8 +49,8 @@ type Tool struct {
 func GetVersionDescription(current string, latest string) string {
 	currentVer, _ := semver.NewVersion(current)
 	latestVer, _ := semver.NewVersion(latest)
-	if strings.Contains(current, "dev") {
-		return fmt.Sprintf("(%v)", aurora.BrightBlue("dev"))
+	if strings.HasSuffix(current, "-dev") {
+		return fmt.Sprintf("(%v)", aurora.Blue("development"))
 	}
 	if currentVer == nil || latestVer == nil {
 		// fallback to naive comparison
