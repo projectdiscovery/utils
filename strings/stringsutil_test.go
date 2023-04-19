@@ -359,3 +359,21 @@ func TestTruncate(t *testing.T) {
 		require.Equalf(t, test.result, res, "test:%s maxsize: %d result: %s", test.test, test.maxSize, res)
 	}
 }
+
+func TestIndexAny(t *testing.T) {
+	tests := []struct {
+		s           string
+		seps        []string
+		expectedIdx int
+		expectedSep string
+	}{
+		{"abcdefg", []string{"a", "b"}, 0, "a"},
+		{"abcdefg", []string{"z", "b"}, 1, "b"},
+		{"abcdefg", []string{"z", "zz"}, -1, ""},
+	}
+	for _, test := range tests {
+		idx, sep := IndexAny(test.s, test.seps...)
+		require.Equal(t, test.expectedIdx, idx)
+		require.Equal(t, test.expectedSep, sep)
+	}
+}
