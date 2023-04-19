@@ -60,7 +60,8 @@ func GetUpdateToolFromRepoCallback(toolName, version, repoName string) func() {
 		if err != nil {
 			gologger.Fatal().Label("updater").Msgf("failed to parse semversion from current version %v got %v", version, err)
 		}
-		if !latestVersion.GreaterThan(currentVersion) {
+		// check if current version is outdated
+		if !IsOutdated(currentVersion.String(), latestVersion.String()) {
 			gologger.Info().Msgf("%v is already updated to latest version", toolName)
 			os.Exit(0)
 		}
