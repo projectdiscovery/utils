@@ -246,11 +246,11 @@ func (d *GHReleaseDownloader) getLatestRelease() error {
 	release, resp, err := d.client.Repositories.GetLatestRelease(context.Background(), d.organization, d.repoName)
 	if err != nil {
 		errx := errorutil.NewWithErr(err)
-		if resp != nil && resp.StatusCode == 404 {
+		if resp != nil && resp.StatusCode == http.StatusNotFound {
 			errx = errx.Msgf("repo %v/%v not found got %v", d.organization, d.repoName)
 		} else if _, ok := err.(*github.RateLimitError); ok {
 			errx = errx.Msgf("hit github ratelimit while downloading latest release")
-		} else if resp != nil && (resp.StatusCode == 401 || resp.StatusCode == 403) {
+		} else if resp != nil && (resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusUnauthorized) {
 			errx = errx.Msgf("gh auth failed try unsetting GITHUB_TOKEN env variable")
 		}
 		return errx
