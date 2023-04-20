@@ -1,6 +1,7 @@
 package httputil
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -43,7 +44,21 @@ func DumpResponseHeadersAndRaw(resp *http.Response) (headers, fullresp []byte, e
 	if err != nil {
 		return
 	}
-	fullresp, err = httputil.DumpResponse(resp, true)
+	// logic same as httputil.DumpResponse(resp, true) but handles
+	// the edge case when we get both error and data on reading resp.Body
+	var buf1, buf2 bytes.Buffer
+	b := resp.Body
+	if _, err = buf1.ReadFrom(b); err != nil {
+		if buf1.Len() <= 0 {
+			return
+		}
+	}
+	if err == nil {
+		_ = b.Close()
+	}
+	resp.Body = io.NopCloser(bytes.NewReader(buf1.Bytes()))
+	err = resp.Write(&buf2)
+	fullresp = buf2.Bytes()
 	return
 }
 
