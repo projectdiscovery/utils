@@ -135,7 +135,11 @@ func GetToolVersionCallback(toolName, version string) func() (string, error) {
 			return "", errorutil.NewWithErr(err).Msgf("failed to unmarshal %v", string(body)).WithTag("updater")
 		}
 		if toolDetails.Version == "" {
-			return "", errorutil.NewWithErr(err).Msgf("something went wrong, expected version string but got empty string for GET `%v`", updateURL)
+			msg := fmt.Sprintf("something went wrong, expected version string but got empty string for GET `%v` response `%v`", updateURL, string(body))
+			if err == nil {
+				return "", errorutil.New(msg)
+			}
+			return "", errorutil.NewWithErr(err).Msgf(msg)
 		}
 		return toolDetails.Version, nil
 	}
