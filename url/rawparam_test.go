@@ -103,17 +103,17 @@ func TestURLEncode(t *testing.T) {
 
 func TestURLDecode(t *testing.T) {
 	testcases := []struct {
-		raw      string
+		url      string
 		Expected Params
 	}{
 		{
 			"/ctc/servlet/ConfigServlet?param=com.sap.ctc.util.FileSystemConfig;EXECUTE_CMD;CMDLINE=tasklist",
-			Params{"/ctc/servlet/ConfigServlet?param": []string{"com.sap.ctc.util.FileSystemConfig;EXECUTE_CMD;CMDLINE=tasklist"}},
+			Params{"param": []string{"com.sap.ctc.util.FileSystemConfig;EXECUTE_CMD;CMDLINE=tasklist"}},
 		},
 	}
 	for _, v := range testcases {
-		params := make(Params)
-		params.Decode(v.raw)
-		require.Equalf(t, v.Expected, params, "failed to decode params %v expected %v got %v", v.raw, v.Expected, params)
+		parsed, err := Parse(v.url)
+		require.Nilf(t, err, "failed to parse url %v", v.url)
+		require.Equalf(t, v.Expected, parsed.Query(), "failed to decode params in url %v expected %v got %v", v.url, v.Expected, parsed.Query())
 	}
 }
