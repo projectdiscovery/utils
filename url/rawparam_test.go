@@ -100,3 +100,20 @@ func TestURLEncode(t *testing.T) {
 		require.Equalf(t, expected, got, "url encoding mismatch for non-printable char with ascii val:%v", r)
 	}
 }
+
+func TestURLDecode(t *testing.T) {
+	testcases := []struct {
+		raw      string
+		Expected Params
+	}{
+		{
+			"/ctc/servlet/ConfigServlet?param=com.sap.ctc.util.FileSystemConfig;EXECUTE_CMD;CMDLINE=tasklist",
+			Params{"/ctc/servlet/ConfigServlet?param": []string{"com.sap.ctc.util.FileSystemConfig;EXECUTE_CMD;CMDLINE=tasklist"}},
+		},
+	}
+	for _, v := range testcases {
+		params := make(Params)
+		params.Decode(v.raw)
+		require.Equalf(t, v.Expected, params, "failed to decode params %v expected %v got %v", v.raw, v.Expected, params)
+	}
+}
