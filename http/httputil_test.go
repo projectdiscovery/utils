@@ -2,6 +2,7 @@ package httputil
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -20,9 +21,10 @@ func TestDumpRequest(t *testing.T) {
 }
 
 func TestDumpResponseHeadersAndRaw(t *testing.T) {
+	expectedResponseBody := "Hello, client"
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Del("Date")
-		fmt.Fprintln(w, "Hello, client")
+		fmt.Fprintln(w, expectedResponseBody)
 	}))
 	defer ts.Close()
 
@@ -45,4 +47,9 @@ func TestDumpResponseHeadersAndRaw(t *testing.T) {
 	resp := "HTTP/1.1 200 OK\r\nContent-Length: 14\r\nContent-Type: text/plain; charset=utf-8\r\n\r\nHello, client\n\r\n"
 	require.Equal(t, headers, headersdump)
 	require.Equal(t, resp, respdump)
+
+	// ensure that the response body is still readable
+	respBody, err := io.ReadAll(res.Body)
+	require.Nil(t, err)
+	require.Equal(t, expectedResponseBody+"\n", string(respBody))
 }

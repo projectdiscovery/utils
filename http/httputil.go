@@ -56,9 +56,14 @@ func DumpResponseHeadersAndRaw(resp *http.Response) (headers, fullresp []byte, e
 	if err == nil {
 		_ = b.Close()
 	}
+
+	// rewind the body to allow full dump
 	resp.Body = io.NopCloser(bytes.NewReader(buf1.Bytes()))
 	err = resp.Write(&buf2)
 	fullresp = buf2.Bytes()
+
+	// rewind once more to allow further reuses
+	resp.Body = io.NopCloser(bytes.NewReader(buf1.Bytes()))
 	return
 }
 
