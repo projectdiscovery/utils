@@ -455,8 +455,8 @@ func CountLinesWithOptions(reader io.Reader, separator []byte, filter func([]byt
 	return count, scanner.Err()
 }
 
-// SetConfigFromEnvVars reads a config file and generates a reader with config values from environment variables
-func SetConfigFromEnvVars(filepath string) (io.Reader, error) {
+// SubstituteConfigFromEnvVars reads a config file and generates a reader with substituted config values from environment variables
+func SubstituteConfigFromEnvVars(filepath string) (io.Reader, error) {
 	var config strings.Builder
 
 	lines, err := ReadFile(filepath)
