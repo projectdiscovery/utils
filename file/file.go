@@ -464,7 +464,7 @@ func SetConfigFromEnvVars(filepath string) (io.Reader, error) {
 		return nil, err
 	}
 
-	for _, line := range <-lines {
+	for line := range lines {
 		config.WriteString(substituteEnvVars(string(line)))
 		config.WriteString("\n")
 	}
