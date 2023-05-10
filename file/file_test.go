@@ -3,6 +3,7 @@ package fileutil
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -478,5 +479,45 @@ func TestCountLineWithSeparator(t *testing.T) {
 			require.Nil(t, err)
 			require.Equal(t, test.expectedLines, linesCount)
 		}
+	}
+}
+
+func TestSubstituteConfigFromEnvVars(t *testing.T) {
+	configFileContent := `test:
+	- id: some_id
+	  channel: $CHANNEL
+	  username: $USER
+	  webhook_url: $WEBHOOK
+	  threads: $THREADS
+  `
+	f, err := os.CreateTemp("", "")
+	require.Nil(t, err, "couldn't create file: %s", err)
+	fname := f.Name()
+	_, _ = f.Write([]byte(configFileContent))
+	f.Close()
+	defer os.Remove(fname)
+
+	os.Setenv("CHANNEL", "test_channel")
+	os.Setenv("USER", "test_user")
+	os.Setenv("WEBHOOK", "test_webhook")
+	os.Setenv("THREADS", "test_threads")
+
+	expectedFileContent := `test:
+	- id: some_id
+	  channel: test_channel
+	  username: test_user
+	  webhook_url: test_webhook
+	  threads: test_threads
+  `
+	reader, err := SubstituteConfigFromEnvVars(fname)
+	require.Nil(t, err, "couldn't substitute config values: %s", err)
+
+	bytes, err := io.ReadAll(reader)
+	require.Nil(t, err, "couldn't read file data: %s", err)
+
+	expectedFileContentLines := strings.Split(expectedFileContent, "\n")
+	gotFileContentLines := strings.Split(string(bytes), "\n")
+	for i := range expectedFileContentLines {
+		require.Equal(t, expectedFileContentLines[i], gotFileContentLines[i], "lines in config don't match")
 	}
 }
