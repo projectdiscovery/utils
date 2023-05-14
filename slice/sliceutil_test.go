@@ -256,3 +256,38 @@ func TestClone(t *testing.T) {
 	bytesSlice := []byte{1, 2, 3}
 	require.Equal(t, bytesSlice, Clone(bytesSlice))
 }
+
+func TestVisitSequential(t *testing.T) {
+	intSlice := []int{1, 2, 3}
+	var res []int
+	visit := func(index int, item int) error {
+		res = append(res, item)
+		return nil
+	}
+	VisitSequential(intSlice, visit)
+	require.Equal(t, intSlice, res)
+}
+
+func TestVisitRandom(t *testing.T) {
+	intSlice := []int{1, 2, 3}
+	var res []int
+	visit := func(index int, item int) error {
+		res = append(res, item)
+		return nil
+	}
+	VisitRandom(intSlice, visit)
+	require.NotEqual(t, intSlice, res)
+	require.ElementsMatch(t, intSlice, res)
+}
+
+func TestVisitRandomZero(t *testing.T) {
+	intSlice := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+	var res []int
+	visit := func(index int, item int) error {
+		res = append(res, item)
+		return nil
+	}
+	VisitRandomZero(intSlice, visit)
+	require.NotEqual(t, intSlice, res)
+	require.ElementsMatch(t, intSlice, res)
+}

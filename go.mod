@@ -12,6 +12,7 @@ require (
 	github.com/miekg/dns v1.1.54
 	github.com/minio/selfupdate v0.6.0
 	github.com/pkg/errors v0.9.1
+	github.com/projectdiscovery/blackrock v0.0.1
 	github.com/remeh/sizedwaitgroup v1.0.0
 	github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca
 	github.com/shirou/gopsutil/v3 v3.23.4
