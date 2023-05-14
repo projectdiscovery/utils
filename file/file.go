@@ -454,3 +454,35 @@ func CountLinesWithOptions(reader io.Reader, separator []byte, filter func([]byt
 	}
 	return count, scanner.Err()
 }
+
+// SubstituteConfigFromEnvVars reads a config file and generates a reader with substituted config values from environment variables
+func SubstituteConfigFromEnvVars(filepath string) (io.Reader, error) {
+	var config strings.Builder
+
+	lines, err := ReadFile(filepath)
+	if err != nil {
+		return nil, err
+	}
+
+	for line := range lines {
+		config.WriteString(substituteEnvVars(string(line)))
+		config.WriteString("\n")
+	}
+
+	return strings.NewReader(config.String()), nil
+}
+
+// substituteEnvVars identifies environment variables declared inline and tries to replace them using os.Getenv
+func substituteEnvVars(line string) string {
+	for _, word := range strings.Fields(line) {
+		word = strings.Trim(word, `"`)
+		if strings.HasPrefix(word, "$") {
+			key := strings.TrimPrefix(word, "$")
+			substituteEnv := os.Getenv(key)
+			if substituteEnv != "" {
+				line = strings.Replace(line, word, substituteEnv, 1)
+			}
+		}
+	}
+	return line
+}
