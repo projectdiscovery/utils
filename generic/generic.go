@@ -1,5 +1,10 @@
 package generic
 
+import (
+	"bytes"
+	"encoding/gob"
+)
+
 // EqualsAny checks if a base value of type T is equal to
 // any of the other values of type T provided as arguments.
 func EqualsAny[T comparable](base T, all ...T) bool {
@@ -23,4 +28,13 @@ func EqualsAll[T comparable](base T, all ...T) bool {
 		}
 	}
 	return true
+}
+
+// SizeOf returns the approx size of a variable in bytes
+func ApproxSizeOf[T any](v T) (int, error) {
+	buf := new(bytes.Buffer)
+	if err := gob.NewEncoder(buf).Encode(v); err != nil {
+		return 0, err
+	}
+	return buf.Len(), nil
 }
