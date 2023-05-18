@@ -5,6 +5,12 @@ var (
 	HasCapNetRaw bool
 )
 
+// Set permissions for a file using  file.Chmod(os.FileMode(<permission>))
+// Example: file.Chmod(os.FileMode(AllReadWriteExecute))
+// If you are trying to set permissions using  os.OpenFile then permissions get filtered out by the umask.
+// these permissions are 'filtered' by whatever umask has been set.
+// https://stackoverflow.com/questions/66097279/why-will-os-openfile-not-create-a-777-file
+
 const (
 	os_read        = 04
 	os_write       = 02
