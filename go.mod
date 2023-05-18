@@ -8,7 +8,7 @@ require (
 	github.com/charmbracelet/glamour v0.6.0
 	github.com/google/go-github/v30 v30.1.0
 	github.com/logrusorgru/aurora v2.0.3+incompatible
-	github.com/microcosm-cc/bluemonday v1.0.23
+	github.com/microcosm-cc/bluemonday v1.0.24
 	github.com/miekg/dns v1.1.54
 	github.com/minio/selfupdate v0.6.0
 	github.com/pkg/errors v0.9.1
