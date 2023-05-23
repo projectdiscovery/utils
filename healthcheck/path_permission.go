@@ -2,15 +2,9 @@ package healthcheck
 
 import (
 	"errors"
-	"path/filepath"
 
 	fileutil "github.com/projectdiscovery/utils/file"
-	folderutil "github.com/projectdiscovery/utils/folder"
 )
-
-var DefaultPathsToCheckPermission = []string{
-	filepath.Join(folderutil.HomeDirOrDefault(""), ".config", fileutil.ExecutableName()),
-}
 
 type PathPermission struct {
 	path       string
@@ -35,18 +29,18 @@ func CheckPathPermission(path string) (*PathPermission, error) {
 }
 
 // CheckPathsPermissionOrDefault checks the permissions of the given files or directories, or default files or directories if none are given.
-func CheckPathsPermissionOrDefault(paths []string) ([]PathPermission, error) {
-	if len(paths) == 0 {
-		paths = DefaultPathsToCheckPermission
-	}
+// func CheckPathsPermissionOrDefault(paths []string) ([]PathPermission, error) {
+// 	if len(paths) == 0 {
+// 		paths = DefaultPathsToCheckPermission
+// 	}
 
-	pathPermissions := []PathPermission{}
-	for _, path := range paths {
-		pathPermission, err := CheckPathPermission(path)
-		if err != nil {
-			return nil, err
-		}
-		pathPermissions = append(pathPermissions, *pathPermission)
-	}
-	return pathPermissions, nil
-}
+// 	pathPermissions := []PathPermission{}
+// 	for _, path := range paths {
+// 		pathPermission, err := CheckPathPermission(path)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		pathPermissions = append(pathPermissions, *pathPermission)
+// 	}
+// 	return pathPermissions, nil
+// }

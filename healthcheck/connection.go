@@ -7,10 +7,6 @@ import (
 	"time"
 )
 
-var DefaultHostsToCheckConnectivity = []string{
-	"scanme.sh",
-}
-
 type ConnectionInfo struct {
 	Host       string
 	Successful bool
@@ -32,18 +28,18 @@ func CheckConnection(host string, port int, protocol string, timeout time.Durati
 	}, nil
 }
 
-func CheckConnectionsOrDefault(hosts []string, port int, protocol string, timeout time.Duration) ([]ConnectionInfo, error) {
-	if len(hosts) == 0 {
-		hosts = DefaultHostsToCheckConnectivity
-	}
+// func CheckConnectionsOrDefault(hosts []string, port int, protocol string, timeout time.Duration) ([]ConnectionInfo, error) {
+// 	if len(hosts) == 0 {
+// 		hosts = DefaultHostsToCheckConnectivity
+// 	}
 
-	connectionInfos := []ConnectionInfo{}
-	for _, host := range hosts {
-		connectivityInfo, err := CheckConnection(host, port, protocol, timeout)
-		if err != nil {
-			return nil, err
-		}
-		connectionInfos = append(connectionInfos, *connectivityInfo)
-	}
-	return connectionInfos, nil
-}
+// 	connectionInfos := []ConnectionInfo{}
+// 	for _, host := range hosts {
+// 		connectivityInfo, err := CheckConnection(host, port, protocol, timeout)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		connectionInfos = append(connectionInfos, *connectivityInfo)
+// 	}
+// 	return connectionInfos, nil
+// }
