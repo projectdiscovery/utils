@@ -7,17 +7,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCheckFilePermissions(t *testing.T) {
+func TestCheckPathPermission(t *testing.T) {
 	t.Run("file with read and write permissions", func(t *testing.T) {
 		filename := "testfile_read_write.txt"
 		_, err := os.Create(filename)
 		defer os.Remove(filename)
 		assert.NoError(t, err)
 
-		permissions, err := CheckPathPermission(filename)
+		permission, err := CheckPathPermission(filename)
 		assert.NoError(t, err)
-		assert.Equal(t, true, permissions.isReadable)
-		assert.Equal(t, true, permissions.isWritable)
+		assert.Equal(t, true, permission.isReadable)
+		assert.Equal(t, true, permission.isWritable)
 	})
 
 	t.Run("non-existing file", func(t *testing.T) {
@@ -35,10 +35,10 @@ func TestCheckFilePermissions(t *testing.T) {
 		assert.NoError(t, err)
 
 		defer os.Remove(filename)
-		permissions, err := CheckPathPermission(filename)
+		permission, err := CheckPathPermission(filename)
 
 		assert.NoError(t, err)
-		assert.Equal(t, true, permissions.isReadable)
-		assert.Equal(t, false, permissions.isWritable)
+		assert.Equal(t, true, permission.isReadable)
+		assert.Equal(t, false, permission.isWritable)
 	})
 }
