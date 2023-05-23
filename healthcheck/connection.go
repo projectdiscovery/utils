@@ -11,13 +11,13 @@ var DefaultHostsToCheckConnectivity = []string{
 	"scanme.sh",
 }
 
-type ConnectivityInfo struct {
+type ConnectionInfo struct {
 	Host       string
 	Successful bool
 	Message    string
 }
 
-func CheckConnection(host string, port int, protocol string, timeout time.Duration) (*ConnectivityInfo, error) {
+func CheckConnection(host string, port int, protocol string, timeout time.Duration) (*ConnectionInfo, error) {
 	address := net.JoinHostPort(host, strconv.Itoa(port))
 	conn, err := net.DialTimeout(protocol, address, timeout)
 	if err != nil {
@@ -25,25 +25,25 @@ func CheckConnection(host string, port int, protocol string, timeout time.Durati
 	}
 	defer conn.Close()
 
-	return &ConnectivityInfo{
+	return &ConnectionInfo{
 		Host:       host,
 		Successful: true,
 		Message:    fmt.Sprintf("%s IPv4 Connect (%s:%v): %s", protocol, host, port, "Successful"),
 	}, nil
 }
 
-func CheckConnectionsOrDefault(hosts []string, port int, protocol string, timeout time.Duration) ([]ConnectivityInfo, error) {
+func CheckConnectionsOrDefault(hosts []string, port int, protocol string, timeout time.Duration) ([]ConnectionInfo, error) {
 	if len(hosts) == 0 {
 		hosts = DefaultHostsToCheckConnectivity
 	}
 
-	connectivityInfos := []ConnectivityInfo{}
+	connectionInfos := []ConnectionInfo{}
 	for _, host := range hosts {
 		connectivityInfo, err := CheckConnection(host, port, protocol, timeout)
 		if err != nil {
 			return nil, err
 		}
-		connectivityInfos = append(connectivityInfos, *connectivityInfo)
+		connectionInfos = append(connectionInfos, *connectivityInfo)
 	}
-	return connectivityInfos, nil
+	return connectionInfos, nil
 }
