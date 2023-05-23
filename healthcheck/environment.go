@@ -32,7 +32,14 @@ type Ulimit struct {
 func CollectEnvironmentInfo(appVersion string) (*EnvironmentInfo, error) {
 	externalIPv4, _ := iputil.WhatsMyIP()
 	outboundIPv4, outboundIPv6, _ := router.GetOutboundIPs()
-	limit, _ := fdmax.Get()
+
+	ulimit := Ulimit{}
+	limit, err := fdmax.Get()
+	if err == nil {
+		ulimit.Current = limit.Current
+		ulimit.Max = limit.Max
+	}
+
 	return &EnvironmentInfo{
 		ExternalIPv4:   externalIPv4,
 		Admin:          permissionutil.IsRoot,
@@ -43,10 +50,7 @@ func CollectEnvironmentInfo(appVersion string) (*EnvironmentInfo, error) {
 		ProgramVersion: appVersion,
 		OutboundIPv4:   outboundIPv4.String(),
 		OutboundIPv6:   outboundIPv6.String(),
-		Ulimit: Ulimit{
-			Current: limit.Current,
-			Max:     limit.Max,
-		},
-		PathEnvVar: os.Getenv("PATH"),
+		Ulimit:         ulimit,
+		PathEnvVar:     os.Getenv("PATH"),
 	}, nil
 }
