@@ -9,7 +9,7 @@ import (
 )
 
 var DefaultPathsToCheckPermission = []string{
-	filepath.Join(folderutil.HomeDirOrDefault(""), ".config"),
+	filepath.Join(folderutil.HomeDirOrDefault(""), ".config", fileutil.ExecutableName()),
 }
 
 type PathPermission struct {
