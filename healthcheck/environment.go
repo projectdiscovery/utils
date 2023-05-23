@@ -1,6 +1,7 @@
 package healthcheck
 
 import (
+	"os"
 	"runtime"
 
 	"github.com/projectdiscovery/fdmax"
@@ -20,6 +21,7 @@ type EnvironmentInfo struct {
 	OutboundIPv4   string
 	OutboundIPv6   string
 	Ulimit         Ulimit
+	PathEnvVar     string
 }
 
 type Ulimit struct {
@@ -45,5 +47,6 @@ func CollectEnvironmentInfo(appVersion string) (*EnvironmentInfo, error) {
 			Current: limit.Current,
 			Max:     limit.Max,
 		},
+		PathEnvVar: os.Getenv("PATH"),
 	}, nil
 }
