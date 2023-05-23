@@ -28,7 +28,7 @@ func CheckConnection(host string, port int, protocol string, timeout time.Durati
 	return &ConnectionInfo{
 		Host:       host,
 		Successful: true,
-		Message:    fmt.Sprintf("%s IPv4 Connect (%s:%v): %s", protocol, host, port, "Successful"),
+		Message:    fmt.Sprintf("%s Connect (%s:%v): %s", protocol, host, port, "Successful"),
 	}, nil
 }
 
