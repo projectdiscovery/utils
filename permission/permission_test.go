@@ -17,14 +17,13 @@ func TestIsRoot(t *testing.T) {
 
 func TestFilePermissions(t *testing.T) {
 
-	const testFilePath = "/tmp/testfile.txt"
-
 	t.Run("TestFileAllReadWriteExecute", func(t *testing.T) {
-		file, err := os.Create(testFilePath)
+		file, err := os.CreateTemp("", "testfile")
 		if err != nil {
 			t.Fatalf("Failed to create test file: %v", err)
 		}
-		defer os.Remove(testFilePath)
+		testFileName := file.Name()
+		defer os.Remove(testFileName)
 		defer file.Close()
 
 		// Set the file permissions
@@ -34,7 +33,7 @@ func TestFilePermissions(t *testing.T) {
 		}
 
 		// Get the file permissions
-		fileInfo, err := os.Stat(testFilePath)
+		fileInfo, err := os.Stat(testFileName)
 		if err != nil {
 			t.Fatalf("Failed to get file info: %v", err)
 		}
@@ -45,11 +44,12 @@ func TestFilePermissions(t *testing.T) {
 	})
 
 	t.Run("TestFileUserReadWriteExecute", func(t *testing.T) {
-		file, err := os.Create(testFilePath)
+		file, err := os.CreateTemp("", "testfile")
 		if err != nil {
 			t.Fatalf("Failed to create test file: %v", err)
 		}
-		defer os.Remove(testFilePath)
+		testFileName := file.Name()
+		defer os.Remove(testFileName)
 		defer file.Close()
 
 		// Set the file permissions
@@ -59,7 +59,7 @@ func TestFilePermissions(t *testing.T) {
 		}
 
 		// Get the file permissions
-		fileInfo, err := os.Stat(testFilePath)
+		fileInfo, err := os.Stat(testFileName)
 		if err != nil {
 			t.Fatalf("Failed to get file info: %v", err)
 		}
@@ -70,11 +70,12 @@ func TestFilePermissions(t *testing.T) {
 	})
 
 	t.Run("TestFileGroupReadWriteExecute", func(t *testing.T) {
-		file, err := os.Create(testFilePath)
+		file, err := os.CreateTemp("", "testfile")
 		if err != nil {
 			t.Fatalf("Failed to create test file: %v", err)
 		}
-		defer os.Remove(testFilePath)
+		testFileName := file.Name()
+		defer os.Remove(testFileName)
 		defer file.Close()
 
 		// Set the file permissions
@@ -84,7 +85,7 @@ func TestFilePermissions(t *testing.T) {
 		}
 
 		// Get the file permissions
-		fileInfo, err := os.Stat(testFilePath)
+		fileInfo, err := os.Stat(testFileName)
 		if err != nil {
 			t.Fatalf("Failed to get file info: %v", err)
 		}
