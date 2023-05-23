@@ -9,10 +9,10 @@ import (
 
 func TestCheckConnection(t *testing.T) {
 	t.Run("Test successful connection", func(t *testing.T) {
-		info, err := CheckConnection("google.com", 80, "tcp", 1*time.Second)
+		info, err := CheckConnection("scanme.sh", 80, "tcp", 1*time.Second)
 		assert.NoError(t, err)
 		assert.True(t, info.Successful)
-		assert.Equal(t, "google.com", info.Host)
+		assert.Equal(t, "scanme.sh", info.Host)
 		assert.Contains(t, info.Message, "Successful")
 	})
 
