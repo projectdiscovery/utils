@@ -8,43 +8,45 @@ import (
 	folderutil "github.com/projectdiscovery/utils/folder"
 )
 
-var DefaultFilesToCheckPermissions = []string{filepath.Join(folderutil.HomeDirOrDefault(""), ".config")}
+var DefaultPathsToCheckPermission = []string{
+	filepath.Join(folderutil.HomeDirOrDefault(""), ".config"),
+}
 
-type FilePermissions struct {
-	filename   string
+type PathPermission struct {
+	path       string
 	isReadable bool
 	isWritable bool
 }
 
-// CheckFilePermissions checks the permissions of the given file.
-func CheckFilePermissions(filename string) (*FilePermissions, error) {
-	if !fileutil.FileExists(filename) {
-		return nil, errors.New("file doesn't exist")
+// CheckPathPermission checks the permissions of the given file or directory.
+func CheckPathPermission(path string) (*PathPermission, error) {
+	if !fileutil.FileExists(path) {
+		return nil, errors.New("file or directory doesn't exist at " + path)
 	}
 
-	fileIsReadable, _ := fileutil.IsReadable(filename)
-	fileIsWritable, _ := fileutil.IsWriteable(filename)
+	pathIsReadable, _ := fileutil.IsReadable(path)
+	pathIsWritable, _ := fileutil.IsWriteable(path)
 
-	return &FilePermissions{
-		filename:   filename,
-		isReadable: fileIsReadable,
-		isWritable: fileIsWritable,
+	return &PathPermission{
+		path:       path,
+		isReadable: pathIsReadable,
+		isWritable: pathIsWritable,
 	}, nil
 }
 
-// CheckFilesPermissionsOrDefault checks the permissions of the given files or default files if none are given.
-func CheckFilesPermissionsOrDefault(filenames []string) ([]FilePermissions, error) {
-	if len(filenames) == 0 {
-		filenames = DefaultFilesToCheckPermissions
+// CheckPathsPermissionOrDefault checks the permissions of the given files or directories, or default files or directories if none are given.
+func CheckPathsPermissionOrDefault(paths []string) ([]PathPermission, error) {
+	if len(paths) == 0 {
+		paths = DefaultPathsToCheckPermission
 	}
 
-	filePermissions := []FilePermissions{}
-	for _, filename := range filenames {
-		filePermission, err := CheckFilePermissions(filename)
+	pathPermissions := []PathPermission{}
+	for _, path := range paths {
+		pathPermission, err := CheckPathPermission(path)
 		if err != nil {
 			return nil, err
 		}
-		filePermissions = append(filePermissions, *filePermission)
+		pathPermissions = append(pathPermissions, *pathPermission)
 	}
-	return filePermissions, nil
+	return pathPermissions, nil
 }
