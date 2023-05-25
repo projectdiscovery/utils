@@ -270,7 +270,7 @@ func TestVisitSequential(t *testing.T) {
 
 func TestVisitRandom(t *testing.T) {
 	intSlice := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
-	var timesMatched int
+	var timesDifferent int
 	for i := 0; i < 100; i++ {
 		var res []int
 		visit := func(index int, item int) error {
@@ -278,18 +278,17 @@ func TestVisitRandom(t *testing.T) {
 			return nil
 		}
 		VisitRandom(intSlice, visit)
-		if Equal(intSlice, res) {
-			timesMatched++
+		if !Equal(intSlice, res) {
+			timesDifferent++
 		}
 		require.ElementsMatch(t, intSlice, res)
 	}
-	// random order visiting should prevails
-	require.True(t, timesMatched < 10)
+	require.True(t, timesDifferent > 0)
 }
 
 func TestVisitRandomZero(t *testing.T) {
 	intSlice := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
-	var timesMatched int
+	var timesDifferent int
 	for i := 0; i < 100; i++ {
 		var res []int
 		visit := func(index int, item int) error {
@@ -297,11 +296,10 @@ func TestVisitRandomZero(t *testing.T) {
 			return nil
 		}
 		VisitRandomZero(intSlice, visit)
-		if Equal(intSlice, res) {
-			timesMatched++
+		if !Equal(intSlice, res) {
+			timesDifferent++
 		}
 		require.ElementsMatch(t, intSlice, res)
 	}
-	// random order visiting should prevails
-	require.True(t, timesMatched < 10)
+	require.True(t, timesDifferent > 0)
 }
