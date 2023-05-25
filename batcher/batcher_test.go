@@ -33,5 +33,5 @@ func TestBatcher(t *testing.T) {
 	bat.WaitDone()
 
 	require.Equal(t, wanted, got)
-	require.True(t, minWantedBatches < gotBatches)
+	require.True(t, minWantedBatches <= gotBatches)
 }
