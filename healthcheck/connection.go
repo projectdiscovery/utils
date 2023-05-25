@@ -11,35 +11,18 @@ type ConnectionInfo struct {
 	Host       string
 	Successful bool
 	Message    string
+	Error      error
 }
 
-func CheckConnection(host string, port int, protocol string, timeout time.Duration) (*ConnectionInfo, error) {
+func CheckConnection(host string, port int, protocol string, timeout time.Duration) ConnectionInfo {
 	address := net.JoinHostPort(host, strconv.Itoa(port))
 	conn, err := net.DialTimeout(protocol, address, timeout)
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect: %w", err)
-	}
 	defer conn.Close()
 
-	return &ConnectionInfo{
+	return ConnectionInfo{
 		Host:       host,
-		Successful: true,
+		Successful: err == nil,
 		Message:    fmt.Sprintf("%s Connect (%s:%v): %s", protocol, host, port, "Successful"),
-	}, nil
+		Error:      err,
+	}
 }
-
-// func CheckConnectionsOrDefault(hosts []string, port int, protocol string, timeout time.Duration) ([]ConnectionInfo, error) {
-// 	if len(hosts) == 0 {
-// 		hosts = DefaultHostsToCheckConnectivity
-// 	}
-
-// 	connectionInfos := []ConnectionInfo{}
-// 	for _, host := range hosts {
-// 		connectivityInfo, err := CheckConnection(host, port, protocol, timeout)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		connectionInfos = append(connectionInfos, *connectivityInfo)
-// 	}
-// 	return connectionInfos, nil
-// }

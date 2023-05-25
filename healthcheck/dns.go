@@ -11,20 +11,19 @@ type DnsResolveInfo struct {
 	Resolver    string
 	Successful  bool
 	IPAddresses []net.IPAddr
+	Error       error
 }
 
-func DnsResolve(host string, resolver string) (*DnsResolveInfo, error) {
+func DnsResolve(host string, resolver string) DnsResolveInfo {
 	ipAddresses, err := getIPAddresses(host, resolver)
-	if err != nil {
-		return nil, err
-	}
 
-	return &DnsResolveInfo{
+	return DnsResolveInfo{
 		Host:        host,
 		Resolver:    resolver,
-		Successful:  true,
+		Successful:  err == nil,
 		IPAddresses: ipAddresses,
-	}, nil
+		Error:       err,
+	}
 }
 
 func getIPAddresses(name, dnsServer string) ([]net.IPAddr, error) {

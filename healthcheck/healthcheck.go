@@ -13,59 +13,34 @@ var (
 	DefaultResolver                 = "1.1.1.1:53"
 )
 
-type HealthCheck struct {
-	paths    []string
-	hosts    []string
-	resolver string
-}
-
 type HealthCheckInfo struct {
 	EnvironmentInfo EnvironmentInfo
 	PathPermissions []PathPermission
 	DnsResolveInfos []DnsResolveInfo
 }
 
-func New(paths, hosts []string, resolver string) *HealthCheck {
-	if len(paths) == 0 {
-		paths = DefaultPathsToCheckPermission
-	}
-	if len(hosts) == 0 {
-		hosts = DefaultHostsToCheckConnectivity
-	}
-	if resolver == "" {
-		resolver = DefaultResolver
-	}
-
-	return &HealthCheck{paths: paths, hosts: hosts, resolver: resolver}
+type Options struct {
+	Paths    []string
+	Hosts    []string
+	Resolver string
 }
 
-func (h *HealthCheck) Run(programVersion string) (*HealthCheckInfo, error) {
-	environmentInfo, err := CollectEnvironmentInfo(programVersion)
-	if err != nil {
-		return nil, err
-	}
+var DefaultOptions = Options{
+	Paths:    DefaultPathsToCheckPermission,
+	Hosts:    DefaultHostsToCheckConnectivity,
+	Resolver: DefaultResolver,
+}
 
-	pathPermissions := []PathPermission{}
-	for _, path := range h.paths {
-		pathPermission, err := CheckPathPermission(path)
-		if err != nil {
-			return nil, err
-		}
-		pathPermissions = append(pathPermissions, *pathPermission)
+func Do(programVersion string, options *Options) (healthCheckInfo HealthCheckInfo) {
+	if options == nil {
+		options = &DefaultOptions
 	}
-
-	dnsResolveInfos := []DnsResolveInfo{}
-	for _, host := range h.hosts {
-		dnsResolveInfo, err := DnsResolve(host, h.resolver)
-		if err != nil {
-			return nil, err
-		}
-		dnsResolveInfos = append(dnsResolveInfos, *dnsResolveInfo)
+	healthCheckInfo.EnvironmentInfo = CollectEnvironmentInfo(programVersion)
+	for _, path := range options.Paths {
+		healthCheckInfo.PathPermissions = append(healthCheckInfo.PathPermissions, CheckPathPermission(path))
 	}
-
-	return &HealthCheckInfo{
-		EnvironmentInfo: *environmentInfo,
-		PathPermissions: pathPermissions,
-		DnsResolveInfos: dnsResolveInfos,
-	}, nil
+	for _, host := range options.Hosts {
+		healthCheckInfo.DnsResolveInfos = append(healthCheckInfo.DnsResolveInfos, DnsResolve(host, options.Resolver))
+	}
+	return
 }

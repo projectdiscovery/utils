@@ -10,37 +10,19 @@ type PathPermission struct {
 	path       string
 	isReadable bool
 	isWritable bool
+	Error      error
 }
 
 // CheckPathPermission checks the permissions of the given file or directory.
-func CheckPathPermission(path string) (*PathPermission, error) {
+func CheckPathPermission(path string) (pathPermission PathPermission) {
+	pathPermission.path = path
 	if !fileutil.FileExists(path) {
-		return nil, errors.New("file or directory doesn't exist at " + path)
+		pathPermission.Error = errors.New("file or directory doesn't exist at " + path)
+		return
 	}
 
-	pathIsReadable, _ := fileutil.IsReadable(path)
-	pathIsWritable, _ := fileutil.IsWriteable(path)
+	pathPermission.isReadable, _ = fileutil.IsReadable(path)
+	pathPermission.isWritable, _ = fileutil.IsWriteable(path)
 
-	return &PathPermission{
-		path:       path,
-		isReadable: pathIsReadable,
-		isWritable: pathIsWritable,
-	}, nil
+	return
 }
-
-// CheckPathsPermissionOrDefault checks the permissions of the given files or directories, or default files or directories if none are given.
-// func CheckPathsPermissionOrDefault(paths []string) ([]PathPermission, error) {
-// 	if len(paths) == 0 {
-// 		paths = DefaultPathsToCheckPermission
-// 	}
-
-// 	pathPermissions := []PathPermission{}
-// 	for _, path := range paths {
-// 		pathPermission, err := CheckPathPermission(path)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		pathPermissions = append(pathPermissions, *pathPermission)
-// 	}
-// 	return pathPermissions, nil
-// }

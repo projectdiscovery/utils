@@ -14,16 +14,16 @@ func TestCheckPathPermission(t *testing.T) {
 		defer os.Remove(filename)
 		assert.NoError(t, err)
 
-		permission, err := CheckPathPermission(filename)
-		assert.NoError(t, err)
+		permission := CheckPathPermission(filename)
+		assert.NoError(t, permission.Error)
 		assert.Equal(t, true, permission.isReadable)
 		assert.Equal(t, true, permission.isWritable)
 	})
 
 	t.Run("non-existing file", func(t *testing.T) {
 		filename := "non_existing_file.txt"
-		_, err := CheckPathPermission(filename)
-		assert.Error(t, err)
+		permission := CheckPathPermission(filename)
+		assert.Error(t, permission.Error)
 	})
 
 	t.Run("file without write permission", func(t *testing.T) {
@@ -35,9 +35,9 @@ func TestCheckPathPermission(t *testing.T) {
 		assert.NoError(t, err)
 
 		defer os.Remove(filename)
-		permission, err := CheckPathPermission(filename)
+		permission := CheckPathPermission(filename)
 
-		assert.NoError(t, err)
+		assert.NoError(t, permission.Error)
 		assert.Equal(t, true, permission.isReadable)
 		assert.Equal(t, false, permission.isWritable)
 	})
