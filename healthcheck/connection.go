@@ -17,7 +17,9 @@ type ConnectionInfo struct {
 func CheckConnection(host string, port int, protocol string, timeout time.Duration) ConnectionInfo {
 	address := net.JoinHostPort(host, strconv.Itoa(port))
 	conn, err := net.DialTimeout(protocol, address, timeout)
-	defer conn.Close()
+	if conn != nil {
+		conn.Close()
+	}
 
 	return ConnectionInfo{
 		Host:       host,
