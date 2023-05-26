@@ -288,3 +288,35 @@ func TestWalk(t *testing.T) {
 		require.Equal(t, len(expected), len(got))
 	})
 }
+
+func TestGetSortedKeys(t *testing.T) {
+	t.Run("GetSortedKeys with int keys", func(t *testing.T) {
+		intMap := map[int]string{
+			1: "a",
+			2: "b",
+			3: "c",
+		}
+		keys := GetSortedKeys(intMap)
+		require.Equal(t, []int{1, 2, 3}, keys)
+	})
+
+	t.Run("GetSortedKeys with float keys", func(t *testing.T) {
+		floatMap := map[float64]string{
+			1.1: "a",
+			2.2: "b",
+			3.3: "c",
+		}
+		keys := GetSortedKeys(floatMap)
+		require.Equal(t, []float64{1.1, 2.2, 3.3}, keys)
+	})
+
+	t.Run("GetSortedKeys with string keys", func(t *testing.T) {
+		stringMap := map[string]string{
+			"a": "a",
+			"b": "b",
+			"c": "c",
+		}
+		keys := GetSortedKeys(stringMap)
+		require.Equal(t, []string{"a", "b", "c"}, keys)
+	})
+}

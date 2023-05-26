@@ -6,10 +6,12 @@ import (
 	"io"
 	"net/http"
 	"net/http/httputil"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/miekg/dns"
+	"golang.org/x/exp/constraints"
 	extmaps "golang.org/x/exp/maps"
 )
 
@@ -251,4 +253,13 @@ func SliceToMap[T comparable](s []T, dflt T) map[T]T {
 // IsEmpty checks if a map is empty.
 func IsEmpty[K comparable, V any](m map[K]V) bool {
 	return len(m) == 0
+}
+
+// GetSortedKeys returns the map's keys sorted.
+func GetSortedKeys[K constraints.Ordered, V any](maps ...map[K]V) []K {
+	keys := GetKeys(maps...)
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
+	return keys
 }
