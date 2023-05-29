@@ -56,6 +56,15 @@ func (m Map[K, V]) IsEmpty() bool {
 	return len(m) == 0
 }
 
+// Clone the current map
+func (m Map[K, V]) Clone() Map[K, V] {
+	clone := make(Map[K, V])
+	for k, v := range m {
+		clone[k] = v
+	}
+	return clone
+}
+
 // Set the provided key with the provided value
 func (m Map[K, V]) Set(key K, value V) {
 	m[key] = value
