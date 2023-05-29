@@ -63,3 +63,17 @@ func (s *SyncLockMap[K, V]) Iterate(f func(k K, v V) error) error {
 	}
 	return nil
 }
+
+// Clone creates a new SyncLockMap with the same values
+func (s *SyncLockMap[K, V]) Clone() *SyncLockMap[K, V] {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	readOnly := atomic.Bool{}
+	readOnly.Store(s.ReadOnly.Load())
+	return &SyncLockMap[K, V]{
+		ReadOnly: readOnly,
+		mu:       sync.RWMutex{},
+		Map:      s.Map.Clone(),
+	}
+}
