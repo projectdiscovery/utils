@@ -69,11 +69,11 @@ func (s *SyncLockMap[K, V]) Clone() *SyncLockMap[K, V] {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	readOnly := atomic.Bool{}
-	readOnly.Store(s.ReadOnly.Load())
-	return &SyncLockMap[K, V]{
-		ReadOnly: readOnly,
+	smap := &SyncLockMap[K, V]{
+		ReadOnly: atomic.Bool{},
 		mu:       sync.RWMutex{},
 		Map:      s.Map.Clone(),
 	}
+	smap.ReadOnly.Store(s.ReadOnly.Load())
+	return smap
 }
