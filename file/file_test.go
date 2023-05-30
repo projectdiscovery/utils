@@ -521,3 +521,21 @@ func TestSubstituteConfigFromEnvVars(t *testing.T) {
 		require.Equal(t, expectedFileContentLines[i], gotFileContentLines[i], "lines in config don't match")
 	}
 }
+
+func TestFileSizeToByteLen(t *testing.T) {
+	byteLen, err := FileSizeToByteLen("2kb")
+	require.Nil(t, err, "couldn't convert file size to byte len: %s", err)
+	require.Equal(t, int(2048), byteLen)
+
+	byteLen, err = FileSizeToByteLen("2mb")
+	require.Nil(t, err, "couldn't convert file size to byte len: %s", err)
+	require.Equal(t, int(2097152), byteLen)
+
+	byteLen, err = FileSizeToByteLen("2")
+	require.Nil(t, err, "couldn't convert file size to byte len: %s", err)
+	require.Equal(t, int(2097152), byteLen)
+
+	_, err = FileSizeToByteLen("2kilobytes")
+	require.NotNil(t, err, "shouldn't convert file size to byte len: %s", err)
+	require.ErrorContains(t, err, "parse error")
+}
