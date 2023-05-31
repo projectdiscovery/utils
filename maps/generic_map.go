@@ -1,5 +1,7 @@
 package mapsutil
 
+import "golang.org/x/exp/maps"
+
 // Map wraps a generic map type
 type Map[K, V comparable] map[K]V
 
@@ -54,6 +56,11 @@ func (m Map[K, V]) GetKeyWithValue(value V) (K, bool) {
 // IsEmpty checks if the current map is empty
 func (m Map[K, V]) IsEmpty() bool {
 	return len(m) == 0
+}
+
+// Clone the current map
+func (m Map[K, V]) Clone() Map[K, V] {
+	return maps.Clone(m)
 }
 
 // Set the provided key with the provided value
