@@ -1,13 +1,14 @@
 package mapsutil
 
 import (
-	"errors"
 	"sync"
 	"sync/atomic"
+
+	errorutil "github.com/projectdiscovery/utils/errors"
 )
 
 var (
-	ErrReadOnly = errors.New("read only mode")
+	ErrReadOnly = errorutil.New("map is currently in read-only mode").WithTag("syncLockMap")
 )
 
 // SyncLock adds sync and lock capabilities to generic map
@@ -76,4 +77,47 @@ func (s *SyncLockMap[K, V]) Clone() *SyncLockMap[K, V] {
 	}
 	smap.ReadOnly.Store(s.ReadOnly.Load())
 	return smap
+}
+
+// Has checks if the current map has the provided key
+func (s *SyncLockMap[K, V]) Has(key K) bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return s.Map.Has(key)
+}
+
+// IsEmpty checks if the current map is empty
+func (s *SyncLockMap[K, V]) IsEmpty() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return s.Map.IsEmpty()
+}
+
+// GetKeywithValue returns the first key having value
+func (s *SyncLockMap[K, V]) GetKeyWithValue(value V) (K, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return s.Map.GetKeyWithValue(value)
+}
+
+// Merge the current map with the provided one
+func (s *SyncLockMap[K, V]) Merge(n map[K]V) error {
+	if s.ReadOnly.Load() {
+		return ErrReadOnly
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.Map.Merge(n)
+	return nil
+}
+
+// GetAll returns Copy of the current map
+func (s *SyncLockMap[K, V]) GetAll() Map[K, V] {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return s.Map.Clone()
 }

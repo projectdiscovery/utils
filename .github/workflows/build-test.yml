@@ -22,3 +22,6 @@ jobs:
 
       - name: Test
         run: go test ./...
+
+      - name: Race Condition Tests
+        run: go test -race ./...
