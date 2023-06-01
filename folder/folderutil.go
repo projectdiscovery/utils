@@ -148,3 +148,11 @@ func HomeDirOrDefault(defaultDirectory string) string {
 	}
 	return usr.HomeDir
 }
+
+func UserConfigDirOrDefault(defaultConfigDir string) string {
+	userConfigDir, err := os.UserConfigDir()
+	if err != nil {
+		return defaultConfigDir
+	}
+	return userConfigDir
+}
