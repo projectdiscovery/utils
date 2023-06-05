@@ -1,7 +1,6 @@
 package folderutil
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -32,13 +31,13 @@ func TestMigrateDir(t *testing.T) {
 	t.Run("successful migration", func(t *testing.T) {
 		// setup
 		// some files in a temp dir
-		sourceDir, _ := ioutil.TempDir("", "source")
+		sourceDir, _ := os.MkdirTemp("", "source")
 		defer os.RemoveAll(sourceDir)
 		os.WriteFile(sourceDir+"/file1.txt", []byte("file1"), 0644)
 		os.WriteFile(sourceDir+"/file2.txt", []byte("file2"), 0644)
 
 		// destination directory
-		destinationDir, _ := ioutil.TempDir("", "dest")
+		destinationDir, _ := os.MkdirTemp("", "dest")
 		defer os.RemoveAll(destinationDir)
 
 		// when: try to migrate files
