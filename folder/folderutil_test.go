@@ -33,8 +33,10 @@ func TestMigrateDir(t *testing.T) {
 		// some files in a temp dir
 		sourceDir, _ := os.MkdirTemp("", "source")
 		defer os.RemoveAll(sourceDir)
-		os.WriteFile(sourceDir+"/file1.txt", []byte("file1"), 0644)
-		os.WriteFile(sourceDir+"/file2.txt", []byte("file2"), 0644)
+		err := os.WriteFile(sourceDir+"/file1.txt", []byte("file1"), 0644)
+		assert.NoError(t, err)
+		err1 := os.WriteFile(sourceDir+"/file2.txt", []byte("file2"), 0644)
+		assert.NoError(t, err1)
 
 		// destination directory
 		destinationDir, _ := os.MkdirTemp("", "dest")
