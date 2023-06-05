@@ -19,12 +19,12 @@ func TestGetFiles(t *testing.T) {
 
 func TestMigrateDir(t *testing.T) {
 	t.Run("destination folder creation error", func(t *testing.T) {
-		_, err := MigrateDir("/source", "/:/dest")
+		err := MigrateDir("/source", "/:/dest")
 		assert.Error(t, err)
 	})
 
 	t.Run("source folder not found error", func(t *testing.T) {
-		_, err := MigrateDir("/notExistingFolder", "/dest")
+		err := MigrateDir("/notExistingFolder", "/dest")
 		assert.Error(t, err)
 	})
 
@@ -41,11 +41,10 @@ func TestMigrateDir(t *testing.T) {
 		defer os.RemoveAll(destinationDir)
 
 		// when: try to migrate files
-		success, err := MigrateDir(sourceDir, destinationDir)
+		err := MigrateDir(sourceDir, destinationDir)
 
 		// then: verify if files migrated successfully
 		assert.NoError(t, err)
-		assert.True(t, success)
 
 		_, err = os.Stat(destinationDir + "/file1.txt")
 		assert.NoError(t, err)

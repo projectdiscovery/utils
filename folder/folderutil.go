@@ -165,29 +165,29 @@ func UserAppConfigDirOrDefault(defaultAppConfigDir string, toolName string) stri
 	return filepath.Join(userConfigDir, toolName)
 }
 
-func MigrateDir(sourceDir string, destinationDir string) (bool, error) {
+func MigrateDir(sourceDir string, destinationDir string) error {
 	err := os.MkdirAll(destinationDir, os.ModePerm)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	files, err := GetFiles(sourceDir)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	for _, file := range files {
 		destinationFile := strings.Replace(file, sourceDir, destinationDir, 1)
 		err = os.Rename(file, destinationFile)
 		if err != nil {
-			return false, err
+			return err
 		}
 	}
 
 	err = os.Remove(sourceDir)
 	if err != nil {
-		return false, err
+		return err
 	}
 
-	return true, nil
+	return nil
 }
