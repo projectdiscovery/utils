@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-
-	fileutil "github.com/projectdiscovery/utils/file"
 )
 
 // Separator evaluated at runtime
@@ -159,10 +157,10 @@ func UserConfigDirOrDefault(defaultConfigDir string) string {
 	return userConfigDir
 }
 
-func UserAppConfigDirOrDefault(defaultAppConfigDir string) string {
+func UserAppConfigDirOrDefault(defaultAppConfigDir string, toolName string) string {
 	userConfigDir := UserConfigDirOrDefault("")
 	if userConfigDir == "" {
 		return defaultAppConfigDir
 	}
-	return filepath.Join(userConfigDir, fileutil.ExecutableName())
+	return filepath.Join(userConfigDir, toolName)
 }
