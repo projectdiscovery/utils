@@ -34,8 +34,8 @@ func TestMigrateDir(t *testing.T) {
 		// some files in a temp dir
 		sourceDir, _ := ioutil.TempDir("", "source")
 		defer os.RemoveAll(sourceDir)
-		ioutil.WriteFile(sourceDir+"/file1.txt", []byte("file1"), 0644)
-		ioutil.WriteFile(sourceDir+"/file2.txt", []byte("file2"), 0644)
+		os.WriteFile(sourceDir+"/file1.txt", []byte("file1"), 0644)
+		os.WriteFile(sourceDir+"/file2.txt", []byte("file2"), 0644)
 
 		// destination directory
 		destinationDir, _ := ioutil.TempDir("", "dest")
