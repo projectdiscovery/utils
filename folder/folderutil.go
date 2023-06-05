@@ -140,7 +140,7 @@ func agnosticSplit(path string) (parts []string) {
 	return
 }
 
-// HomeDirectory
+// HomeDirectory returns the home directory or defaultDirectory in case of error
 func HomeDirOrDefault(defaultDirectory string) string {
 	usr, err := user.Current()
 	if err != nil {
@@ -149,6 +149,7 @@ func HomeDirOrDefault(defaultDirectory string) string {
 	return usr.HomeDir
 }
 
+// UserConfigDirOrDefault returns the user config directory or defaultConfigDir in case of error
 func UserConfigDirOrDefault(defaultConfigDir string) string {
 	userConfigDir, err := os.UserConfigDir()
 	if err != nil {
@@ -157,15 +158,21 @@ func UserConfigDirOrDefault(defaultConfigDir string) string {
 	return userConfigDir
 }
 
-func UserAppConfigDirOrDefault(defaultAppConfigDir string, toolName string) string {
+// AppConfigDirOrDefault returns the app config directory
+func AppConfigDirOrDefault(defaultAppConfigDir string, toolName string) string {
 	userConfigDir := UserConfigDirOrDefault("")
 	if userConfigDir == "" {
-		return defaultAppConfigDir
+		return filepath.Join(defaultAppConfigDir, toolName)
 	}
 	return filepath.Join(userConfigDir, toolName)
 }
 
+// MigrateDir moves all files from sourceDir to destinationDir and removes sourceDir
 func MigrateDir(sourceDir string, destinationDir string) error {
+	// trim trailing slash to avoid slash related issues
+	sourceDir = strings.TrimSuffix(sourceDir, Separator)
+	destinationDir = strings.TrimSuffix(destinationDir, Separator)
+
 	err := os.MkdirAll(destinationDir, os.ModePerm)
 	if err != nil {
 		return err
