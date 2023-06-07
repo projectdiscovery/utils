@@ -88,3 +88,31 @@ func TestFilePermissions(t *testing.T) {
 		}
 	})
 }
+
+func TestUpdateFilePerm(t *testing.T) {
+	// Create a temporary file for testing
+	tempFile, err := os.CreateTemp("", "testfile")
+	if err != nil {
+		t.Fatalf("Error creating temp file: %v", err)
+	}
+	defer os.Remove(tempFile.Name())
+
+	// Set the desired file permissions
+	expectedPermissions := AllReadWrite
+
+	if err := UpdateFilePerm(tempFile.Name(), expectedPermissions); err != nil {
+		t.Fatalf("Error updating file permissions: %v", err)
+	}
+
+	// Get the updated file information
+	updatedFileInfo, err := os.Stat(tempFile.Name())
+	if err != nil {
+		t.Fatalf("Error getting updated file information: %v", err)
+	}
+
+	// Check if the updated file permissions match expected permissions
+	updatedFileMode := updatedFileInfo.Mode().Perm()
+	if updatedFileMode != os.FileMode(expectedPermissions) {
+		t.Errorf("Invalid file permissions, expected: %v, got: %v", os.FileMode(expectedPermissions), updatedFileMode)
+	}
+}
