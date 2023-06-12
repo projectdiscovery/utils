@@ -82,24 +82,17 @@ func NewReusableReadCloser(raw interface{}) (*ReusableReadCloser, error) {
 
 // Read []byte from Reader
 func (r ReusableReadCloser) Read(p []byte) (int, error) {
-	n, err := r.read(p)
+	r.Lock()
+	defer r.Unlock()
+
+	n, err := r.Reader.Read(p)
 	if errors.Is(err, io.EOF) {
 		r.reset()
 	}
 	return n, err
 }
 
-func (r *ReusableReadCloser) read(p []byte) (int, error) {
-	r.RLock()
-	defer r.RUnlock()
-
-	return r.Reader.Read(p)
-}
-
 func (r ReusableReadCloser) reset() {
-	r.Lock()
-	defer r.Unlock()
-
 	_, _ = io.Copy(r.readBuf, r.backBuf)
 }
 
