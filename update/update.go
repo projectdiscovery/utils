@@ -74,6 +74,7 @@ func GetUpdateToolFromRepoCallback(toolName, version, repoName string) func() {
 		bin, err := gh.GetExecutableFromAsset()
 		if err != nil {
 			gologger.Fatal().Label("updater").Msgf("executable %v not found in release asset `%v` got: %v", toolName, gh.AssetID, err)
+			os.Exit(1)
 		}
 
 		if err = selfupdate.Apply(bytes.NewBuffer(bin), updateOpts); err != nil {
