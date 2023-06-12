@@ -51,9 +51,5 @@ const (
 // Returns an error if the file permissions could not be updated.
 func UpdateFilePerm(filename string, perm int) error {
 	newPerms := os.FileMode(perm)
-	err := os.Chmod(filename, newPerms)
-	if err != nil {
-		return err
-	}
-	return nil
+	return os.Chmod(filename, newPerms)
 }
