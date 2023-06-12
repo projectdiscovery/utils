@@ -2,6 +2,7 @@ package reader
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -81,11 +82,18 @@ func NewReusableReadCloser(raw interface{}) (*ReusableReadCloser, error) {
 
 // Read []byte from Reader
 func (r ReusableReadCloser) Read(p []byte) (int, error) {
-	n, err := r.Reader.Read(p)
-	if err == io.EOF {
+	n, err := r.read(p)
+	if errors.Is(err, io.EOF) {
 		r.reset()
 	}
 	return n, err
+}
+
+func (r *ReusableReadCloser) read(p []byte) (int, error) {
+	r.RLock()
+	defer r.RUnlock()
+
+	return r.Reader.Read(p)
 }
 
 func (r ReusableReadCloser) reset() {
