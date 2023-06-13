@@ -5,7 +5,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/maps"
 )
+
+const IterateCount = 100
 
 func TestSyncLockMap(t *testing.T) {
 	m := &SyncLockMap[string, string]{
@@ -61,5 +64,80 @@ func TestSyncLockMap(t *testing.T) {
 			return nil
 		})
 		require.Nil(t, err, "failed to iterate map")
+	})
+}
+
+func TestSyncLockMapWithConcurrency(t *testing.T) {
+	internalMap := Map[string, string]{
+		"key1": "value1",
+		"key2": "value2",
+	}
+
+	m := &SyncLockMap[string, string]{
+		Map: internalMap,
+	}
+
+	t.Run("Test Clone", func(t *testing.T) {
+		for i := 0; i < IterateCount; i++ {
+			syncMap := m.Clone()
+			maps.Equal(internalMap, syncMap.Map)
+		}
+	})
+
+	t.Run("Test GetKeys", func(t *testing.T) {
+		for i := 0; i < IterateCount; i++ {
+			value, ok := m.Get("key1")
+			require.True(t, ok, "failed to get item from map")
+			require.Equal(t, "value1", value, "failed to get item from map")
+		}
+	})
+
+	t.Run("Test Set", func(t *testing.T) {
+		for i := 0; i < IterateCount; i++ {
+			err := m.Set("key3", "value3")
+			require.Nil(t, err, "failed to set item in map")
+			value, ok := m.Get("key3")
+			require.True(t, ok, "failed to get item from map")
+			require.Equal(t, "value3", value, "failed to get item from map")
+		}
+	})
+
+	t.Run("Test Has", func(t *testing.T) {
+		for i := 0; i < IterateCount; i++ {
+			ok := m.Has("key2")
+			require.True(t, ok, "failed to check item in map")
+		}
+	})
+
+	t.Run("Test Has Negative", func(t *testing.T) {
+		for i := 0; i < IterateCount; i++ {
+			ok := m.Has("key4")
+			require.False(t, ok, "failed to check item in map")
+		}
+	})
+
+	t.Run("Test IsEmpty", func(t *testing.T) {
+		emptyMap := &SyncLockMap[string, string]{}
+		for i := 0; i < IterateCount; i++ {
+			ok := m.IsEmpty()
+			require.False(t, ok, "failed to check item in map")
+			ok = emptyMap.IsEmpty()
+			require.True(t, ok, "failed to check item in map")
+		}
+	})
+
+	t.Run("Test GetAll", func(t *testing.T) {
+		for i := 0; i < IterateCount; i++ {
+			values := m.GetAll()
+			require.Equal(t, 3, len(values), "failed to get all items from map")
+		}
+	})
+
+	t.Run("Test GetKeyWithValue", func(t *testing.T) {
+		for i := 0; i < IterateCount; i++ {
+			key, ok := m.GetKeyWithValue("value1")
+			require.True(t, ok, "failed to get key from map")
+			require.Equal(t, "key1", key, "failed to get key from map")
+		}
 	})
 }

@@ -269,25 +269,37 @@ func TestVisitSequential(t *testing.T) {
 }
 
 func TestVisitRandom(t *testing.T) {
-	intSlice := []int{1, 2, 3}
-	var res []int
-	visit := func(index int, item int) error {
-		res = append(res, item)
-		return nil
+	intSlice := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+	var timesDifferent int
+	for i := 0; i < 100; i++ {
+		var res []int
+		visit := func(index int, item int) error {
+			res = append(res, item)
+			return nil
+		}
+		VisitRandom(intSlice, visit)
+		if !Equal(intSlice, res) {
+			timesDifferent++
+		}
+		require.ElementsMatch(t, intSlice, res)
 	}
-	VisitRandom(intSlice, visit)
-	require.NotEqual(t, intSlice, res)
-	require.ElementsMatch(t, intSlice, res)
+	require.True(t, timesDifferent > 0)
 }
 
 func TestVisitRandomZero(t *testing.T) {
 	intSlice := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
-	var res []int
-	visit := func(index int, item int) error {
-		res = append(res, item)
-		return nil
+	var timesDifferent int
+	for i := 0; i < 100; i++ {
+		var res []int
+		visit := func(index int, item int) error {
+			res = append(res, item)
+			return nil
+		}
+		VisitRandomZero(intSlice, visit)
+		if !Equal(intSlice, res) {
+			timesDifferent++
+		}
+		require.ElementsMatch(t, intSlice, res)
 	}
-	VisitRandomZero(intSlice, visit)
-	require.NotEqual(t, intSlice, res)
-	require.ElementsMatch(t, intSlice, res)
+	require.True(t, timesDifferent > 0)
 }

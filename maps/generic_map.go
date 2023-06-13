@@ -1,5 +1,7 @@
 package mapsutil
 
+import "golang.org/x/exp/maps"
+
 // Map wraps a generic map type
 type Map[K, V comparable] map[K]V
 
@@ -26,6 +28,12 @@ func (m Map[K, V]) GetOrDefault(key K, defaultValue V) V {
 	return defaultValue
 }
 
+// Get returns the value for the provided key
+func (m Map[K, V]) Get(key K) (V, bool) {
+	val, ok := m[key]
+	return val, ok
+}
+
 // Merge the current map with the provided one
 func (m Map[K, V]) Merge(n map[K]V) {
 	for k, v := range n {
@@ -43,4 +51,19 @@ func (m Map[K, V]) GetKeyWithValue(value V) (K, bool) {
 	}
 
 	return zero, false
+}
+
+// IsEmpty checks if the current map is empty
+func (m Map[K, V]) IsEmpty() bool {
+	return len(m) == 0
+}
+
+// Clone the current map
+func (m Map[K, V]) Clone() Map[K, V] {
+	return maps.Clone(m)
+}
+
+// Set the provided key with the provided value
+func (m Map[K, V]) Set(key K, value V) {
+	m[key] = value
 }

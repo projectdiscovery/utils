@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -485,4 +486,36 @@ func substituteEnvVars(line string) string {
 		}
 	}
 	return line
+}
+
+// FileSizeToByteLen converts a file size with units(kb, mb, gb, tb) to byte length
+// e.g. 1kb -> 1024
+// If no unit is provided, it will fallback to mb. e.g: '2' will be converted to 2097152.
+func FileSizeToByteLen(fileSize string) (int, error) {
+	fileSize = strings.ToLower(fileSize)
+	// default to mb
+	if size, err := strconv.Atoi(fileSize); err == nil {
+		return size * 1024 * 1024, nil
+	}
+	if len(fileSize) < 3 {
+		return 0, errors.New("invalid size value")
+	}
+	sizeUnit := fileSize[len(fileSize)-2:]
+	size, err := strconv.Atoi(fileSize[:len(fileSize)-2])
+	if err != nil {
+		return 0, errors.New("parse error: " + err.Error())
+	}
+	if size < 0 {
+		return 0, errors.New("size cannot be negative")
+	}
+	if strings.EqualFold(sizeUnit, "kb") {
+		return size * 1024, nil
+	} else if strings.EqualFold(sizeUnit, "mb") {
+		return size * 1024 * 1024, nil
+	} else if strings.EqualFold(sizeUnit, "gb") {
+		return size * 1024 * 1024 * 1024, nil
+	} else if strings.EqualFold(sizeUnit, "tb") {
+		return size * 1024 * 1024 * 1024 * 1024, nil
+	}
+	return 0, errors.New("unsupported size unit")
 }
