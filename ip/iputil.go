@@ -288,7 +288,7 @@ func WhatsMyIP() (string, error) {
 		return "", err
 	}
 
-	return string(ip), nil
+	return strings.Trim(string(ip), "\n\r\t "), nil
 }
 
 // GetSourceIP gets the local ip based the destination ip
