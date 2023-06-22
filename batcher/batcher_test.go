@@ -2,7 +2,6 @@ package batcher
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -15,12 +14,16 @@ func TestBatcher(t *testing.T) {
 		got              int
 		gotBatches       int
 	)
-	bat := New(batchSize, time.Second, func(t []int) {
+	callback := func(t []int) {
 		gotBatches++
 		for range t {
 			got++
 		}
-	})
+	}
+	bat := New[int](
+		WithMaxCapacity[int](batchSize),
+		WithFlushCallback[int](callback),
+	)
 
 	bat.Run()
 
