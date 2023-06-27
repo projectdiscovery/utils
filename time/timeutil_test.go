@@ -22,3 +22,13 @@ func TestMsToTime(t *testing.T) {
 func TestSToTime(t *testing.T) {
 	// TBD in chaos + bbsh
 }
+
+func TestParseDuration(t *testing.T) {
+	tt, err := ParseDuration("2d")
+	require.Nil(t, err, "couldn't parse duration")
+	require.Equal(t, time.Hour*24*2, tt, "times don't match")
+
+	tt, err = ParseDuration("2")
+	require.Nil(t, err, "couldn't parse duration")
+	require.Equal(t, time.Second*2, tt, "times don't match")
+}

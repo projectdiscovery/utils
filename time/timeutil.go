@@ -3,6 +3,7 @@ package timeutil
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -54,4 +55,22 @@ func ParseUnixTimestamp(s string) (time.Time, error) {
 		return time.Time{}, err
 	}
 	return time.Unix(i, 0), nil
+}
+
+// ParseDuration is similar to time.ParseDuration but also supports days unit
+// if the unit is omitted, it defaults to seconds
+func ParseDuration(s string) (time.Duration, error) {
+	s = strings.ToLower(s)
+	// default to sec
+	if _, err := strconv.Atoi(s); err == nil {
+		s = s + "s"
+	}
+	// parse days unit as hours
+	if strings.HasSuffix(s, "d") {
+		s = strings.TrimSuffix(s, "d")
+		if days, err := strconv.Atoi(s); err == nil {
+			s = strconv.Itoa(days*24) + "h"
+		}
+	}
+	return time.ParseDuration(s)
 }
