@@ -26,7 +26,7 @@ func checkCurrentUserRoot() (bool, error) {
 		return false, err
 	}
 
-	defer windows.FreeSid(sid)
+	defer func() { _ = windows.FreeSid(sid) }()
 
 	// This appears to cast a null pointer so I'm not sure why this
 	// works, but this guy says it does and it Works for Me™:
