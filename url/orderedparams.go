@@ -12,7 +12,7 @@ import (
 
 // OrderedParams is a map that preserves the order of elements
 type OrderedParams struct {
-	om *mapsutil.OrderedMap[string, []string]
+	om mapsutil.OrderedMap[string, []string]
 }
 
 // NewOrderedParams creates a new ordered params
@@ -90,7 +90,7 @@ func (o *OrderedParams) Encode() string {
 // Decode is opposite of Encode() where ("bar=baz&foo=quux") is parsed
 // Parameters are loosely parsed to allow any scenario
 func (o *OrderedParams) Decode(raw string) {
-	if o.om == nil {
+	if o.om.Len() == 0 {
 		o.om = mapsutil.NewOrderedMap[string, []string]()
 	}
 	arr := []string{}

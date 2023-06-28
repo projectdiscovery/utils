@@ -104,16 +104,16 @@ func TestURLEncode(t *testing.T) {
 func TestURLDecode(t *testing.T) {
 	testcases := []struct {
 		url      string
-		Expected Params
+		Expected string
 	}{
 		{
 			"/ctc/servlet/ConfigServlet?param=com.sap.ctc.util.FileSystemConfig;EXECUTE_CMD;CMDLINE=tasklist",
-			Params{"param": []string{"com.sap.ctc.util.FileSystemConfig;EXECUTE_CMD;CMDLINE=tasklist"}},
+			"param=com.sap.ctc.util.FileSystemConfig;EXECUTE_CMD;CMDLINE=tasklist",
 		},
 	}
 	for _, v := range testcases {
 		parsed, err := Parse(v.url)
 		require.Nilf(t, err, "failed to parse url %v", v.url)
-		require.Equalf(t, v.Expected, parsed.Query(), "failed to decode params in url %v expected %v got %v", v.url, v.Expected, parsed.Query())
+		require.Equalf(t, v.Expected, parsed.Query().Encode(), "failed to decode params in url %v expected %v got %v", v.url, v.Expected, parsed.Query())
 	}
 }

