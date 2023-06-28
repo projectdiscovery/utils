@@ -13,8 +13,10 @@ type OrderedMap[k comparable, v any] struct {
 
 // Set sets a value in the OrderedMap (if the key already exists, it will be overwritten)
 func (o *OrderedMap[k, v]) Set(key k, value v) {
+	if _, ok := o.m[key]; !ok {
+		o.keys = append(o.keys, key)
+	}
 	o.m[key] = value
-	o.keys = append(o.keys, key)
 }
 
 // Get gets a value from the OrderedMap
