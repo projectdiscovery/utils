@@ -133,6 +133,14 @@ func (o *OrderedParams) Decode(raw string) {
 // Clone returns a copy of the ordered params
 func (o *OrderedParams) Clone() *OrderedParams {
 	clone := NewOrderedParams()
-	clone.om = o.om.Clone()
+	o.om.Iterate(func(key string, value []string) bool {
+		// this needs to be a deep copy (from reference in nuclei race condition issue)
+		if len(value) != 0 {
+			clone.Add(key, value...)
+		} else {
+			clone.Add(key, "")
+		}
+		return true
+	})
 	return clone
 }
