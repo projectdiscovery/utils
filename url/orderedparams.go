@@ -22,6 +22,11 @@ func NewOrderedParams() *OrderedParams {
 	}
 }
 
+// IsEmpty checks if the OrderedParams is empty
+func (o *OrderedParams) IsEmpty() bool {
+	return o.om.IsEmpty()
+}
+
 // Add Parameters to store
 func (o *OrderedParams) Add(key string, value ...string) {
 	if arr, ok := o.om.Get(key); ok && len(arr) > 0 {
