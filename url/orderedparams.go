@@ -27,6 +27,11 @@ func (o *OrderedParams) IsEmpty() bool {
 	return o.om.IsEmpty()
 }
 
+// Update is similar to Set but it takes value as slice (similar to internal implementation of url.Values)
+func (o *OrderedParams) Update(key string, value []string) {
+	o.om.Set(key, value)
+}
+
 // Iterate iterates over the OrderedParams
 func (o *OrderedParams) Iterate(f func(key string, value []string) bool) {
 	o.om.Iterate(func(key string, value []string) bool {
@@ -57,6 +62,15 @@ func (o *OrderedParams) Get(key string) string {
 		return ""
 	}
 	return val[0]
+}
+
+// GetAll returns all values of given key or returns empty slice if key doesn't exist
+func (o *OrderedParams) GetAll(key string) []string {
+	val, ok := o.om.Get(key)
+	if !ok || len(val) == 0 {
+		return []string{}
+	}
+	return val
 }
 
 // Has returns if given key exists
