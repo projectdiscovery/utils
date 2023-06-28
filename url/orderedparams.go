@@ -27,6 +27,13 @@ func (o *OrderedParams) IsEmpty() bool {
 	return o.om.IsEmpty()
 }
 
+// Iterate iterates over the OrderedParams
+func (o *OrderedParams) Iterate(f func(key string, value []string) bool) {
+	o.om.Iterate(func(key string, value []string) bool {
+		return f(key, value)
+	})
+}
+
 // Add Parameters to store
 func (o *OrderedParams) Add(key string, value ...string) {
 	if arr, ok := o.om.Get(key); ok && len(arr) > 0 {
