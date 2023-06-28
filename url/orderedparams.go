@@ -59,7 +59,7 @@ func (o *OrderedParams) Del(key string) {
 
 // Merges given paramset into existing one with base as priority
 func (o *OrderedParams) Merge(raw string) {
-
+	o.Decode(raw)
 }
 
 // Encode returns encoded parameters by preserving order
@@ -123,4 +123,11 @@ func (o *OrderedParams) Decode(raw string) {
 			o.Add(d[0], "")
 		}
 	}
+}
+
+// Clone returns a copy of the ordered params
+func (o *OrderedParams) Clone() *OrderedParams {
+	clone := NewOrderedParams()
+	clone.om = o.om.Clone()
+	return clone
 }
