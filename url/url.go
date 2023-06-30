@@ -18,10 +18,10 @@ var DisableAutoCorrect bool
 type URL struct {
 	*url.URL
 
-	Original   string // original or given url(without params if any)
-	Unsafe     bool   // If request is unsafe (skip validation)
-	IsRelative bool   // If URL is relative
-	Params     Params // Query Parameters
+	Original   string         // original or given url(without params if any)
+	Unsafe     bool           // If request is unsafe (skip validation)
+	IsRelative bool           // If URL is relative
+	Params     *OrderedParams // Query Parameters
 	// should call Update() method when directly updating wrapped url.URL or parameters
 }
 
@@ -34,7 +34,7 @@ func (u *URL) MergePath(newrelpath string, unsafe bool) error {
 	if err != nil {
 		return err
 	}
-	u.Params.Merge(ux.Params)
+	u.Params.Merge(ux.Params.Encode())
 	u.Path = mergePaths(u.Path, ux.Path)
 	if ux.Fragment != "" {
 		u.Fragment = ux.Fragment
@@ -59,7 +59,7 @@ func (u *URL) Update() {
 }
 
 // Query returns Query Params
-func (u *URL) Query() Params {
+func (u *URL) Query() *OrderedParams {
 	return u.Params
 }
 
@@ -87,12 +87,7 @@ func (u *URL) Clone() *URL {
 		ForceQuery:  u.ForceQuery,
 		RawFragment: u.RawFragment,
 	}
-	params := make(Params)
-	if u.Params != nil {
-		for k, v := range u.Params {
-			params[k] = v
-		}
-	}
+	params := u.Params.Clone()
 	return &URL{
 		URL:        ux,
 		Params:     params,
@@ -140,7 +135,7 @@ func (u *URL) GetRelativePath() string {
 		}
 		buff.WriteString(u.Path)
 	}
-	if len(u.Params) > 0 {
+	if u.Params.om.Len() > 0 {
 		buff.WriteRune('?')
 		buff.WriteString(u.Params.Encode())
 	}
@@ -207,7 +202,7 @@ func (u *URL) parseUnsafeRelativePath() {
 // fetchParams retrieves query parameters from URL
 func (u *URL) fetchParams() {
 	if u.Params == nil {
-		u.Params = make(Params)
+		u.Params = NewOrderedParams()
 	}
 	// parse fragments if any
 	if i := strings.IndexRune(u.Original, '#'); i != -1 {
@@ -236,6 +231,7 @@ func ParseURL(inputURL string, unsafe bool) (*URL, error) {
 		URL:      &url.URL{},
 		Original: inputURL,
 		Unsafe:   unsafe,
+		Params:   NewOrderedParams(),
 	}
 	u.fetchParams()
 	// filter out fragments and parameters only then parse path
