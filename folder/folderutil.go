@@ -167,31 +167,46 @@ func AppConfigDirOrDefault(defaultAppConfigDir string, toolName string) string {
 	return filepath.Join(userConfigDir, toolName)
 }
 
-// MigrateDir moves all files from sourceDir to destinationDir and removes sourceDir
+// MigrateDir moves all files and non-empty directories from sourceDir to destinationDir and removes sourceDir
 func MigrateDir(sourceDir string, destinationDir string) error {
 	// trim trailing slash to avoid slash related issues
 	sourceDir = strings.TrimSuffix(sourceDir, Separator)
 	destinationDir = strings.TrimSuffix(destinationDir, Separator)
 
-	err := os.MkdirAll(destinationDir, os.ModePerm)
+	entries, err := os.ReadDir(sourceDir)
 	if err != nil {
 		return err
 	}
 
-	files, err := GetFiles(sourceDir)
-	if err != nil {
-		return err
-	}
+	for _, entry := range entries {
+		sourcePath := filepath.Join(sourceDir, entry.Name())
+		destPath := filepath.Join(destinationDir, entry.Name())
 
-	for _, file := range files {
-		destinationFile := strings.Replace(file, sourceDir, destinationDir, 1)
-		err = os.Rename(file, destinationFile)
-		if err != nil {
-			return err
+		if entry.IsDir() {
+			subentries, err := os.ReadDir(sourcePath)
+			if err != nil {
+				return err
+			}
+			if len(subentries) > 0 {
+				err = os.MkdirAll(destPath, os.ModePerm)
+				if err != nil {
+					return err
+				}
+
+				err = MigrateDir(sourcePath, destPath)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			err = os.Rename(sourcePath, destPath)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
-	err = os.Remove(sourceDir)
+	err = os.RemoveAll(sourceDir)
 	if err != nil {
 		return err
 	}
