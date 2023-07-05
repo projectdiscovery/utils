@@ -43,7 +43,7 @@ func TestSyncLockMap(t *testing.T) {
 	})
 
 	t.Run("Test delete", func(t *testing.T) {
-		m.Set("key5", "value5")
+		_ = m.Set("key5", "value5")
 		if !m.Has("key5") {
 			t.Error("couldn't set item to delete")
 		}

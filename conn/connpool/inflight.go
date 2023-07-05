@@ -20,7 +20,7 @@ func NewInFlightConns() (*InFlightConns, error) {
 }
 
 func (i *InFlightConns) Add(conn net.Conn) {
-	i.inflightConns.Set(conn, struct{}{})
+	_ = i.inflightConns.Set(conn, struct{}{})
 }
 
 func (i *InFlightConns) Remove(conn net.Conn) {

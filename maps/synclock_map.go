@@ -108,7 +108,7 @@ func (s *SyncLockMap[K, V]) Clear() bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	return s.Clear()
+	return s.Map.Clear()
 }
 
 // GetKeywithValue returns the first key having value
