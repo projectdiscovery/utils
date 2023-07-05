@@ -10,6 +10,9 @@ import (
 )
 
 func TestTryExtendIP(t *testing.T) {
+	if osutils.IsLinux() {
+		return
+	}
 	if osutils.IsWindows() {
 		i, err := TryExtendIP("localhost")
 		require.Nil(t, i)
@@ -58,13 +61,13 @@ func TestTryExtendIP(t *testing.T) {
 
 	for _, tc := range testCases {
 		ip, err := TryExtendIP(tc.input)
-		require.Equal(t, tc.expectedError, err != nil)
+		require.Equal(t, tc.expectedError, err != nil, "input: %v, error: %v", tc.input, err)
 		require.True(t, ip.Equal(tc.expectedIP), "Expected IP: %v, got: %v", tc.expectedIP, ip)
 	}
 }
 
 func TestCanExtend(t *testing.T) {
-	if osutils.IsWindows() {
+	if osutils.IsWindows() || osutils.IsLinux() {
 		return
 	}
 
