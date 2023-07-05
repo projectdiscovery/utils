@@ -8,11 +8,6 @@ import (
 	"github.com/projectdiscovery/blackrock"
 )
 
-func init() {
-	//todo:this is automatic with go1.20
-	rand.Seed(time.Now().UnixNano())
-}
-
 // PruneEmptyStrings from the slice
 func PruneEmptyStrings(v []string) []string {
 	return PruneEqual(v, "")
