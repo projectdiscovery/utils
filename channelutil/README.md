@@ -23,11 +23,11 @@ when a buffer of particular channel is full.
 	
 	
 			Ex:
-					   $ 			 <-  Source Channel
-				     /   \
-				    $  	  $			 <-  Relay Channels
-			       / \ 	 / \
-			      $   $ $   $		 <-  Leaf Channels (i.e Sinks)
+                                    $ 			 <-  Source Channel
+	                          /   \
+	                         $     $			 <-  Relay Channels
+			        / \    / \
+			       $   $  $   $		 <-  Leaf Channels (i.e Sinks)
 
 		*Simplicity purpose 2 childs are shown for each nodebut each node(except root node) has 5 childs
 ```	
@@ -53,7 +53,7 @@ Go Standard library provides [reflect.SelectDir](https://pkg.go.dev/reflect#Sele
 		Ex:
 			$   $ $   $		 <-  Leaf Channels (i.e Sources)
 			 \ /   \ /
-		      $  	$		 <-  Relay Channels
+		          $  	$		 <-  Relay Channels
 			   \   /
 			     $           <- Sink Channel
 
