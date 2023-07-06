@@ -539,3 +539,43 @@ func TestFileSizeToByteLen(t *testing.T) {
 	require.NotNil(t, err, "shouldn't convert file size to byte len: %s", err)
 	require.ErrorContains(t, err, "parse error")
 }
+
+func TestOpenOrCreateFile(t *testing.T) {
+	t.Run("should open an existing file", func(t *testing.T) {
+		testFileName := "existingfile.txt"
+
+		_, err := os.Create(testFileName)
+		if err != nil {
+			t.Fatalf("failed to create test file: %v", err)
+		}
+
+		_, err = OpenOrCreateFile(testFileName)
+		require.NoError(t, err)
+		require.True(t, FileExists(testFileName))
+
+		err = os.Remove(testFileName)
+		if err != nil {
+			t.Fatalf("failed to remove test file: %v", err)
+		}
+	})
+
+	t.Run("should create file if it does not exist", func(t *testing.T) {
+		testFileName := "testfile.txt"
+		_, err := OpenOrCreateFile(testFileName)
+
+		require.NoError(t, err)
+		require.True(t, FileExists(testFileName))
+
+		err = os.Remove(testFileName)
+		if err != nil {
+			t.Fatalf("failed to remove test file: %v", err)
+		}
+	})
+
+	t.Run("should fail when opening a non-existing file", func(t *testing.T) {
+		testFileName := "/nonexistentdirectory/testfile.txt"
+		_, err := OpenOrCreateFile(testFileName)
+
+		require.Error(t, err)
+	})
+}

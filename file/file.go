@@ -519,3 +519,19 @@ func FileSizeToByteLen(fileSize string) (int, error) {
 	}
 	return 0, errors.New("unsupported size unit")
 }
+
+// OpenOrCreate opens the named file for reading. If successful, methods on
+// the returned file can be used for reading; the associated file
+// descriptor has mode O_RDWR.
+// If there is an error, it'll create the named file with mode 0666.
+// If successful, methods on the returned File can be used for I/O;
+// the associated file descriptor has mode O_RDWR.
+// If there is an error, it will be of type *PathError.
+func OpenOrCreateFile(name string) (*os.File, error) {
+	file, err := os.OpenFile(name, os.O_RDWR, 0666)
+
+	if !os.IsNotExist(err) {
+		return file, nil
+	}
+	return os.OpenFile(name, os.O_RDWR|os.O_CREATE, 0666)
+}
