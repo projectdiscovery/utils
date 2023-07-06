@@ -544,16 +544,18 @@ func TestOpenOrCreateFile(t *testing.T) {
 	t.Run("should open an existing file", func(t *testing.T) {
 		testFileName := "existingfile.txt"
 
-		_, err := os.Create(testFileName)
+		file, err := os.Create(testFileName)
 		if err != nil {
 			t.Fatalf("failed to create test file: %v", err)
 		}
+		file.Close()
 
-		_, err = OpenOrCreateFile(testFileName)
+		file, err = OpenOrCreateFile(testFileName)
 		require.NoError(t, err)
 		require.True(t, FileExists(testFileName))
+		file.Close()
 
-		err = os.Remove(testFileName)
+		err = os.RemoveAll(testFileName)
 		if err != nil {
 			t.Fatalf("failed to remove test file: %v", err)
 		}
@@ -561,12 +563,12 @@ func TestOpenOrCreateFile(t *testing.T) {
 
 	t.Run("should create file if it does not exist", func(t *testing.T) {
 		testFileName := "testfile.txt"
-		_, err := OpenOrCreateFile(testFileName)
-
+		file, err := OpenOrCreateFile(testFileName)
 		require.NoError(t, err)
 		require.True(t, FileExists(testFileName))
+		file.Close()
 
-		err = os.Remove(testFileName)
+		err = os.RemoveAll(testFileName)
 		if err != nil {
 			t.Fatalf("failed to remove test file: %v", err)
 		}

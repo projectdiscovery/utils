@@ -527,11 +527,10 @@ func FileSizeToByteLen(fileSize string) (int, error) {
 // If successful, methods on the returned File can be used for I/O;
 // the associated file descriptor has mode O_RDWR.
 // If there is an error, it will be of type *PathError.
+// Note: The file gets created only if the target directory exists
 func OpenOrCreateFile(name string) (*os.File, error) {
-	file, err := os.OpenFile(name, os.O_RDWR, 0666)
-
-	if !os.IsNotExist(err) {
-		return file, nil
+	if FileExists(name) {
+		return os.OpenFile(name, os.O_RDWR, 0666)
 	}
 	return os.OpenFile(name, os.O_RDWR|os.O_CREATE, 0666)
 }
