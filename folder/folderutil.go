@@ -1,6 +1,7 @@
 package folderutil
 
 import (
+	"errors"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -168,10 +169,14 @@ func AppConfigDirOrDefault(defaultAppConfigDir string, toolName string) string {
 }
 
 // MigrateDir moves all files and non-empty directories from sourceDir to destinationDir and removes sourceDir
-func MigrateDir(sourceDir string, destinationDir string) error {
+func MigrateDir(sourceDir string, destinationDir string, removeSourceDir bool) error {
 	// trim trailing slash to avoid slash related issues
 	sourceDir = strings.TrimSuffix(sourceDir, Separator)
 	destinationDir = strings.TrimSuffix(destinationDir, Separator)
+
+	if sourceDir == destinationDir {
+		return errors.New("sourceDir and destinationDir cannot be the same")
+	}
 
 	entries, err := os.ReadDir(sourceDir)
 	if err != nil {
@@ -193,7 +198,7 @@ func MigrateDir(sourceDir string, destinationDir string) error {
 					return err
 				}
 
-				err = MigrateDir(sourcePath, destPath)
+				err = MigrateDir(sourcePath, destPath, removeSourceDir)
 				if err != nil {
 					return err
 				}
@@ -206,9 +211,11 @@ func MigrateDir(sourceDir string, destinationDir string) error {
 		}
 	}
 
-	err = os.RemoveAll(sourceDir)
-	if err != nil {
-		return err
+	if removeSourceDir {
+		err = os.RemoveAll(sourceDir)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
