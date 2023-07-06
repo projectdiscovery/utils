@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	fileutil "github.com/projectdiscovery/utils/file"
 )
 
 // Separator evaluated at runtime
@@ -174,8 +176,22 @@ func MigrateDir(sourceDir string, destinationDir string, removeSourceDir bool) e
 	sourceDir = strings.TrimSuffix(sourceDir, Separator)
 	destinationDir = strings.TrimSuffix(destinationDir, Separator)
 
-	if sourceDir == destinationDir {
-		return errors.New("sourceDir and destinationDir cannot be the same")
+	if !fileutil.FolderExists(sourceDir) {
+		return errors.New("source directory doesn't exist")
+	}
+
+	if fileutil.FolderExists(destinationDir) {
+		sourceStat, err := os.Stat(sourceDir)
+		if err != nil {
+			return err
+		}
+		destinationStat, err := os.Stat(destinationDir)
+		if err != nil {
+			return err
+		}
+		if os.SameFile(sourceStat, destinationStat) {
+			return errors.New("sourceDir and destinationDir cannot be the same")
+		}
 	}
 
 	entries, err := os.ReadDir(sourceDir)

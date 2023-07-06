@@ -67,7 +67,7 @@ func TestMigrateDir(t *testing.T) {
 		err := MigrateDir(sourceDir, destinationDir, true)
 
 		// then: verify if files migrated successfully
-		assert.NoError(t, err)
+		assert.NoError(t, err, sourceDir, destinationDir)
 
 		assert.True(t, fileutil.FileExists(filepath.Join(destinationDir, "/file1.txt")))
 		assert.True(t, fileutil.FileExists(filepath.Join(destinationDir, "/file2.txt")))
