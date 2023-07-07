@@ -2,6 +2,7 @@ package folderutil
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -21,12 +22,12 @@ func TestGetFiles(t *testing.T) {
 
 func TestMigrateDir(t *testing.T) {
 	t.Run("destination folder creation error", func(t *testing.T) {
-		err := MigrateDir("/source", "/:/dest", true)
+		err := MigrateDir("/source", "/:/dest")
 		assert.Error(t, err)
 	})
 
 	t.Run("source folder not found error", func(t *testing.T) {
-		err := MigrateDir("/notExistingFolder", "/dest", true)
+		err := MigrateDir("/notExistingFolder", "/dest")
 		assert.Error(t, err)
 	})
 
@@ -39,7 +40,7 @@ func TestMigrateDir(t *testing.T) {
 		_ = os.WriteFile(filepath.Join(sourceDir, "/file2.txt"), []byte("file2"), os.ModePerm)
 
 		// when: try to migrate files
-		err := MigrateDir(sourceDir, sourceDir, true)
+		err := MigrateDir(sourceDir, sourceDir)
 
 		// then: verify if files migrated successfully
 		assert.Error(t, err)
@@ -64,7 +65,7 @@ func TestMigrateDir(t *testing.T) {
 		defer os.RemoveAll(destinationDir)
 
 		// when: try to migrate files
-		err := MigrateDir(sourceDir, destinationDir, true)
+		err := MigrateDir(sourceDir, destinationDir)
 
 		// then: verify if files migrated successfully
 		assert.NoError(t, err, sourceDir, destinationDir)
@@ -95,7 +96,8 @@ func TestMigrateDir(t *testing.T) {
 		defer os.RemoveAll(destinationDir)
 
 		// when: try to migrate files
-		err := MigrateDir(sourceDir, destinationDir, false)
+		RemoveSourceDirAfterMigration = false
+		err := MigrateDir(sourceDir, destinationDir)
 
 		// then: verify if files migrated successfully
 		assert.NoError(t, err)
@@ -109,4 +111,33 @@ func TestMigrateDir(t *testing.T) {
 
 		assert.True(t, fileutil.FolderExists(sourceDir))
 	})
+}
+
+func TestMustMigrateDir(t *testing.T) {
+	t.Run("it should panic if MigrateDir returns an error", func(t *testing.T) {
+		// // given
+		sourceDir := "/notExistingFolder"
+		destinationDir := "/dest"
+
+		ExitsOnFailure(t, func() {
+			MustMigrateDir(sourceDir, destinationDir)
+		})
+	})
+}
+
+func ExitsOnFailure(t *testing.T, f func()) {
+	if os.Getenv("BE_CRASHER") == "1" {
+		f()
+		return
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run="+t.Name())
+	cmd.Env = append(os.Environ(), "BE_CRASHER=1")
+	err := cmd.Run()
+
+	if e, ok := err.(*exec.ExitError); ok && !e.Success() {
+		return
+	}
+
+	t.Fatalf("process ran with err %v, want exit status 1", err)
 }

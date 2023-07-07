@@ -9,10 +9,15 @@ import (
 	"strings"
 
 	fileutil "github.com/projectdiscovery/utils/file"
+
+	"github.com/projectdiscovery/gologger"
 )
 
-// Separator evaluated at runtime
-var Separator = string(os.PathSeparator)
+var (
+	// Separator evaluated at runtime
+	Separator                     = string(os.PathSeparator)
+	RemoveSourceDirAfterMigration = true
+)
 
 const (
 	UnixPathSeparator    = "/"
@@ -171,7 +176,7 @@ func AppConfigDirOrDefault(defaultAppConfigDir string, toolName string) string {
 }
 
 // MigrateDir moves all files and non-empty directories from sourceDir to destinationDir and removes sourceDir
-func MigrateDir(sourceDir string, destinationDir string, removeSourceDir bool) error {
+func MigrateDir(sourceDir, destinationDir string) error {
 	// trim trailing slash to avoid slash related issues
 	sourceDir = strings.TrimSuffix(sourceDir, Separator)
 	destinationDir = strings.TrimSuffix(destinationDir, Separator)
@@ -214,7 +219,7 @@ func MigrateDir(sourceDir string, destinationDir string, removeSourceDir bool) e
 					return err
 				}
 
-				err = MigrateDir(sourcePath, destPath, removeSourceDir)
+				err = MigrateDir(sourcePath, destPath)
 				if err != nil {
 					return err
 				}
@@ -227,7 +232,7 @@ func MigrateDir(sourceDir string, destinationDir string, removeSourceDir bool) e
 		}
 	}
 
-	if removeSourceDir {
+	if RemoveSourceDirAfterMigration {
 		err = os.RemoveAll(sourceDir)
 		if err != nil {
 			return err
@@ -235,4 +240,10 @@ func MigrateDir(sourceDir string, destinationDir string, removeSourceDir bool) e
 	}
 
 	return nil
+}
+
+func MustMigrateDir(sourceDir, destinationDir string) {
+	if err := MigrateDir(sourceDir, destinationDir); err != nil {
+		gologger.Fatal().Msgf("could not move %s to %s: %s", sourceDir, destinationDir, err)
+	}
 }
