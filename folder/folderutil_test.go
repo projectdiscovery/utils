@@ -114,7 +114,7 @@ func TestMigrateDir(t *testing.T) {
 }
 
 func TestMustMigrateDir(t *testing.T) {
-	t.Run("it should panic if MigrateDir returns an error", func(t *testing.T) {
+	t.Run("it should exit if MigrateDir returns an error", func(t *testing.T) {
 		// // given
 		sourceDir := "/notExistingFolder"
 		destinationDir := "/dest"
