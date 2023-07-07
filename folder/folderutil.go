@@ -9,14 +9,11 @@ import (
 	"strings"
 
 	fileutil "github.com/projectdiscovery/utils/file"
-
-	"github.com/projectdiscovery/gologger"
 )
 
 var (
 	// Separator evaluated at runtime
-	Separator                     = string(os.PathSeparator)
-	RemoveSourceDirAfterMigration = true
+	Separator = string(os.PathSeparator)
 )
 
 const (
@@ -175,38 +172,42 @@ func AppConfigDirOrDefault(defaultAppConfigDir string, toolName string) string {
 	return filepath.Join(userConfigDir, toolName)
 }
 
-// MigrateDir moves all files and non-empty directories from sourceDir to destinationDir and removes sourceDir
-func MigrateDir(sourceDir, destinationDir string) error {
-	// trim trailing slash to avoid slash related issues
-	sourceDir = strings.TrimSuffix(sourceDir, Separator)
-	destinationDir = strings.TrimSuffix(destinationDir, Separator)
+// Remove source directory after successful sync
+var RemoveSourceDirAfterSync = true
 
-	if !fileutil.FolderExists(sourceDir) {
+// SyncDirectory sync all files and non-empty directories from source to destination folder
+// optionally removes source directory and removes source
+func SyncDirectory(source, destination string) error {
+	// trim trailing slash to avoid slash related issues
+	source = strings.TrimSuffix(source, Separator)
+	destination = strings.TrimSuffix(destination, Separator)
+
+	if !fileutil.FolderExists(source) {
 		return errors.New("source directory doesn't exist")
 	}
 
-	if fileutil.FolderExists(destinationDir) {
-		sourceStat, err := os.Stat(sourceDir)
+	if fileutil.FolderExists(destination) {
+		sourceStat, err := os.Stat(source)
 		if err != nil {
 			return err
 		}
-		destinationStat, err := os.Stat(destinationDir)
+		destinationStat, err := os.Stat(destination)
 		if err != nil {
 			return err
 		}
 		if os.SameFile(sourceStat, destinationStat) {
-			return errors.New("sourceDir and destinationDir cannot be the same")
+			return errors.New("source and destination cannot be the same")
 		}
 	}
 
-	entries, err := os.ReadDir(sourceDir)
+	entries, err := os.ReadDir(source)
 	if err != nil {
 		return err
 	}
 
 	for _, entry := range entries {
-		sourcePath := filepath.Join(sourceDir, entry.Name())
-		destPath := filepath.Join(destinationDir, entry.Name())
+		sourcePath := filepath.Join(source, entry.Name())
+		destPath := filepath.Join(destination, entry.Name())
 
 		if entry.IsDir() {
 			subentries, err := os.ReadDir(sourcePath)
@@ -219,7 +220,7 @@ func MigrateDir(sourceDir, destinationDir string) error {
 					return err
 				}
 
-				err = MigrateDir(sourcePath, destPath)
+				err = SyncDirectory(sourcePath, destPath)
 				if err != nil {
 					return err
 				}
@@ -232,18 +233,12 @@ func MigrateDir(sourceDir, destinationDir string) error {
 		}
 	}
 
-	if RemoveSourceDirAfterMigration {
-		err = os.RemoveAll(sourceDir)
+	if RemoveSourceDirAfterSync {
+		err = os.RemoveAll(source)
 		if err != nil {
 			return err
 		}
 	}
 
 	return nil
-}
-
-func MustMigrateDir(sourceDir, destinationDir string) {
-	if err := MigrateDir(sourceDir, destinationDir); err != nil {
-		gologger.Fatal().Msgf("could not move %s to %s: %s", sourceDir, destinationDir, err)
-	}
 }
