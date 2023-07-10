@@ -1,6 +1,9 @@
 package metrics
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type ConfusionMatrix struct {
 	matrix [][]int
@@ -29,23 +32,27 @@ func NewConfusionMatrix(actual, predicted []string, labels []string) *ConfusionM
 	}
 }
 
-func (cm *ConfusionMatrix) PrintConfusionMatrix() {
-	fmt.Printf("%30s\n", "Confusion Matrix")
-	fmt.Println()
+func (cm *ConfusionMatrix) PrintConfusionMatrix() string {
+	var s strings.Builder
+
+	s.WriteString(fmt.Sprintf("%30s\n", "Confusion Matrix"))
+	s.WriteString(fmt.Sprintln())
 	// Print header
-	fmt.Printf("%-15s", "")
+	s.WriteString(fmt.Sprintf("%-15s", ""))
 	for _, label := range cm.labels {
-		fmt.Printf("%-15s", label)
+		s.WriteString(fmt.Sprintf("%-15s", label))
 	}
-	fmt.Println()
+	s.WriteString(fmt.Sprintln())
 
 	// Print rows
 	for i, row := range cm.matrix {
-		fmt.Printf("%-15s", cm.labels[i])
+		s.WriteString(fmt.Sprintf("%-15s", cm.labels[i]))
 		for _, value := range row {
-			fmt.Printf("%-15d", value)
+			s.WriteString(fmt.Sprintf("%-15d", value))
 		}
-		fmt.Println()
+		s.WriteString(fmt.Sprintln())
 	}
-	fmt.Println()
+	s.WriteString(fmt.Sprintln())
+
+	return s.String()
 }

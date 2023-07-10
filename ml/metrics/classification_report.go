@@ -1,12 +1,16 @@
 package metrics
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
-func (cm *ConfusionMatrix) PrintClassificationReport() {
-	fmt.Printf("%30s\n", "Classification Report")
-	fmt.Println()
+func (cm *ConfusionMatrix) PrintClassificationReport() string {
+	var s strings.Builder
+	s.WriteString(fmt.Sprintf("%30s\n", "Classification Report"))
+	s.WriteString(fmt.Sprintln())
 
-	fmt.Printf("\n%-15s %-10s %-10s %-10s %-10s\n", "", "precision", "recall", "f1-score", "support")
+	s.WriteString(fmt.Sprintf("\n%-15s %-10s %-10s %-10s %-10s\n", "", "precision", "recall", "f1-score", "support"))
 
 	totals := map[string]float64{"true": 0, "predicted": 0, "correct": 0}
 	macroAvg := map[string]float64{"precision": 0, "recall": 0, "f1-score": 0}
@@ -38,20 +42,22 @@ func (cm *ConfusionMatrix) PrintClassificationReport() {
 	}
 
 	accuracy := totals["correct"] / totals["true"]
-	fmt.Printf("\n%-26s %-10s %-10.2f %-10d", "accuracy", "", accuracy, int(totals["true"]))
+	s.WriteString(fmt.Sprint("\n%-26s %-10s %-10.2f %-10d", "accuracy", "", accuracy, int(totals["true"])))
 
-	fmt.Printf("\n%-15s %-10.2f %-10.2f %-10.2f %-10d\n", "macro avg",
+	s.WriteString(fmt.Sprint("\n%-15s %-10.2f %-10.2f %-10.2f %-10d\n", "macro avg",
 		macroAvg["precision"]/float64(len(cm.labels)),
 		macroAvg["recall"]/float64(len(cm.labels)),
 		macroAvg["f1-score"]/float64(len(cm.labels)),
-		int(totals["true"]))
+		int(totals["true"])))
 
 	precisionWeightedAvg := totals["correct"] / totals["predicted"]
 	recallWeightedAvg := totals["correct"] / totals["true"]
 	f1ScoreWeightedAvg := 2 * precisionWeightedAvg * recallWeightedAvg / (precisionWeightedAvg + recallWeightedAvg)
 
-	fmt.Printf("%-15s %-10.2f %-10.2f %-10.2f %-10d\n", "weighted avg",
-		precisionWeightedAvg, recallWeightedAvg, f1ScoreWeightedAvg, int(totals["true"]))
+	s.WriteString(fmt.Sprint("%-15s %-10.2f %-10.2f %-10.2f %-10d\n", "weighted avg",
+		precisionWeightedAvg, recallWeightedAvg, f1ScoreWeightedAvg, int(totals["true"])))
 
-	fmt.Println()
+	s.WriteString(fmt.Sprintln())
+
+	return s.String()
 }
