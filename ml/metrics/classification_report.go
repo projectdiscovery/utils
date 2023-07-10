@@ -42,9 +42,9 @@ func (cm *ConfusionMatrix) PrintClassificationReport() string {
 	}
 
 	accuracy := totals["correct"] / totals["true"]
-	s.WriteString(fmt.Sprint("\n%-26s %-10s %-10.2f %-10d", "accuracy", "", accuracy, int(totals["true"])))
+	s.WriteString(fmt.Sprintf("\n%-26s %-10s %-10.2f %-10d", "accuracy", "", accuracy, int(totals["true"])))
 
-	s.WriteString(fmt.Sprint("\n%-15s %-10.2f %-10.2f %-10.2f %-10d\n", "macro avg",
+	s.WriteString(fmt.Sprintf("\n%-15s %-10.2f %-10.2f %-10.2f %-10d\n", "macro avg",
 		macroAvg["precision"]/float64(len(cm.labels)),
 		macroAvg["recall"]/float64(len(cm.labels)),
 		macroAvg["f1-score"]/float64(len(cm.labels)),
@@ -54,7 +54,7 @@ func (cm *ConfusionMatrix) PrintClassificationReport() string {
 	recallWeightedAvg := totals["correct"] / totals["true"]
 	f1ScoreWeightedAvg := 2 * precisionWeightedAvg * recallWeightedAvg / (precisionWeightedAvg + recallWeightedAvg)
 
-	s.WriteString(fmt.Sprint("%-15s %-10.2f %-10.2f %-10.2f %-10d\n", "weighted avg",
+	s.WriteString(fmt.Sprintf("%-15s %-10.2f %-10.2f %-10.2f %-10d\n", "weighted avg",
 		precisionWeightedAvg, recallWeightedAvg, f1ScoreWeightedAvg, int(totals["true"])))
 
 	s.WriteString(fmt.Sprintln())
