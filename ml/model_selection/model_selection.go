@@ -1,4 +1,4 @@
-package model_selection
+package modelselection
 
 import (
 	"math/rand"

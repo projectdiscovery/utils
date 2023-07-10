@@ -7,7 +7,6 @@ import (
 )
 
 func TestNaiveBayesClassifier(t *testing.T) {
-
 	// Create a new Naive Bayes Classifier
 	threshold := 1.1
 	nb := New(threshold)
