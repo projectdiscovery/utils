@@ -5,6 +5,7 @@ package naive_bayes
 import (
 	"bytes"
 	"encoding/gob"
+	"fmt"
 	"io"
 	"os"
 	"regexp"
@@ -12,6 +13,8 @@ import (
 	"strings"
 
 	"github.com/kljensen/snowball"
+	"github.com/projectdiscovery/utils/mlutils"
+	"github.com/projectdiscovery/utils/mlutils/metrics"
 )
 
 var (
@@ -197,4 +200,45 @@ func stem(word string) string {
 	}
 	// fmt.Println("Cannot stem word:", word)
 	return word
+}
+
+func (c *NaiveBayesClassifier) Evaluate(train, test []mlutils.LabeledDocument) {
+	fmt.Println("no of docs in TRAIN dataset:", len(train))
+	fmt.Println("no of docs in TEST dataset:", len(test))
+
+	fmt.Println("Evaluating classifier on test set:")
+	actualTest, predictedTest := c.testClf(test)
+	confusionMatrixTest := metrics.NewConfusionMatrix(actualTest, predictedTest, []string{"error", "nonerror"})
+	confusionMatrixTest.PrintConfusionMatrix()
+	confusionMatrixTest.PrintClassificationReport()
+
+	fmt.Println("Evaluating classifier on the first 100 docs in the train set:")
+	actualValidate, predictedValidate := c.validateClf(train[0:100])
+	confusionMatrixValidate := metrics.NewConfusionMatrix(actualValidate, predictedValidate, []string{"error", "nonerror"})
+	confusionMatrixValidate.PrintConfusionMatrix()
+	confusionMatrixValidate.PrintClassificationReport()
+}
+
+func (c *NaiveBayesClassifier) testClf(dataset []mlutils.LabeledDocument) ([]string, []string) {
+	actual := []string{}
+	predicted := []string{}
+
+	for _, data := range dataset {
+		class := c.Classify(data.Document)
+		actual = append(actual, data.Label)
+		predicted = append(predicted, class)
+	}
+	return actual, predicted
+}
+
+func (c *NaiveBayesClassifier) validateClf(dataset []mlutils.LabeledDocument) ([]string, []string) {
+	actual := []string{}
+	predicted := []string{}
+
+	for _, data := range dataset {
+		actual = append(actual, data.Label)
+		sentiment := c.Classify(data.Document)
+		predicted = append(predicted, sentiment)
+	}
+	return actual, predicted
 }
