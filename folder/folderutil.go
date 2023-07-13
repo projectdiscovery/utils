@@ -1,15 +1,20 @@
 package folderutil
 
 import (
+	"errors"
 	"os"
 	"os/user"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	fileutil "github.com/projectdiscovery/utils/file"
 )
 
-// Separator evaluated at runtime
-var Separator = string(os.PathSeparator)
+var (
+	// Separator evaluated at runtime
+	Separator = string(os.PathSeparator)
+)
 
 const (
 	UnixPathSeparator    = "/"
@@ -167,33 +172,72 @@ func AppConfigDirOrDefault(defaultAppConfigDir string, toolName string) string {
 	return filepath.Join(userConfigDir, toolName)
 }
 
-// MigrateDir moves all files from sourceDir to destinationDir and removes sourceDir
-func MigrateDir(sourceDir string, destinationDir string) error {
+// Remove source directory after successful sync
+var RemoveSourceDirAfterSync = true
+
+// SyncDirectory sync all files and non-empty directories from source to destination folder
+// optionally removes source directory and removes source
+func SyncDirectory(source, destination string) error {
 	// trim trailing slash to avoid slash related issues
-	sourceDir = strings.TrimSuffix(sourceDir, Separator)
-	destinationDir = strings.TrimSuffix(destinationDir, Separator)
+	source = strings.TrimSuffix(source, Separator)
+	destination = strings.TrimSuffix(destination, Separator)
 
-	err := os.MkdirAll(destinationDir, os.ModePerm)
-	if err != nil {
-		return err
+	if !fileutil.FolderExists(source) {
+		return errors.New("source directory doesn't exist")
 	}
 
-	files, err := GetFiles(sourceDir)
-	if err != nil {
-		return err
-	}
-
-	for _, file := range files {
-		destinationFile := strings.Replace(file, sourceDir, destinationDir, 1)
-		err = os.Rename(file, destinationFile)
+	if fileutil.FolderExists(destination) {
+		sourceStat, err := os.Stat(source)
 		if err != nil {
 			return err
 		}
+		destinationStat, err := os.Stat(destination)
+		if err != nil {
+			return err
+		}
+		if os.SameFile(sourceStat, destinationStat) {
+			return errors.New("source and destination cannot be the same")
+		}
 	}
 
-	err = os.Remove(sourceDir)
+	entries, err := os.ReadDir(source)
 	if err != nil {
 		return err
+	}
+
+	for _, entry := range entries {
+		sourcePath := filepath.Join(source, entry.Name())
+		destPath := filepath.Join(destination, entry.Name())
+
+		if entry.IsDir() {
+			subentries, err := os.ReadDir(sourcePath)
+			if err != nil {
+				return err
+			}
+			if len(subentries) > 0 {
+				err = os.MkdirAll(destPath, os.ModePerm)
+				if err != nil {
+					return err
+				}
+
+				err = SyncDirectory(sourcePath, destPath)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			err = os.Rename(sourcePath, destPath)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	if RemoveSourceDirAfterSync {
+		err = os.RemoveAll(source)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
