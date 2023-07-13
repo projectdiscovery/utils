@@ -2,9 +2,9 @@ package channelutil
 
 import (
 	"context"
+	"log"
 	"sync"
 
-	"github.com/projectdiscovery/gologger"
 	errorutil "github.com/projectdiscovery/utils/errors"
 )
 
@@ -13,7 +13,8 @@ import (
 // this is useful when you have multiple sources and you want to send data to one channel
 type JoinChannels[T any] struct {
 	// internal
-	wg sync.WaitGroup
+	wg  sync.WaitGroup
+	Log *log.Logger
 }
 
 // JoinChannels Joins Many Channels to Create One
@@ -97,11 +98,16 @@ func (j *JoinChannels[T]) joinWorker(ctx context.Context, sink chan T, sources .
 		j.wg.Done()
 	}()
 	if len(sources) != 5 {
-		gologger.Error().Msgf("worker only supports 5 sources got %v", len(sources))
+		if j.Log != nil {
+			j.Log.Printf("Error: worker only supports 5 sources got %v", len(sources))
+		}
 		return
 	}
 	if sink == nil {
-		gologger.Error().Msgf("sink cannot be nil")
+		if j.Log != nil {
+			j.Log.Printf("Error: sink cannot be nil")
+		}
+		return
 	}
 
 	// recieve only channels

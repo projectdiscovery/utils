@@ -2,9 +2,9 @@ package channelutil
 
 import (
 	"context"
+	"log"
 	"sync"
 
-	"github.com/projectdiscovery/gologger"
 	errorutil "github.com/projectdiscovery/utils/errors"
 )
 
@@ -18,6 +18,7 @@ type CloneOptions struct {
 type CloneChannels[T any] struct {
 	// Options
 	opts *CloneOptions
+	Log  *log.Logger
 
 	// Internal
 	wg sync.WaitGroup
@@ -125,11 +126,15 @@ func (s *CloneChannels[T]) cloneChanWorker(ctx context.Context, src chan T, sink
 		s.wg.Done()
 	}()
 	if src == nil {
-		gologger.Error().Msgf("source channel is nil")
+		if s.Log != nil {
+			s.Log.Println("Error: source channel is nil")
+		}
 		return
 	}
 	if len(sinkchans) != 5 {
-		gologger.Error().Msgf("expected total sinks 5 but got %v", len(sinkchans))
+		if s.Log != nil {
+			s.Log.Printf("Error: expected total sinks 5 but got %v", len(sinkchans))
+		}
 		return
 	}
 
