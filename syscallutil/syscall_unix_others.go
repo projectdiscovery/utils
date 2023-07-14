@@ -2,8 +2,8 @@
 
 package syscallutil
 
-import "github.com/ebitengine/purego"
+import "errors"
 
 func loadLibrary(name string) (uintptr, error) {
-	return -1, errors.New("not implemented")
+	return 0, errors.New("not implemented")
 }
