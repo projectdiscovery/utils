@@ -52,6 +52,14 @@ func (s *SyncLockMap[K, V]) Get(k K) (V, bool) {
 	return v, ok
 }
 
+// Get an item with syncronous access
+func (s *SyncLockMap[K, V]) Delete(k K) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	delete(s.Map, k)
+}
+
 // Iterate with a callback function synchronously
 func (s *SyncLockMap[K, V]) Iterate(f func(k K, v V) error) error {
 	s.mu.RLock()
@@ -93,6 +101,14 @@ func (s *SyncLockMap[K, V]) IsEmpty() bool {
 	defer s.mu.RUnlock()
 
 	return s.Map.IsEmpty()
+}
+
+// IsEmpty checks if the current map is empty
+func (s *SyncLockMap[K, V]) Clear() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	return s.Map.Clear()
 }
 
 // GetKeywithValue returns the first key having value

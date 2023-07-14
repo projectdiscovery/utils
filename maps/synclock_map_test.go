@@ -42,6 +42,17 @@ func TestSyncLockMap(t *testing.T) {
 		}
 	})
 
+	t.Run("Test delete", func(t *testing.T) {
+		_ = m.Set("key5", "value5")
+		if !m.Has("key5") {
+			t.Error("couldn't set item to delete")
+		}
+		m.Delete("key5")
+		if m.Has("key5") {
+			t.Error("couldn't delete item")
+		}
+	})
+
 	t.Run("Test set error", func(t *testing.T) {
 		m.Lock()
 		if err := m.Set("key4", "value4"); err != ErrReadOnly {

@@ -67,3 +67,9 @@ func (m Map[K, V]) Clone() Map[K, V] {
 func (m Map[K, V]) Set(key K, value V) {
 	m[key] = value
 }
+
+// Clear the map
+func (m Map[K, V]) Clear() bool {
+	maps.Clear(m)
+	return m.IsEmpty()
+}

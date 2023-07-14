@@ -1,12 +1,13 @@
 module github.com/projectdiscovery/utils
 
-go 1.19
+go 1.20
 
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/charmbracelet/glamour v0.6.0
 	github.com/google/go-github/v30 v30.1.0
+	github.com/hdm/jarm-go v0.0.7
 	github.com/kljensen/snowball v0.8.0
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/microcosm-cc/bluemonday v1.0.24
