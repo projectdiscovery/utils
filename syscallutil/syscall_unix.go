@@ -1,4 +1,4 @@
-//go:build (darwin || linux) && !386
+//go:build (darwin || linux) && !(386 || arm_6)
 
 package syscallutil
 
