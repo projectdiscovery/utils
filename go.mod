@@ -10,7 +10,7 @@ require (
 	github.com/hdm/jarm-go v0.0.7
 	github.com/kljensen/snowball v0.8.0
 	github.com/logrusorgru/aurora v2.0.3+incompatible
-	github.com/microcosm-cc/bluemonday v1.0.24
+	github.com/microcosm-cc/bluemonday v1.0.25
 	github.com/miekg/dns v1.1.55
 	github.com/minio/selfupdate v0.6.0
 	github.com/pkg/errors v0.9.1
