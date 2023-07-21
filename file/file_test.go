@@ -586,7 +586,10 @@ func TestFileExistsIn(t *testing.T) {
 	tempDir := t.TempDir()
 	anotherTempDir := t.TempDir()
 	tempFile := filepath.Join(tempDir, "file.txt")
-	os.WriteFile(tempFile, []byte("content"), 0644)
+	err := os.WriteFile(tempFile, []byte("content"), 0644)
+	if err != nil {
+		t.Fatalf("failed to write to temporary file: %v", err)
+	}
 
 	tests := []struct {
 		name          string
