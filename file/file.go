@@ -10,6 +10,7 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -32,6 +33,29 @@ func FileExists(filename string) bool {
 		return false
 	}
 	return !info.IsDir()
+}
+
+// FileExistsIn checks if the file exists in the allowed paths
+func FileExistsIn(file string, allowedPaths ...string) bool {
+	fileAbsPath, err := filepath.Abs(file)
+	if err != nil {
+		return false
+	}
+
+	for _, allowedPath := range allowedPaths {
+		allowedAbsPath, err := filepath.Abs(allowedPath)
+		if err != nil {
+			return false
+		}
+		allowedDirPath := allowedAbsPath
+		if path.Ext(allowedAbsPath) != "" {
+			allowedDirPath = filepath.Dir(allowedAbsPath)
+		}
+		if strings.HasPrefix(fileAbsPath, allowedDirPath) && FileExists(fileAbsPath) {
+			return true
+		}
+	}
+	return false
 }
 
 // FolderExists checks if the folder exists
