@@ -590,6 +590,7 @@ func TestFileExistsIn(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to write to temporary file: %v", err)
 	}
+	defer os.RemoveAll(tempFile)
 
 	tests := []struct {
 		name         string
@@ -609,6 +610,13 @@ func TestFileExistsIn(t *testing.T) {
 			name:         "file does not exist in allowed directory",
 			file:         tempFile,
 			allowedFiles: []string{anotherTempDir},
+			expectedPath: "",
+			expectedErr:  true,
+		},
+		{
+			name:         "path starting with .",
+			file:         tempFile,
+			allowedFiles: []string{"."},
 			expectedPath: "",
 			expectedErr:  true,
 		},

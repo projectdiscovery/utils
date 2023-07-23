@@ -49,6 +49,11 @@ func FileExistsIn(file string, allowedPaths ...string) (string, error) {
 		if err != nil {
 			return "", err
 		}
+		// reject any path that for some reason was cleaned up and starts with .
+		if stringsutil.HasPrefixAny(allowedAbsPath, ".") {
+			return "", errors.New("invalid path")
+		}
+
 		allowedDirPath := allowedAbsPath
 		if filepath.Ext(allowedAbsPath) != "" {
 			allowedDirPath = filepath.Dir(allowedAbsPath)
