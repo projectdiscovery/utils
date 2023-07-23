@@ -592,31 +592,35 @@ func TestFileExistsIn(t *testing.T) {
 	}
 
 	tests := []struct {
-		name          string
-		file          string
-		allowedFiles  []string
-		expectedExist bool
+		name         string
+		file         string
+		allowedFiles []string
+		expectedPath string
+		expectedErr  bool
 	}{
 		{
-			name:          "file exists in allowed directory",
-			file:          tempFile,
-			allowedFiles:  []string{filepath.Join(tempDir, "tempfile.txt")},
-			expectedExist: true,
+			name:         "file exists in allowed directory",
+			file:         tempFile,
+			allowedFiles: []string{filepath.Join(tempDir, "tempfile.txt")},
+			expectedPath: tempDir,
+			expectedErr:  false,
 		},
 		{
-			name:          "file does not exist in allowed directory",
-			file:          tempFile,
-			allowedFiles:  []string{anotherTempDir},
-			expectedExist: false,
+			name:         "file does not exist in allowed directory",
+			file:         tempFile,
+			allowedFiles: []string{anotherTempDir},
+			expectedPath: "",
+			expectedErr:  true,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			exists := FileExistsIn(tc.file, tc.allowedFiles...)
-			if exists != tc.expectedExist {
-				t.Errorf("expected existence to be %v but got %v", tc.expectedExist, exists)
-			}
+			allowedPath, err := FileExistsIn(tc.file, tc.allowedFiles...)
+			gotErr := err != nil
+			require.Equal(t, tc.expectedErr, gotErr, "expected err but got %v", gotErr)
+			require.Equal(t, tc.expectedPath, allowedPath)
+
 		})
 	}
 }
