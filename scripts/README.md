@@ -2,8 +2,7 @@
 The package contains various scripts
 
 
-
-## versionbump.go
+## versionbump
 This Go script can automatically bump the semantic version number defined in a Go source file. It parses the specified Go source file with `go/ast`, finds the given variable (which is assumed to contain a semantic version string), increments the specified part of the version number (major, minor, or patch) with `github.com/Masterminds/semver/v3`, and rewrites the file with the updated version.
 
 ```
