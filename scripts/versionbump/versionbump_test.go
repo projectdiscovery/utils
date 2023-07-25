@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"testing"
@@ -103,7 +102,7 @@ func TestBumpVersionCLI(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create a temporary file and write the content to it
-			tempFile, err := ioutil.TempFile(os.TempDir(), "prefix-")
+			tempFile, err := os.CreateTemp(os.TempDir(), "prefix-")
 			if err != nil {
 				t.Fatalf("Cannot create temporary file: %s", err)
 			}
