@@ -36,7 +36,7 @@ func bumpVersion(fileName, varName, part string) (string, string, error) {
 						if id.Name == varName {
 							oldVersion, _ = strconv.Unquote(s.Values[idx].(*ast.BasicLit).Value)
 							v, err := semver.NewVersion(oldVersion)
-							if err != nil {
+							if err != nil || v.String() == "" {
 								return false
 							}
 							var vInc func() semver.Version
@@ -50,8 +50,8 @@ func bumpVersion(fileName, varName, part string) (string, string, error) {
 							default:
 								return false
 							}
-							newVersion = fmt.Sprintf("`v%s`", vInc().String())
-							s.Values[idx].(*ast.BasicLit).Value = newVersion
+							newVersion = "v" + vInc().String()
+							s.Values[idx].(*ast.BasicLit).Value = fmt.Sprintf("`%s`", newVersion)
 							return false
 						}
 					}
@@ -60,6 +60,10 @@ func bumpVersion(fileName, varName, part string) (string, string, error) {
 		}
 		return true
 	})
+
+	if newVersion == "" {
+		return oldVersion, newVersion, fmt.Errorf("failed to update the version")
+	}
 
 	f, err := os.OpenFile(fileName, os.O_RDWR, 0666)
 	if err != nil {
