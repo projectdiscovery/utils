@@ -97,6 +97,13 @@ func TestBumpVersionCLI(t *testing.T) {
 			part:        "patch",
 			expectedErr: true,
 		},
+		{
+			name:        "Test with big numbers",
+			fileContent: "package main\n\nvar version = \"1.0.111111111111111111111111111111111111111111111111111111111111111111111111\"",
+			varName:     "minor",
+			part:        "patch",
+			expectedErr: true,
+		},
 	}
 
 	for _, tc := range testCases {
