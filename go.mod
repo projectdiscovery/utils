@@ -70,7 +70,7 @@ require (
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/cheggaaa/pb/v3 v3.1.4
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/ebitengine/purego v0.3.2
+	github.com/ebitengine/purego v0.4.0
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
