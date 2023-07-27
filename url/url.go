@@ -330,6 +330,7 @@ func ParseRelativePath(inputURL string, unsafe bool) (*URL, error) {
 		}
 	}
 	if urlparse != nil {
+		urlparse.Host = ""
 		copy(u.URL, urlparse)
 	}
 	u.parseUnsafeRelativePath()
