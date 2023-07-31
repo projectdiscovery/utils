@@ -18,6 +18,18 @@ type SyncLockMap[K, V comparable] struct {
 	Map      Map[K, V]
 }
 
+// NewSyncLockMap creates a new SyncLockMap.
+// If an existing map is provided, it is used; otherwise, a new map is created.
+func NewSyncLockMap[K, V comparable](m Map[K, V]) *SyncLockMap[K, V] {
+	if m == nil {
+		m = make(Map[K, V])
+	}
+
+	return &SyncLockMap[K, V]{
+		Map: m,
+	}
+}
+
 // Lock the current map to read-only mode
 func (s *SyncLockMap[K, V]) Lock() {
 	s.ReadOnly.Store(true)

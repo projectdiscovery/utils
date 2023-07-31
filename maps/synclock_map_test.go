@@ -18,6 +18,27 @@ func TestSyncLockMap(t *testing.T) {
 		},
 	}
 
+	t.Run("Test NewSyncLockMap with map ", func(t *testing.T) {
+		m := NewSyncLockMap[string, string](Map[string, string]{
+			"key1": "value1",
+			"key2": "value2",
+		})
+
+		if !m.Has("key1") || !m.Has("key2") {
+			t.Error("couldn't init SyncLockMap with NewSyncLockMap")
+		}
+	})
+
+	t.Run("Test NewSyncLockMap without map", func(t *testing.T) {
+		m := NewSyncLockMap[string, string](nil)
+		m.Set("key1", "value1")
+		m.Set("key2", "value2")
+
+		if !m.Has("key1") || !m.Has("key2") {
+			t.Error("couldn't init SyncLockMap with NewSyncLockMap")
+		}
+	})
+
 	t.Run("Test lock", func(t *testing.T) {
 		m.Lock()
 		if m.ReadOnly.Load() != true {
