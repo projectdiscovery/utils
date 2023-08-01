@@ -18,7 +18,7 @@ require (
 	github.com/projectdiscovery/fdmax v0.0.4
 	github.com/remeh/sizedwaitgroup v1.0.0
 	github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca
-	github.com/shirou/gopsutil/v3 v3.23.6
+	github.com/shirou/gopsutil/v3 v3.23.7
 	github.com/stretchr/testify v1.8.4
 	github.com/zmap/zcrypto v0.0.0-20220803033029-557f3e4940be
 	go.uber.org/multierr v1.11.0
