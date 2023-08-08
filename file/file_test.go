@@ -581,3 +581,54 @@ func TestOpenOrCreateFile(t *testing.T) {
 		require.Error(t, err)
 	})
 }
+
+func TestFileExistsIn(t *testing.T) {
+	tempDir := t.TempDir()
+	anotherTempDir := t.TempDir()
+	tempFile := filepath.Join(tempDir, "file.txt")
+	err := os.WriteFile(tempFile, []byte("content"), 0644)
+	if err != nil {
+		t.Fatalf("failed to write to temporary file: %v", err)
+	}
+	defer os.RemoveAll(tempFile)
+
+	tests := []struct {
+		name         string
+		file         string
+		allowedFiles []string
+		expectedPath string
+		expectedErr  bool
+	}{
+		{
+			name:         "file exists in allowed directory",
+			file:         tempFile,
+			allowedFiles: []string{filepath.Join(tempDir, "tempfile.txt")},
+			expectedPath: tempDir,
+			expectedErr:  false,
+		},
+		{
+			name:         "file does not exist in allowed directory",
+			file:         tempFile,
+			allowedFiles: []string{anotherTempDir},
+			expectedPath: "",
+			expectedErr:  true,
+		},
+		{
+			name:         "path starting with .",
+			file:         tempFile,
+			allowedFiles: []string{"."},
+			expectedPath: "",
+			expectedErr:  true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			allowedPath, err := FileExistsIn(tc.file, tc.allowedFiles...)
+			gotErr := err != nil
+			require.Equal(t, tc.expectedErr, gotErr, "expected err but got %v", gotErr)
+			require.Equal(t, tc.expectedPath, allowedPath)
+
+		})
+	}
+}

@@ -18,6 +18,30 @@ type SyncLockMap[K, V comparable] struct {
 	Map      Map[K, V]
 }
 
+type SyncLockMapOption[K, V comparable] func(slm *SyncLockMap[K, V])
+
+func WithMap[K, V comparable](m Map[K, V]) SyncLockMapOption[K, V] {
+	return func(slm *SyncLockMap[K, V]) {
+		slm.Map = m
+	}
+}
+
+// NewSyncLockMap creates a new SyncLockMap.
+// If an existing map is provided, it is used; otherwise, a new map is created.
+func NewSyncLockMap[K, V comparable](options ...SyncLockMapOption[K, V]) *SyncLockMap[K, V] {
+	slm := &SyncLockMap[K, V]{}
+
+	for _, option := range options {
+		option(slm)
+	}
+
+	if slm.Map == nil {
+		slm.Map = make(Map[K, V])
+	}
+
+	return slm
+}
+
 // Lock the current map to read-only mode
 func (s *SyncLockMap[K, V]) Lock() {
 	s.ReadOnly.Store(true)

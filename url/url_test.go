@@ -101,3 +101,19 @@ func TestInvalidURLs(t *testing.T) {
 		require.Equal(t, urlx.String(), v)
 	}
 }
+
+func TestParseRelativePath(t *testing.T) {
+	testcases := []struct {
+		inputURL     string
+		unsafe       bool
+		expectedPath string
+	}{
+		{"//CFIDE/wizards/common/utils.cfc", false, "//CFIDE/wizards/common/utils.cfc"},
+	}
+
+	for _, v := range testcases {
+		urlx, err := ParseRelativePath(v.inputURL, v.unsafe)
+		require.Nilf(t, err, "got error for url %v", v.inputURL)
+		require.Equal(t, v.expectedPath, urlx.GetRelativePath())
+	}
+}
