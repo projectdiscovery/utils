@@ -76,6 +76,8 @@ func (p *OneTimePool) Run() error {
 func (p *OneTimePool) Close() error {
 	p.cancel()
 	// remove dialer references
-	p.Dialer = nil
+	if p.Dialer != nil {
+		p.Dialer = nil
+	}
 	return p.InFlightConns.Close()
 }
