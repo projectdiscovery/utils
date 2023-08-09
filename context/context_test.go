@@ -10,29 +10,29 @@ import (
 func TestWithValues(t *testing.T) {
 	type testCase struct {
 		name          string
-		keyValue      []string
+		keyValue      []ContextArg
 		expectedError error
-		expectedValue map[string]string
+		expectedValue map[ContextArg]ContextArg
 	}
 
 	var testCases = []testCase{
 		{
 			name:          "even number of key-value pairs",
-			keyValue:      []string{"key1", "value1", "key2", "value2"},
+			keyValue:      []ContextArg{"key1", "value1", "key2", "value2"},
 			expectedError: nil,
-			expectedValue: map[string]string{"key1": "value1", "key2": "value2"},
+			expectedValue: map[ContextArg]ContextArg{"key1": "value1", "key2": "value2"},
 		},
 		{
 			name:          "odd number of key-value pairs",
-			keyValue:      []string{"key1", "value1", "key2"},
+			keyValue:      []ContextArg{"key1", "value1", "key2"},
 			expectedError: ErrIncorrectNumberOfItems,
-			expectedValue: map[string]string{},
+			expectedValue: map[ContextArg]ContextArg{},
 		},
 		{
 			name:          "overwriting values",
-			keyValue:      []string{"key1", "value1", "key1", "newValue"},
+			keyValue:      []ContextArg{"key1", "value1", "key1", "newValue"},
 			expectedError: nil,
-			expectedValue: map[string]string{"key1": "newValue"},
+			expectedValue: map[ContextArg]ContextArg{"key1": "newValue"},
 		},
 	}
 	ctx := context.Background()
