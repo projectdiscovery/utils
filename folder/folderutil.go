@@ -145,13 +145,23 @@ func agnosticSplit(path string) (parts []string) {
 	return
 }
 
-// HomeDirectory returns the home directory or defaultDirectory in case of error
+// HomeDirOrDefault tries to obtain the user's home directory and
+// returns the default if it cannot be obtained.
 func HomeDirOrDefault(defaultDirectory string) string {
-	usr, err := user.Current()
-	if err != nil {
-		return defaultDirectory
+	home, err := user.Current()
+	if err == nil && isWritable(home.HomeDir) {
+		return home.HomeDir
 	}
-	return usr.HomeDir
+	if homeEnv, ok := os.LookupEnv("HOME"); ok && isWritable(homeEnv) {
+		return homeEnv
+	}
+	return defaultDirectory
+}
+
+// isWritable checks if a path is writable.
+func isWritable(path string) bool {
+	hasPermission, _ := fileutil.HasPermission(path, os.O_WRONLY)
+	return hasPermission
 }
 
 // UserConfigDirOrDefault returns the user config directory or defaultConfigDir in case of error
