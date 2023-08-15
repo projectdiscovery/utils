@@ -5,11 +5,13 @@ import (
 	"strings"
 )
 
-// UpdateWithEnv replaces a string variable with its corresponding environment variable value.
-// If the environment variable does not exist, it remains unchanged.
-func UpdateWithEnv(variable *string) {
-	if variable == nil {
-		return
+// UpdateWithEnv updates string variables to their corresponding environment values.
+// If the variables does not exist, they're set to empty strings.
+func UpdateWithEnv(variables ...*string) {
+	for _, variable := range variables {
+		if variable == nil {
+			continue
+		}
+		*variable = os.Getenv(strings.TrimPrefix(*variable, "$"))
 	}
-	*variable = os.Getenv(strings.TrimPrefix(*variable, "$"))
 }
