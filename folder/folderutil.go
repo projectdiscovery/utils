@@ -148,12 +148,11 @@ func agnosticSplit(path string) (parts []string) {
 // HomeDirOrDefault tries to obtain the user's home directory and
 // returns the default if it cannot be obtained.
 func HomeDirOrDefault(defaultDirectory string) string {
-	home, err := user.Current()
-	if err == nil && isWritable(home.HomeDir) {
-		return home.HomeDir
+	if user, err := user.Current(); err == nil && isWritable(user.HomeDir) {
+		return user.HomeDir
 	}
-	if homeEnv, ok := os.LookupEnv("HOME"); ok && isWritable(homeEnv) {
-		return homeEnv
+	if homeDir, err := os.UserHomeDir(); err == nil && isWritable(homeDir) {
+		return homeDir
 	}
 	return defaultDirectory
 }
