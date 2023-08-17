@@ -159,10 +159,10 @@ func HomeDirOrDefault(defaultDirectory string) string {
 
 // isWritable checks if a path is writable.
 func isWritable(path string) bool {
-	info, err := os.Stat(path)
-	if err != nil || !info.IsDir() {
+	if !fileutil.FolderExists(path) {
 		return false
 	}
+
 	tmpfile, err := os.CreateTemp(path, "test")
 	if err != nil {
 		return false
