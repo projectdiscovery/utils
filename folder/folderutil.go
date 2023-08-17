@@ -159,8 +159,16 @@ func HomeDirOrDefault(defaultDirectory string) string {
 
 // isWritable checks if a path is writable.
 func isWritable(path string) bool {
-	hasPermission, _ := fileutil.HasPermission(path, os.O_WRONLY)
-	return hasPermission
+	info, err := os.Stat(path)
+	if err != nil || !info.IsDir() {
+		return false
+	}
+	tmpfile, err := os.CreateTemp(path, "test")
+	if err != nil {
+		return false
+	}
+	defer os.Remove(tmpfile.Name())
+	return true
 }
 
 // UserConfigDirOrDefault returns the user config directory or defaultConfigDir in case of error
