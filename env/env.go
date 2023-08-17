@@ -1,4 +1,4 @@
-package osutils
+package env
 
 import (
 	"os"
