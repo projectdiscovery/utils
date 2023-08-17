@@ -117,3 +117,18 @@ func TestParseRelativePath(t *testing.T) {
 		require.Equal(t, v.expectedPath, urlx.GetRelativePath())
 	}
 }
+
+func TestUnicodeEscape(t *testing.T) {
+	testcases := []struct {
+		input    string
+		expected string
+	}{
+		{"https://admin/%u002e%u002e/%u002e%u002e/1.txt.it", "https://admin/../../1.txt.it"},
+	}
+
+	for _, v := range testcases {
+		urlx, err := Parse(v.input)
+		require.Nilf(t, err, "got error for url %v", v.input)
+		require.Equal(t, v.expected, urlx.String())
+	}
+}
