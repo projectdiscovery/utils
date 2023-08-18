@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestUpdateWithEnv(t *testing.T) {
+func TestExpandWithEnv(t *testing.T) {
 	testEnvVar := "TEST_VAR"
 	testEnvValue := "TestValue"
 	os.Setenv(testEnvVar, testEnvValue)
@@ -24,7 +24,7 @@ func TestUpdateWithEnv(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			UpdateWithEnv(&tt.input)
+			ExpandWithEnv(&tt.input)
 			if tt.input != tt.expected {
 				t.Errorf("got %q, want %q", tt.input, tt.expected)
 			}
@@ -32,7 +32,7 @@ func TestUpdateWithEnv(t *testing.T) {
 	}
 }
 
-func TestUpdateWithEnvNilInput(t *testing.T) {
+func TestExpandWithEnvNilInput(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
 			t.Errorf("The code panicked with %v", r)
@@ -40,5 +40,5 @@ func TestUpdateWithEnvNilInput(t *testing.T) {
 	}()
 
 	var nilVar *string = nil
-	UpdateWithEnv(nilVar)
+	ExpandWithEnv(nilVar)
 }
