@@ -148,17 +148,19 @@ func agnosticSplit(path string) (parts []string) {
 // HomeDirOrDefault tries to obtain the user's home directory and
 // returns the default if it cannot be obtained.
 func HomeDirOrDefault(defaultDirectory string) string {
-	if user, err := user.Current(); err == nil && isWritable(user.HomeDir) {
+	if user, err := user.Current(); err == nil && IsWritable(user.HomeDir) {
 		return user.HomeDir
 	}
-	if homeDir, err := os.UserHomeDir(); err == nil && isWritable(homeDir) {
+	if homeDir, err := os.UserHomeDir(); err == nil && IsWritable(homeDir) {
 		return homeDir
 	}
 	return defaultDirectory
 }
 
-// isWritable checks if a path is writable.
-func isWritable(path string) bool {
+// IsWritable checks if a path is writable by attempting to create a temporary file.
+// Note: It's recommended to minimize the use of this function because it involves file creation.
+// If performance is a concern, consider declaring a global variable in the module using this and initialize it once.
+func IsWritable(path string) bool {
 	if !fileutil.FolderExists(path) {
 		return false
 	}
