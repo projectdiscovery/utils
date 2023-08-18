@@ -127,7 +127,8 @@ func TestIsWritable(t *testing.T) {
 	})
 
 	t.Run("Test non-writable directory", func(t *testing.T) {
-		nonWritableDir, err := os.MkdirTemp("", "non-writable-dir")
+		nonWritableDir := "non-writable-dir"
+		err := os.Mkdir(nonWritableDir, 0400)
 		assert.NoError(t, err)
 		defer os.RemoveAll(nonWritableDir)
 
