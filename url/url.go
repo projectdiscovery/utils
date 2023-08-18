@@ -224,7 +224,6 @@ func (u *URL) fetchParams() {
 
 // ParseURL
 func Parse(inputURL string) (*URL, error) {
-	inputURL = decodeUnicodeEscapes(inputURL)
 	return ParseURL(inputURL, false)
 }
 
@@ -239,6 +238,7 @@ func decodeUnicodeEscapes(inputURL string) string {
 
 // Parse and return URL
 func ParseURL(inputURL string, unsafe bool) (*URL, error) {
+	inputURL = decodeUnicodeEscapes(inputURL)
 	u := &URL{
 		URL:      &url.URL{},
 		Original: inputURL,
