@@ -132,7 +132,7 @@ func TestIsWritable(t *testing.T) {
 		defer os.RemoveAll(nonWritableDir)
 
 		// Make the directory non-writable.
-		err = os.Chmod(nonWritableDir, 0555)
+		err = os.Chmod(nonWritableDir, 0400)
 		assert.NoError(t, err)
 
 		assert.False(t, IsWritable(nonWritableDir), "expected directory to not be writable")
