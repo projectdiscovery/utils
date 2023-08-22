@@ -78,8 +78,8 @@ func (s *SyncLockMap[K, V]) Get(k K) (V, bool) {
 
 // Get an item with syncronous access
 func (s *SyncLockMap[K, V]) Delete(k K) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	delete(s.Map, k)
 }
