@@ -5,6 +5,8 @@ import (
 	"math"
 	"runtime"
 	"time"
+
+	"github.com/projectdiscovery/utils/generic"
 )
 
 const (
@@ -45,59 +47,67 @@ type ActionStrategy interface {
 }
 
 type DefaultStrategy struct {
-	metrics *Metrics
+	metrics generic.Lockable[*Metrics]
 	ticker  *time.Ticker
 	done    chan bool
 }
 
 func (d *DefaultStrategy) Before() {
-	d.metrics.StartTime = time.Now()
+	d.metrics.Do(func(m *Metrics) {
+		m.StartTime = time.Now()
 
-	d.ticker = time.NewTicker(DefaultMemorySnapshotInterval)
-	d.done = make(chan bool)
-	go func() {
-		for {
-			select {
-			case <-d.done:
-				return
-			case t := <-d.ticker.C:
-				var mem runtime.MemStats
-				runtime.ReadMemStats(&mem)
-				d.metrics.Snapshots = append(d.metrics.Snapshots, MemorySnapshot{
-					Time:  t,
-					Alloc: mem.Alloc,
-				})
+		d.ticker = time.NewTicker(DefaultMemorySnapshotInterval)
+		d.done = make(chan bool)
+		go func() {
+			for {
+				select {
+				case <-d.done:
+					return
+				case t := <-d.ticker.C:
+					var mem runtime.MemStats
+					runtime.ReadMemStats(&mem)
+					m.Snapshots = append(m.Snapshots, MemorySnapshot{
+						Time:  t,
+						Alloc: mem.Alloc,
+					})
+				}
 			}
-		}
-	}()
+		}()
+	})
 }
 
 func (d *DefaultStrategy) After() {
 	close(d.done)
 	d.ticker.Stop()
+	d.metrics.Do(func(m *Metrics) {
+		m.FinishTime = time.Now()
+		m.ExecutionDuration = m.FinishTime.Sub(m.StartTime)
 
-	d.metrics.FinishTime = time.Now()
-	d.metrics.ExecutionDuration = d.metrics.FinishTime.Sub(d.metrics.StartTime)
+		var totalMemory uint64 = 0
+		if len(m.Snapshots) > 0 {
+			m.MinAllocMemory = m.Snapshots[0].Alloc
+			m.MaxAllocMemory = m.Snapshots[0].Alloc
 
-	var totalMemory uint64 = 0
-	if len(d.metrics.Snapshots) > 0 {
-		d.metrics.MinAllocMemory = d.metrics.Snapshots[0].Alloc
-		d.metrics.MaxAllocMemory = d.metrics.Snapshots[0].Alloc
-
-		for _, s := range d.metrics.Snapshots {
-			if s.Alloc < d.metrics.MinAllocMemory {
-				d.metrics.MinAllocMemory = s.Alloc
+			for _, s := range m.Snapshots {
+				if s.Alloc < m.MinAllocMemory {
+					m.MinAllocMemory = s.Alloc
+				}
+				m.MinAllocMemory = uint64(math.Min(float64(m.MinAllocMemory), float64(s.Alloc)))
+				m.MaxAllocMemory = uint64(math.Max(float64(m.MaxAllocMemory), float64(s.Alloc)))
+				totalMemory += s.Alloc
 			}
-			d.metrics.MinAllocMemory = uint64(math.Min(float64(d.metrics.MinAllocMemory), float64(s.Alloc)))
-			d.metrics.MaxAllocMemory = uint64(math.Max(float64(d.metrics.MaxAllocMemory), float64(s.Alloc)))
-			totalMemory += s.Alloc
+			m.AvgAllocMemory = totalMemory / uint64(len(m.Snapshots))
 		}
-		d.metrics.AvgAllocMemory = totalMemory / uint64(len(d.metrics.Snapshots))
-	}
+	})
+
 }
 
 func (d *DefaultStrategy) GetMetrics() *Metrics {
-	return d.metrics
+	var metrics *Metrics
+	d.metrics.Do(func(m *Metrics) {
+		metrics = m
+	})
+	return metrics
 }
 
 type TraceOptions struct {
@@ -114,7 +124,7 @@ func WithStrategy(s ActionStrategy) TraceOptionSetter {
 
 func Trace(f func(), setter TraceOptionSetter) (*Metrics, error) {
 	opts := &TraceOptions{
-		strategy: &DefaultStrategy{metrics: &Metrics{}},
+		strategy: &DefaultStrategy{metrics: generic.Lockable[*Metrics]{V: &Metrics{}}},
 	}
 
 	// Apply option if provided
