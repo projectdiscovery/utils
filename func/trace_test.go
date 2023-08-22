@@ -14,8 +14,20 @@ func TestFunctionTracing(t *testing.T) {
 		t.Errorf("ExecutionDuration is less than expected: %v", metrics.ExecutionDuration)
 	}
 
-	if metrics.AllocMemory == 0 {
-		t.Errorf("Memory allocation not captured")
+	if len(metrics.Snapshots) == 0 {
+		t.Errorf("Memory snapshots are not captured")
+	}
+
+	if metrics.MinAllocMemory == 0 {
+		t.Errorf("MinMemory not computed")
+	}
+
+	if metrics.MaxAllocMemory == 0 {
+		t.Errorf("MaxMemory not computed")
+	}
+
+	if metrics.AvgAllocMemory == 0 {
+		t.Errorf("AvgMemory not computed")
 	}
 }
 
@@ -39,6 +51,10 @@ func TestFunctionWithCustomStrategy(t *testing.T) {
 
 	if metrics.ExecutionDuration.Seconds() < 1 {
 		t.Errorf("ExecutionDuration is less than expected: %v", metrics.ExecutionDuration)
+	}
+
+	if len(metrics.Snapshots) != 0 {
+		t.Errorf("Custom strategy should not capture snapshots")
 	}
 }
 

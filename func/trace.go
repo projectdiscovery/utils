@@ -2,15 +2,29 @@ package main
 
 import (
 	"errors"
+	"math"
 	"runtime"
 	"time"
 )
+
+const (
+	// DefaultMemorySnapshotInterval is the default interval for taking memory snapshots
+	DefaultMemorySnapshotInterval = 100 * time.Millisecond
+)
+
+type MemorySnapshot struct {
+	Time  time.Time
+	Alloc uint64
+}
 
 type Metrics struct {
 	StartTime         time.Time
 	FinishTime        time.Time
 	ExecutionDuration time.Duration
-	AllocMemory       uint64
+	Snapshots         []MemorySnapshot
+	MinAllocMemory    uint64
+	MaxAllocMemory    uint64
+	AvgAllocMemory    uint64
 }
 
 type FunctionContext struct {
@@ -32,21 +46,54 @@ type ActionStrategy interface {
 
 type DefaultStrategy struct {
 	metrics *Metrics
+	ticker  *time.Ticker
+	done    chan bool
 }
 
 func (d *DefaultStrategy) Before() {
 	d.metrics.StartTime = time.Now()
-	var mem runtime.MemStats
-	runtime.ReadMemStats(&mem)
-	d.metrics.AllocMemory = mem.Alloc
+
+	d.ticker = time.NewTicker(DefaultMemorySnapshotInterval)
+	d.done = make(chan bool)
+	go func() {
+		for {
+			select {
+			case <-d.done:
+				return
+			case t := <-d.ticker.C:
+				var mem runtime.MemStats
+				runtime.ReadMemStats(&mem)
+				d.metrics.Snapshots = append(d.metrics.Snapshots, MemorySnapshot{
+					Time:  t,
+					Alloc: mem.Alloc,
+				})
+			}
+		}
+	}()
 }
 
 func (d *DefaultStrategy) After() {
+	close(d.done)
+	d.ticker.Stop()
+
 	d.metrics.FinishTime = time.Now()
 	d.metrics.ExecutionDuration = d.metrics.FinishTime.Sub(d.metrics.StartTime)
-	var mem runtime.MemStats
-	runtime.ReadMemStats(&mem)
-	d.metrics.AllocMemory = mem.Alloc - d.metrics.AllocMemory
+
+	var totalMemory uint64 = 0
+	if len(d.metrics.Snapshots) > 0 {
+		d.metrics.MinAllocMemory = d.metrics.Snapshots[0].Alloc
+		d.metrics.MaxAllocMemory = d.metrics.Snapshots[0].Alloc
+
+		for _, s := range d.metrics.Snapshots {
+			if s.Alloc < d.metrics.MinAllocMemory {
+				d.metrics.MinAllocMemory = s.Alloc
+			}
+			d.metrics.MinAllocMemory = uint64(math.Min(float64(d.metrics.MinAllocMemory), float64(s.Alloc)))
+			d.metrics.MaxAllocMemory = uint64(math.Max(float64(d.metrics.MaxAllocMemory), float64(s.Alloc)))
+			totalMemory += s.Alloc
+		}
+		d.metrics.AvgAllocMemory = totalMemory / uint64(len(d.metrics.Snapshots))
+	}
 }
 
 func (d *DefaultStrategy) GetMetrics() *Metrics {
