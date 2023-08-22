@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math"
 	"runtime"
+	"sync"
 	"time"
 
 	"github.com/projectdiscovery/utils/generic"
@@ -50,6 +51,7 @@ type DefaultStrategy struct {
 	metrics generic.Lockable[*Metrics]
 	ticker  *time.Ticker
 	done    chan bool
+	wg      sync.WaitGroup
 }
 
 func (d *DefaultStrategy) Before() {
@@ -58,7 +60,9 @@ func (d *DefaultStrategy) Before() {
 
 		d.ticker = time.NewTicker(DefaultMemorySnapshotInterval)
 		d.done = make(chan bool)
+		d.wg.Add(1)
 		go func() {
+			defer d.wg.Done()
 			for {
 				select {
 				case <-d.done:
@@ -78,6 +82,7 @@ func (d *DefaultStrategy) Before() {
 
 func (d *DefaultStrategy) After() {
 	close(d.done)
+	d.wg.Wait()
 	d.ticker.Stop()
 	d.metrics.Do(func(m *Metrics) {
 		m.FinishTime = time.Now()
