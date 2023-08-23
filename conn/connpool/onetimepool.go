@@ -3,6 +3,7 @@ package connpool
 import (
 	"context"
 	"net"
+	"sync"
 )
 
 type Dialer interface {
@@ -17,6 +18,7 @@ type OneTimePool struct {
 	ctx             context.Context
 	cancel          context.CancelFunc
 	Dialer          Dialer
+	mx              sync.RWMutex
 }
 
 func NewOneTimePool(ctx context.Context, address string, poolSize int) (*OneTimePool, error) {
@@ -60,8 +62,14 @@ func (p *OneTimePool) Run() error {
 				conn net.Conn
 				err  error
 			)
-			if p.Dialer != nil {
+			p.mx.RLock()
+			hasDialer := p.Dialer != nil
+			p.mx.RUnlock()
+
+			if hasDialer {
+				p.mx.RLock()
 				conn, err = p.Dialer.Dial(p.ctx, "tcp", p.address)
+				p.mx.RUnlock()
 			} else {
 				conn, err = net.Dial("tcp", p.address)
 			}
@@ -75,7 +83,11 @@ func (p *OneTimePool) Run() error {
 
 func (p *OneTimePool) Close() error {
 	p.cancel()
+
 	// remove dialer references
+	p.mx.Lock()
 	p.Dialer = nil
+	p.mx.Unlock()
+
 	return p.InFlightConns.Close()
 }
