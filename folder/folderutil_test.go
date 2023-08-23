@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	fileutil "github.com/projectdiscovery/utils/file"
+	osutils "github.com/projectdiscovery/utils/os"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -109,5 +110,47 @@ func TestSyncDirectory(t *testing.T) {
 		assert.False(t, fileutil.FolderExists(filepath.Join(destinationDir, "/dir2")))
 
 		assert.True(t, fileutil.FolderExists(sourceDir))
+	})
+}
+
+func TestIsWritable(t *testing.T) {
+	t.Run("Test writable directory", func(t *testing.T) {
+		tempDir, err := os.MkdirTemp("", "test-dir")
+		assert.NoError(t, err)
+		defer os.RemoveAll(tempDir)
+
+		assert.True(t, IsWritable(tempDir), "expected directory to be writable")
+	})
+
+	t.Run("Test non-existent directory", func(t *testing.T) {
+		nonExistentDir := "/path/to/non/existent/dir"
+		assert.False(t, IsWritable(nonExistentDir), "expected directory to not be writable")
+	})
+
+	t.Run("Test non-writable directory", func(t *testing.T) {
+		// on windows bitsets are applied only to files
+		// https://github.com/golang/go/issues/35042
+		if osutils.IsWindows() {
+			return
+		}
+
+		nonWritableDir := "non-writable-dir"
+		err := os.Mkdir(nonWritableDir, 0400)
+		assert.NoError(t, err)
+		defer os.RemoveAll(nonWritableDir)
+
+		// Make the directory non-writable.
+		err = os.Chmod(nonWritableDir, 0400)
+		assert.NoError(t, err)
+
+		assert.False(t, IsWritable(nonWritableDir), "expected directory to not be writable")
+	})
+
+	t.Run("Test with a file instead of a directory", func(t *testing.T) {
+		tempFile, err := os.CreateTemp("", "test-file")
+		assert.NoError(t, err)
+		defer os.Remove(tempFile.Name())
+
+		assert.False(t, IsWritable(tempFile.Name()), "expected file to not be considered a writable directory")
 	})
 }
