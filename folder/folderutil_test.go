@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	fileutil "github.com/projectdiscovery/utils/file"
+	osutils "github.com/projectdiscovery/utils/os"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -127,6 +128,12 @@ func TestIsWritable(t *testing.T) {
 	})
 
 	t.Run("Test non-writable directory", func(t *testing.T) {
+		// on windows bitsets are applied only to files
+		// https://github.com/golang/go/issues/35042
+		if osutils.IsWindows() {
+			return
+		}
+
 		nonWritableDir := "non-writable-dir"
 		err := os.Mkdir(nonWritableDir, 0400)
 		assert.NoError(t, err)
