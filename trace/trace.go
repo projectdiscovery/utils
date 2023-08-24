@@ -127,13 +127,13 @@ func WithStrategy(s ActionStrategy) TraceOptionSetter {
 	}
 }
 
-func Trace(f func(), setter TraceOptionSetter) (*Metrics, error) {
+func Trace(f func(), setters ...TraceOptionSetter) (*Metrics, error) {
 	opts := &TraceOptions{
 		strategy: &DefaultStrategy{metrics: generic.Lockable[*Metrics]{V: &Metrics{}}},
 	}
 
 	// Apply option if provided
-	if setter != nil {
+	for _, setter := range setters {
 		setter(opts)
 	}
 
