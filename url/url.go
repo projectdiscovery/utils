@@ -234,8 +234,6 @@ func ParseURL(inputURL string, unsafe bool) (*URL, error) {
 		Params:   NewOrderedParams(),
 	}
 	u.fetchParams()
-	// filter out fragments and parameters only then parse path
-	inputURL = u.Original
 	if inputURL == "" {
 		return nil, errorutil.NewWithTag("urlutil", "failed to parse url got empty input")
 	}

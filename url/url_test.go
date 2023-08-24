@@ -117,3 +117,35 @@ func TestParseRelativePath(t *testing.T) {
 		require.Equal(t, v.expectedPath, urlx.GetRelativePath())
 	}
 }
+
+func TestParseFragment(t *testing.T) {
+	testcases := []struct {
+		inputURL         string
+		unsafe           bool
+		expectedFragment string
+	}{
+		{"https://admin?param=value#highlight", false, "highlight"},
+	}
+
+	for _, v := range testcases {
+		urlx, err := ParseURL(v.inputURL, v.unsafe)
+		require.Nilf(t, err, "got error for url %v", v.inputURL)
+		require.Equal(t, v.expectedFragment, urlx.Fragment)
+	}
+}
+
+func TestParseParam(t *testing.T) {
+	testcases := []struct {
+		inputURL      string
+		unsafe        bool
+		expectedParam string
+	}{
+		{"https://admin?param=value#highlight", false, "param=value"},
+	}
+
+	for _, v := range testcases {
+		urlx, err := ParseURL(v.inputURL, v.unsafe)
+		require.Nilf(t, err, "got error for url %v", v.inputURL)
+		require.Equal(t, v.expectedParam, urlx.Params.Encode())
+	}
+}
