@@ -8,7 +8,7 @@ import (
 func TestFunctionTracing(t *testing.T) {
 	metrics, _ := Trace(func() {
 		time.Sleep(2 * time.Second)
-	}, nil)
+	})
 
 	if metrics.ExecutionDuration.Seconds() < 2 {
 		t.Errorf("ExecutionDuration is less than expected: %v", metrics.ExecutionDuration)
