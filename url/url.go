@@ -3,8 +3,6 @@ package urlutil
 import (
 	"bytes"
 	"net/url"
-	"regexp"
-	"strconv"
 	"strings"
 
 	errorutil "github.com/projectdiscovery/utils/errors"
@@ -224,17 +222,7 @@ func (u *URL) fetchParams() {
 
 // ParseURL
 func Parse(inputURL string) (*URL, error) {
-	inputURL = decodeUnicodeEscapes(inputURL)
 	return ParseURL(inputURL, false)
-}
-
-// decodeUnicodeEscapes replaces %uXXXX escapes with their actual characters.
-func decodeUnicodeEscapes(inputURL string) string {
-	re := regexp.MustCompile(`%u([0-9a-fA-F]{4})`)
-	return re.ReplaceAllStringFunc(inputURL, func(match string) string {
-		code, _ := strconv.ParseInt(match[2:], 16, 32)
-		return string(rune(code))
-	})
 }
 
 // Parse and return URL
@@ -303,8 +291,7 @@ func ParseURL(inputURL string, unsafe bool) (*URL, error) {
 		// TODO: should use a proper regex to validate hostname/ip
 		// currently domain names without (.) are not considered as valid and autocorrected
 		// if DisableAutoCorrect is false
-		if !stringsutil.HasPrefixAny(inputURL, HTTP+SchemeSeparator, HTTPS+SchemeSeparator, "//") &&
-			!strings.Contains(u.Host, ".") && !strings.Contains(u.Host, ":") && u.Host != "localhost" {
+		if !strings.Contains(u.Host, ".") && !strings.Contains(u.Host, ":") && u.Host != "localhost" {
 			// this does not look like a valid domain , ipv4 or ipv6
 			// consider it as relative
 			if !DisableAutoCorrect {
