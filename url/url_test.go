@@ -168,3 +168,19 @@ func TestURLFragment(t *testing.T) {
 		require.Equalf(t, v.expectedFragment, urlx.Fragment, "got error for url %v", v.inputURL)
 	}
 }
+
+func TestUnicodeEscapeWithUnsafe(t *testing.T) {
+	testcases := []struct {
+		input    string
+		expected string
+	}{
+		{"https://scanme.sh/%u002e%u002e/%u002e%u002e/1.txt.it", "https://scanme.sh/%u002e%u002e/%u002e%u002e/1.txt.it"},
+	}
+	DisableAutoCorrect = true
+
+	for _, v := range testcases {
+		urlx, err := ParseURL(v.input, true)
+		require.Nilf(t, err, "got error for url %v", v.input)
+		require.Equal(t, v.expected, urlx.String())
+	}
+}

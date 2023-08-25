@@ -56,6 +56,16 @@ func HasPrefixAny(s string, prefixes ...string) bool {
 	return false
 }
 
+// HasPrefixAnyI is case insensitive HasPrefixAny
+func HasPrefixAnyI(s string, prefixes ...string) bool {
+	for _, prefix := range prefixes {
+		if HasPrefixI(s, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
 // HasSuffixAny checks if the string ends with any specified suffix
 func HasSuffixAny(s string, suffixes ...string) bool {
 	for _, suffix := range suffixes {
