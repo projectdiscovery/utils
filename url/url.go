@@ -238,10 +238,7 @@ func decodeUnicodeEscapes(inputURL string) string {
 
 // Parse and return URL
 func ParseURL(inputURL string, unsafe bool) (*URL, error) {
-	if unsafe {
-		inputURL = decodeUnicodeEscapes(inputURL)
-	}
-
+	inputURL = decodeUnicodeEscapes(inputURL)
 	u := &URL{
 		URL:      &url.URL{},
 		Original: inputURL,
