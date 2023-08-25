@@ -79,6 +79,19 @@ func TestHasPrefixAny(t *testing.T) {
 	}
 }
 
+func TestHasPrefixAnyI(t *testing.T) {
+	tests := map[string]prefixsuffixtest{
+		"A b c":     {Prefixes: []string{"a"}, Result: true},
+		"A B c d":   {Prefixes: []string{"a b", "a"}, Result: true},
+		"a b c d e": {Prefixes: []string{"b", "o", "A"}, Result: true},
+		"test test": {Prefixes: []string{"a", "b"}, Result: false},
+	}
+	for str, test := range tests {
+		res := HasPrefixAnyI(str, test.Prefixes...)
+		require.Equalf(t, test.Result, res, "test: %s prefixes: %+v result: %s", str, test.Prefixes, res)
+	}
+}
+
 func TestHasSuffixAny(t *testing.T) {
 	tests := map[string]prefixsuffixtest{
 		"a b c":     {Suffixes: []string{"c"}, Result: true},
