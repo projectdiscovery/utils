@@ -117,3 +117,19 @@ func TestParseRelativePath(t *testing.T) {
 		require.Equal(t, v.expectedPath, urlx.GetRelativePath())
 	}
 }
+
+func TestUnicodeEscapeWithUnsafe(t *testing.T) {
+	testcases := []struct {
+		input    string
+		expected string
+	}{
+		{"https://admin/%u002e%u002e/%u002e%u002e/1.txt.it", "https://admin/%u002e%u002e/%u002e%u002e/1.txt.it"},
+	}
+	DisableAutoCorrect = true
+
+	for _, v := range testcases {
+		urlx, err := ParseURL(v.input, true)
+		require.Nilf(t, err, "got error for url %v", v.input)
+		require.Equal(t, v.expected, urlx.String())
+	}
+}
