@@ -118,12 +118,63 @@ func TestParseRelativePath(t *testing.T) {
 	}
 }
 
+func TestParseFragmentRelativePath(t *testing.T) {
+	testcases := []struct {
+		inputURL         string
+		unsafe           bool
+		expectedFragment string
+	}{
+		{"/?param=value#highlight", false, "highlight"},
+		{"/somepath/#highlight", true, "highlight"},
+		{"/somepath/?with=param#highlight", false, "highlight"},
+	}
+
+	for _, v := range testcases {
+		urlx, err := ParseURL(v.inputURL, v.unsafe)
+		require.Nilf(t, err, "got error for url %v", v.inputURL)
+		require.Equal(t, v.expectedFragment, urlx.Fragment)
+	}
+}
+
+func TestParseParam(t *testing.T) {
+	testcases := []struct {
+		inputURL      string
+		unsafe        bool
+		expectedParam string
+	}{
+		{"https://scanme.sh/?param=value#highlight", false, "param=value"},
+	}
+
+	for _, v := range testcases {
+		urlx, err := ParseURL(v.inputURL, v.unsafe)
+		require.Nilf(t, err, "got error for url %v", v.inputURL)
+		require.Equal(t, v.expectedParam, urlx.Params.Encode())
+	}
+}
+
+func TestURLFragment(t *testing.T) {
+	testcases := []struct {
+		inputURL         string
+		unsafe           bool
+		expectedFragment string
+	}{
+		{"https://scanme.sh/admin?param=value#highlight", false, "highlight"},
+		{"https://scanme.sh/#highlight", true, "highlight"},
+	}
+
+	for _, v := range testcases {
+		urlx, err := ParseURL(v.inputURL, v.unsafe)
+		require.Nilf(t, err, "got error for url %v", v.inputURL)
+		require.Equalf(t, v.expectedFragment, urlx.Fragment, "got error for url %v", v.inputURL)
+	}
+}
+
 func TestUnicodeEscapeWithUnsafe(t *testing.T) {
 	testcases := []struct {
 		input    string
 		expected string
 	}{
-		{"https://admin/%u002e%u002e/%u002e%u002e/1.txt.it", "https://admin/%u002e%u002e/%u002e%u002e/1.txt.it"},
+		{"https://scanme.sh/%u002e%u002e/%u002e%u002e/1.txt.it", "https://scanme.sh/%u002e%u002e/%u002e%u002e/1.txt.it"},
 	}
 	DisableAutoCorrect = true
 
