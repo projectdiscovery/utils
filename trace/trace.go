@@ -33,12 +33,22 @@ type Metrics struct {
 type FunctionContext struct {
 	strategy ActionStrategy
 	action   func()
+	before   func()
+	after    func()
 }
 
 func (f *FunctionContext) Execute() {
+	if f.before != nil {
+		f.before()
+	}
+
 	f.strategy.Before()
 	f.action()
 	f.strategy.After()
+
+	if f.after != nil {
+		f.after()
+	}
 }
 
 type ActionStrategy interface {
@@ -117,6 +127,8 @@ func (d *DefaultStrategy) GetMetrics() *Metrics {
 
 type TraceOptions struct {
 	strategy ActionStrategy
+	before   func()
+	after    func()
 }
 
 type TraceOptionSetter func(opts *TraceOptions)
@@ -124,6 +136,18 @@ type TraceOptionSetter func(opts *TraceOptions)
 func WithStrategy(s ActionStrategy) TraceOptionSetter {
 	return func(opts *TraceOptions) {
 		opts.strategy = s
+	}
+}
+
+func WithBefore(b func()) TraceOptionSetter {
+	return func(opts *TraceOptions) {
+		opts.before = b
+	}
+}
+
+func WithAfter(a func()) TraceOptionSetter {
+	return func(opts *TraceOptions) {
+		opts.after = a
 	}
 }
 
@@ -144,6 +168,8 @@ func Trace(f func(), setters ...TraceOptionSetter) (*Metrics, error) {
 	context := &FunctionContext{
 		strategy: opts.strategy,
 		action:   f,
+		before:   opts.before,
+		after:    opts.after,
 	}
 
 	context.Execute()

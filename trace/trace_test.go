@@ -5,6 +5,36 @@ import (
 	"time"
 )
 
+func TestFunctionWithBeforeFunction(t *testing.T) {
+	var beforeCalled bool
+	_, _ = Trace(func() {
+		if !beforeCalled {
+			t.Errorf("Before function was not called before the main function")
+		}
+	}, WithBefore(func() {
+		beforeCalled = true
+	}))
+
+	if !beforeCalled {
+		t.Errorf("Before function was not called")
+	}
+}
+
+func TestFunctionWithAfterFunction(t *testing.T) {
+	var afterCalled bool
+	_, _ = Trace(func() {
+		if afterCalled {
+			t.Errorf("After function was called before the main function finished")
+		}
+	}, WithAfter(func() {
+		afterCalled = true
+	}))
+
+	if !afterCalled {
+		t.Errorf("After function was not called")
+	}
+}
+
 func TestFunctionTracing(t *testing.T) {
 	metrics, _ := Trace(func() {
 		time.Sleep(2 * time.Second)
