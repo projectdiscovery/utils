@@ -1,6 +1,11 @@
 package netutil
 
-import "net"
+import (
+	"errors"
+	"net"
+)
+
+var ErrMissingPort = errors.New("missing port")
 
 // TryJoinHostPort joins host and port. If port is empty, it returns host and an error.
 func TryJoinHostPort(host, port string) (string, error) {
@@ -9,7 +14,7 @@ func TryJoinHostPort(host, port string) (string, error) {
 	}
 
 	if port == "" {
-		return host, &net.AddrError{Err: "missing port", Addr: host}
+		return host, ErrMissingPort
 	}
 
 	return net.JoinHostPort(host, port), nil
