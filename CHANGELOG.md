@@ -8,8 +8,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <a name="unreleased"></a>
 ## [Unreleased]
 
+
+<a name="v0.0.55"></a>
+## [v0.0.55] - 2023-09-11
+### Add
+- add TryJoinHostPort func
+- add before and after func
+
+### Changing
+- changing package name
+
+### Fix
+- fix test
+- fix race condition
+
+### Introduce
+- introduce func trace
+
+### Merge
+- Merge branch 'main' into introduce_func_trace
+
+### Snapshot
+- snapshot memory
+
+### Update
+- update variadic param usage
+
+### Use
+- use lock
+
+### Using
+- using custom error
+
+
+<a name="v0.0.54"></a>
+## [v0.0.54] - 2023-09-04
+### Fix
+- fix HasCapNetRaw err
+
 ### Keep
 - keep a changelog ([#251](https://github.com/projectdiscovery/utils/issues/251))
+
+### Update
+- update CHANGELOG.md
 
 
 <a name="v0.0.53"></a>
@@ -1048,7 +1089,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - wo global functions for log util and test cases
 
 
-[Unreleased]: https://github.com/projectdiscovery/utils/compare/v0.0.53...HEAD
+[Unreleased]: https://github.com/projectdiscovery/utils/compare/v0.0.55...HEAD
+[v0.0.55]: https://github.com/projectdiscovery/utils/compare/v0.0.54...v0.0.55
+[v0.0.54]: https://github.com/projectdiscovery/utils/compare/v0.0.53...v0.0.54
 [v0.0.53]: https://github.com/projectdiscovery/utils/compare/v0.0.52...v0.0.53
 [v0.0.52]: https://github.com/projectdiscovery/utils/compare/v0.0.51...v0.0.52
 [v0.0.51]: https://github.com/projectdiscovery/utils/compare/v0.0.50...v0.0.51
