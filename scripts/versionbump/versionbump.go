@@ -4,8 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"go/ast"
+	"go/format"
 	"go/parser"
-	"go/printer"
 	"go/token"
 	"os"
 	"path/filepath"
@@ -71,7 +71,7 @@ func bumpVersion(fileName, varName, part string) (string, string, error) {
 	}
 	defer f.Close()
 
-	if err := printer.Fprint(f, fset, node); err != nil {
+	if err := format.Node(f, fset, node); err != nil {
 		return oldVersion, newVersion, fmt.Errorf("could not write to file: %w", err)
 	}
 
