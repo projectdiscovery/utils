@@ -14,6 +14,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/charmbracelet/glamour"
+	"github.com/denisbrodbeck/machineid"
 	"github.com/minio/selfupdate"
 	"github.com/projectdiscovery/gologger"
 	errorutil "github.com/projectdiscovery/utils/errors"
@@ -110,7 +111,7 @@ func GetUpdateToolFromRepoCallback(toolName, version, repoName string) func() {
 // if repoName is empty then tool name is considered as repoName
 func GetToolVersionCallback(toolName, version string) func() (string, error) {
 	return func() (string, error) {
-		updateURL := fmt.Sprintf(UpdateCheckEndpoint, toolName) + "?" + getpdtmParams(version)
+		updateURL := fmt.Sprintf(UpdateCheckEndpoint, toolName) + "?" + GetpdtmParams(version)
 		if DefaultHttpClient == nil {
 			// not needed but as a precaution to avoid nil panics
 			DefaultHttpClient = http.DefaultClient
@@ -145,14 +146,23 @@ func GetToolVersionCallback(toolName, version string) func() (string, error) {
 	}
 }
 
-// getpdtmParams returns encoded query parameters sent to update check endpoint
-func getpdtmParams(version string) string {
+// GetpdtmParams returns encoded query parameters sent to update check endpoint
+func GetpdtmParams(version string) string {
 	params := &url.Values{}
 	params.Add("os", runtime.GOOS)
 	params.Add("arch", runtime.GOARCH)
 	params.Add("go_version", runtime.Version())
 	params.Add("v", version)
+	params.Add("machine_id", buildMachineId())
 	return params.Encode()
+}
+
+func buildMachineId() string {
+	machineId, err := machineid.ProtectedID("pdtm")
+	if err != nil {
+		return "unknown"
+	}
+	return machineId
 }
 
 // Deprecated: use GetToolVersionCheckCallback instead
