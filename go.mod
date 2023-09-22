@@ -33,6 +33,7 @@ require (
 	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/alecthomas/chroma v0.10.0 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
+	github.com/denisbrodbeck/machineid v1.0.1 // indirect
 	github.com/dlclark/regexp2 v1.8.1 // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/fatih/color v1.15.0 // indirect
