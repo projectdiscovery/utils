@@ -19,10 +19,17 @@ func NewLevelDBBackend() *LevelDBBackend {
 	return l
 }
 
-func (l *LevelDBBackend) Upsert(elem string) {
+func (l *LevelDBBackend) Upsert(elem string) bool {
+	_, exists := l.storage.Get(elem)
+	if exists {
+		return false
+	}
+
 	if err := l.storage.Set(elem, nil); err != nil {
 		gologger.Error().Msgf("dedupe: leveldb: got %v while writing %v", err, elem)
+		return false
 	}
+	return true
 }
 
 func (l *LevelDBBackend) IterCallback(callback func(elem string)) {

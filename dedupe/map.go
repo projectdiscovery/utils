@@ -10,8 +10,12 @@ func NewMapBackend() *MapBackend {
 	return &MapBackend{storage: map[string]struct{}{}}
 }
 
-func (m *MapBackend) Upsert(elem string) {
+func (m *MapBackend) Upsert(elem string) bool {
+	if _, exists := m.storage[elem]; exists {
+		return false
+	}
 	m.storage[elem] = struct{}{}
+	return true
 }
 
 func (m *MapBackend) IterCallback(callback func(elem string)) {

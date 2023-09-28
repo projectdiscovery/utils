@@ -5,7 +5,7 @@ var MaxInMemoryDedupeSize = 100 * 1024 * 1024
 
 type DedupeBackend interface {
 	// Upsert add/update key to backend/database
-	Upsert(elem string)
+	Upsert(elem string) bool
 	// Execute given callback on each element while iterating
 	IterCallback(callback func(elem string))
 	// Cleanup cleans any residuals after deduping
@@ -16,18 +16,18 @@ type DedupeBackend interface {
 // all duplicates if
 type Dedupe struct {
 	receive <-chan string
+	send    chan<- string
 	backend DedupeBackend
 }
 
 // Drains channel and tries to dedupe it
 func (d *Dedupe) Drain() {
-	for {
-		val, ok := <-d.receive
-		if !ok {
-			break
+	for val := range d.receive {
+		if unique := d.backend.Upsert(val); unique {
+			d.send <- val
 		}
-		d.backend.Upsert(val)
 	}
+	close(d.send)
 }
 
 // GetResults iterates over dedupe storage and returns results
@@ -45,9 +45,10 @@ func (d *Dedupe) GetResults() <-chan string {
 
 // NewDedupe returns a dedupe instance which removes all duplicates
 // Note: If byteLen is not correct/specified alterx may consume lot of memory
-func NewDedupe(ch <-chan string, byteLen int) *Dedupe {
+func NewDedupe(receiveCh <-chan string, sendCh chan<- string, byteLen int) *Dedupe {
 	d := &Dedupe{
-		receive: ch,
+		receive: receiveCh,
+		send:    sendCh,
 	}
 	if byteLen <= MaxInMemoryDedupeSize {
 		d.backend = NewMapBackend()
