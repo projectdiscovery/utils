@@ -1,34 +1,62 @@
 package fileutil
 
 import (
-	"path/filepath"
+	"io"
+	"os"
+	"strings"
 	"testing"
 )
 
-func FuzzCleanPath(f *testing.F) {
-	// // Define your custom payloads here
-	// customPayloads := []string{
-	// 	"../../etc/passwd",
-	// 	"/absolute/path/to/file",
-	// 	"./relative/path",
-	// 	// Add more payloads as needed
-	// }
+func FuzzSafeOpen(f *testing.F) {
 
-	// // Use each custom payload for fuzzing
-	// for _, payload := range customPayloads {
-	// 	f.Add(payload)
-	// }
+	// ==========setup==========
 
-	f.Fuzz(func(t *testing.T, inputPath string) {
-		result, err := CleanPath(inputPath)
+	bin, err := os.ReadFile("tests/path-traversal.txt")
+	if err != nil {
+		f.Fatalf("failed to read file: %s", err)
+	}
+
+	fuzzPayloads := strings.Split(string(bin), "\n")
+
+	file, err := os.CreateTemp("", "*")
+	if err != nil {
+		f.Fatal(err)
+	}
+	_, _ = file.WriteString("pwned!")
+	_ = file.Close()
+
+	defer func(tmp string) {
+		if err = os.Remove(tmp); err != nil {
+			panic(err)
+		}
+	}(file.Name())
+
+	// ==========fuzzing==========
+
+	for _, payload := range fuzzPayloads {
+		f.Add(strings.ReplaceAll(payload, "{FILE}", f.Name()), f.Name())
+
+	}
+	f.Fuzz(func(t *testing.T, fuzzPath string, targetPath string) {
+		cleaned, err := CleanPath(fuzzPath)
 		if err != nil {
-			t.Fatal(err)
+			// Ignore errors
+			return
+		}
+		if cleaned != targetPath {
+			// cleaned path is different from target file
+			// so verify if 'path' is actually valid and not random chars
+			result, err := SafeOpen(cleaned)
+			if err != nil {
+				// Ignore errors
+				return
+			}
+			defer result.Close()
+			bin, _ := io.ReadAll(result)
+			if string(bin) == "pwned!" {
+				t.Fatalf("pwned! cleaned=%s ,input=%s", cleaned, fuzzPath)
+			}
 		}
 
-		// You can add more assertions here based on your requirements
-		// For example, you might want to check if the returned path is absolute
-		if !filepath.IsAbs(result) {
-			t.Errorf("CleanPath(%q) returned a non-absolute path", result)
-		}
 	})
 }
