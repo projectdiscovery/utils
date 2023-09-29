@@ -26,3 +26,6 @@ jobs:
       - name: Race Condition Tests
         if: ${{ matrix.os != 'windows-latest' }} # false positives in windows
         run: go test -race ./...
+
+      - name: Fuzz File Read  # fuzz tests need to be run separately  
+        run:  go test -fuzztime=10s -fuzz=FuzzSafeOpen -run "FuzzSafeOpen" ./file/...

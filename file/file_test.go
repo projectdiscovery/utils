@@ -56,8 +56,8 @@ func TestDeleteFilesOlderThan(t *testing.T) {
 	// create a temporary folder with a couple of files
 	fo, err := os.MkdirTemp("", "")
 	require.Nil(t, err, "couldn't create folder: %s", err)
-	ttl := time.Duration(5 * time.Second)
-	sleepTime := time.Duration(10 * time.Second)
+	ttl := time.Duration(1 * time.Second)
+	sleepTime := time.Duration(3 * time.Second)
 
 	// defer temporary folder removal
 	defer os.RemoveAll(fo)
