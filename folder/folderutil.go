@@ -166,7 +166,7 @@ func IsWritable(path string) bool {
 	}
 	_ = tmpfile.Close()
 	_ = os.Remove(tmpfile.Name())
-	writeablePathCache.Set(path, struct{}{})
+	_ = writeablePathCache.Set(path, struct{}{})
 	return true
 }
 

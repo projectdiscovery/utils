@@ -1,6 +1,7 @@
 package folderutil
 
 import (
+	"fmt"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -47,4 +48,12 @@ func AppCacheDirOrDefault(defaultCacheDir string, toolName string) string {
 		return filepath.Join(defaultCacheDir, toolName)
 	}
 	return filepath.Join(userCacheDir, toolName)
+}
+
+// Prints the standard directories for a tool
+func PrintStdDirs(toolName string) {
+	appConfigDir := AppConfigDirOrDefault("", toolName)
+	appCacheDir := AppCacheDirOrDefault("", toolName)
+	fmt.Printf("[+] %v %-13v: %v\n", toolName, "AppConfigDir", appConfigDir)
+	fmt.Printf("[+] %v %-13v: %v\n", toolName, "AppCacheDir", appCacheDir)
 }
