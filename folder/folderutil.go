@@ -3,17 +3,23 @@ package folderutil
 import (
 	"errors"
 	"os"
-	"os/user"
 	"path/filepath"
 	"runtime"
 	"strings"
 
 	fileutil "github.com/projectdiscovery/utils/file"
+	mapsutil "github.com/projectdiscovery/utils/maps"
 )
 
 var (
 	// Separator evaluated at runtime
 	Separator = string(os.PathSeparator)
+	// Remove source directory after successful sync
+	RemoveSourceDirAfterSync = true
+	// writeablePathCache is a cache of writeable paths
+	writeablePathCache = mapsutil.SyncLockMap[string, struct{}]{
+		Map: make(map[string]struct{}),
+	}
 )
 
 const (
@@ -145,54 +151,24 @@ func agnosticSplit(path string) (parts []string) {
 	return
 }
 
-// HomeDirOrDefault tries to obtain the user's home directory and
-// returns the default if it cannot be obtained.
-func HomeDirOrDefault(defaultDirectory string) string {
-	if user, err := user.Current(); err == nil && IsWritable(user.HomeDir) {
-		return user.HomeDir
-	}
-	if homeDir, err := os.UserHomeDir(); err == nil && IsWritable(homeDir) {
-		return homeDir
-	}
-	return defaultDirectory
-}
-
 // IsWritable checks if a path is writable by attempting to create a temporary file.
-// Note: It's recommended to minimize the use of this function because it involves file creation.
-// If performance is a concern, consider declaring a global variable in the module using this and initialize it once.
+// It caches writable paths to avoid unnecessary file operations.
 func IsWritable(path string) bool {
+	if _, ok := writeablePathCache.Get(path); ok {
+		return true
+	}
 	if !fileutil.FolderExists(path) {
 		return false
 	}
-
 	tmpfile, err := os.CreateTemp(path, "test")
 	if err != nil {
 		return false
 	}
-	defer os.Remove(tmpfile.Name())
+	_ = tmpfile.Close()
+	_ = os.Remove(tmpfile.Name())
+	writeablePathCache.Set(path, struct{}{})
 	return true
 }
-
-// UserConfigDirOrDefault returns the user config directory or defaultConfigDir in case of error
-func UserConfigDirOrDefault(defaultConfigDir string) string {
-	userConfigDir, err := os.UserConfigDir()
-	if err != nil {
-		return defaultConfigDir
-	}
-	return userConfigDir
-}
-
-// AppConfigDirOrDefault returns the app config directory
-func AppConfigDirOrDefault(defaultAppConfigDir string, toolName string) string {
-	userConfigDir := UserConfigDirOrDefault("")
-	if userConfigDir == "" {
-		return filepath.Join(defaultAppConfigDir, toolName)
-	}
-	return filepath.Join(userConfigDir, toolName)
-}
-
-// Remove source directory after successful sync
-var RemoveSourceDirAfterSync = true
 
 // SyncDirectory sync all files and non-empty directories from source to destination folder
 // optionally removes source directory and removes source
