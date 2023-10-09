@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"runtime/pprof"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/projectdiscovery/utils/env"
@@ -23,8 +24,9 @@ const (
 
 func init() {
 	if env.GetEnvOrDefault(PPROFSwitchENV, 0) == 1 {
-		log.Printf("GOOS: %v\n", runtime.GOOS)
-		log.Printf("GOARCH: %v\n", runtime.GOARCH)
+		log.Printf("[+] GOOS: %v\n", runtime.GOOS)
+		log.Printf("[+] GOARCH: %v\n", runtime.GOARCH)
+		log.Printf("[+] Command: %v\n", strings.Join(os.Args, " "))
 		log.Println("Available PPROF Config Options:")
 		log.Printf("%-16v - directory to write memory profiles to\n", MemProfileENV)
 		log.Printf("%-16v - directory to write cpu profiles to\n", CPUProfileENV)
