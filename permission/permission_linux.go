@@ -1,4 +1,4 @@
-//go:build linux
+//go:build linux && !(armv7l || armv8l)
 
 package permissionutil
 
