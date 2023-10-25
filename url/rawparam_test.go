@@ -52,10 +52,10 @@ func TestParamIntegration(t *testing.T) {
 		}
 		w.WriteHeader(http.StatusOK)
 	})
-	//nolint:all
 	listener, err := net.Listen("tcp", "localhost:0")
 	require.Nil(t, err)
 
+	//nolint:all
 	go http.Serve(listener, nil)
 
 	p := NewParams()
