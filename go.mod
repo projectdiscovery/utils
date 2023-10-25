@@ -13,7 +13,7 @@ require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/microcosm-cc/bluemonday v1.0.25
 	github.com/miekg/dns v1.1.55
-	github.com/minio/selfupdate v0.6.0
+	github.com/minio/selfupdate v0.6.1-0.20230907112617-f11e74f84ca7
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/blackrock v0.0.1
 	github.com/projectdiscovery/fdmax v0.0.4
