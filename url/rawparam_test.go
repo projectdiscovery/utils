@@ -2,6 +2,7 @@ package urlutil
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"testing"
@@ -52,7 +53,10 @@ func TestParamIntegration(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 	//nolint:all
-	go http.ListenAndServe(":9000", nil)
+	listener, err := net.Listen("tcp", ":0")
+	require.Nil(t, err)
+
+	go http.Serve(listener, nil)
 
 	p := NewParams()
 	p.Add("sqli", "1+AND+(SELECT+*+FROM+(SELECT(SLEEP(12)))nQIP)")
@@ -60,9 +64,9 @@ func TestParamIntegration(t *testing.T) {
 	p.Add("xssiwthspace", "<svg id=alert(1) onload=eval(id)>")
 	p.Add("jsprotocol", "javascript://alert(1)")
 
-	url, _ := url.Parse("http://localhost:9000/params")
+	url, _ := url.Parse("http://" + listener.Addr().String() + "/params")
 	url.RawQuery = p.Encode()
-	_, err := http.Get(url.String())
+	_, err = http.Get(url.String())
 	require.Nil(t, err)
 	require.Nil(t, routerErr)
 }
