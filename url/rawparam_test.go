@@ -3,9 +3,11 @@ package urlutil
 import (
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"testing"
 
+	"github.com/julienschmidt/httprouter"
 	"github.com/stretchr/testify/require"
 )
 
@@ -45,14 +47,15 @@ func TestParamIntegration(t *testing.T) {
 	var routerErr error
 	expected := "/params?jsprotocol=javascript://alert(1)&sqli=1+AND+(SELECT+*+FROM+(SELECT(SLEEP(12)))nQIP)&xss=<script>alert('XSS')</script>&xssiwthspace=<svg+id=alert(1)+onload=eval(id)>"
 
-	http.HandleFunc("/params", func(w http.ResponseWriter, r *http.Request) {
+	router := httprouter.New()
+	router.GET("/params", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		if r.RequestURI != expected {
 			routerErr = fmt.Errorf("expected %v but got %v", expected, r.RequestURI)
 		}
 		w.WriteHeader(http.StatusOK)
 	})
-	//nolint:all
-	go http.ListenAndServe(":9000", nil)
+	ts := httptest.NewServer(router)
+	defer ts.Close()
 
 	p := NewParams()
 	p.Add("sqli", "1+AND+(SELECT+*+FROM+(SELECT(SLEEP(12)))nQIP)")
@@ -60,7 +63,7 @@ func TestParamIntegration(t *testing.T) {
 	p.Add("xssiwthspace", "<svg id=alert(1) onload=eval(id)>")
 	p.Add("jsprotocol", "javascript://alert(1)")
 
-	url, _ := url.Parse("http://localhost:9000/params")
+	url, _ := url.Parse(ts.URL + "/params")
 	url.RawQuery = p.Encode()
 	_, err := http.Get(url.String())
 	require.Nil(t, err)
