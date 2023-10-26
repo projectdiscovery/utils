@@ -137,10 +137,17 @@ func TestParseFragmentRelativePath(t *testing.T) {
 }
 
 func TestParseInvalidUnsafe(t *testing.T) {
-	input := "https://127.0.0.1/%25"
-	u, err := ParseURL(input, true)
-	require.Nilf(t, err, "got error for url %v", input)
-	require.Equal(t, input, u.String())
+	testcases := []string{
+		"https://127.0.0.1/%25",
+		"https://127.0.0.1/%25/aaaa",
+		"https://127.0.0.1/%25/bb/%45?a=1",
+	}
+
+	for _, input := range testcases {
+		u, err := ParseURL(input, true)
+		require.Nilf(t, err, "got error for url %v", input)
+		require.Equal(t, input, u.String())
+	}
 }
 
 func TestParseParam(t *testing.T) {
