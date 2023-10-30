@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"syscall"
 )
 
 const (
 	// although this is more than enough for most cases
-	MaxReadSize   = 1 << 23 // 8MB
-	BuffAllocSize = 1 << 12 // 4KB
+	MaxReadSize = 1 << 23 // 8MB
 )
 
 var (
@@ -30,19 +30,24 @@ func ConnReadN(reader io.Reader, N int64) ([]byte, error) {
 	} else if N > MaxReadSize {
 		return nil, ErrTooLarge
 	}
-	// no need to allocate slice upfront if N is signficantly larger than BuffAllocSize
-	// since we use this to read from network connection lets read 4KB at a time
-	// net.Conn has 2KB and 4KB variants while reading http request from net.Conn
-	allocSize := N
-	if N > BuffAllocSize {
-		allocSize = BuffAllocSize
-	}
-
-	buff := bytes.NewBuffer(make([]byte, 0, allocSize))
+	var buff bytes.Buffer
 	// read N bytes or until EOF
-	_, err := io.CopyN(buff, reader, N)
-	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
+	_, err := io.CopyN(&buff, io.LimitReader(reader, N), N)
+	if err != nil && !IsAcceptedError(err) {
 		return nil, err
 	}
 	return buff.Bytes(), nil
+}
+
+// IsAcceptedError checks if the error is accepted error
+// for example: timeout, connection refused, io.EOF, io.ErrUnexpectedEOF
+// while reading from connection
+func IsAcceptedError(err error) bool {
+	if err == io.EOF || err == io.ErrUnexpectedEOF {
+		return true
+	}
+	if errors.Is(err, syscall.ECONNREFUSED) {
+		return true
+	}
+	return false
 }
