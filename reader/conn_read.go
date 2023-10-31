@@ -41,10 +41,14 @@ func ConnReadN(ctx context.Context, reader io.Reader, N int64) ([]byte, error) {
 		return io.CopyN(&buff, io.LimitReader(reader, N), N)
 	}
 	_, err := contextutil.ExecFuncWithTwoReturns(ctx, fn)
-	if err != nil && (!IsAcceptedError(err) && buff.Len() > 0) {
-		// if error occured and it is not accepted error then return error
-		// accept errors if we get at least some data from connection
-		return nil, errorutil.WrapfWithNil(err, "reader: error while reading from connection")
+	if err != nil {
+		if IsAcceptedError(err) && buff.Len() > 0 {
+			// if error is accepted error and we have some data
+			// then return data
+			return buff.Bytes(), nil
+		} else {
+			return nil, errorutil.WrapfWithNil(err, "reader: error while reading from connection")
+		}
 	} else {
 		return buff.Bytes(), nil
 	}
