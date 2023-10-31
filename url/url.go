@@ -100,7 +100,7 @@ func (u *URL) Clone() *URL {
 // String
 func (u *URL) String() string {
 	var buff bytes.Buffer
-	if u.Scheme != "" {
+	if u.Scheme != "" && u.Host != "" {
 		buff.WriteString(u.Scheme + "://")
 	}
 	if u.User != nil {
@@ -308,10 +308,6 @@ func ParseURL(inputURL string, unsafe bool) (*URL, error) {
 	}
 	if u.IsRelative {
 		return ParseRelativePath(inputURL, unsafe)
-	} else if unsafe {
-		// we are not relative, but we still need to call this in order to call
-		// the internal parser for paths url.Parse will not handle.
-		u.parseUnsafeRelativePath()
 	}
 	return u, nil
 }
