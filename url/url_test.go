@@ -146,7 +146,7 @@ func TestParseInvalidUnsafe(t *testing.T) {
 	for _, input := range testcases {
 		u, err := ParseURL(input, true)
 		require.Nilf(t, err, "got error for url %v", input)
-		require.Equal(t, input, u.String())
+		require.Equal(t, input, u.URL.String())
 	}
 }
 
