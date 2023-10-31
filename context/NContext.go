@@ -2,8 +2,8 @@ package contextutil
 
 import "context"
 
-// A problematic situation when implementing
-// context in a function is when there is more than one value is returned by the function
+// A problematic situation when implementing context in a function
+// is when that function has more than one return values
 // if function has only one return value we can safely wrap it something like this
 /*
 	func DoSomething() error {}
@@ -18,10 +18,10 @@ import "context"
 		// handle context cancelation
 	}
 */
-// but what if we have more than one value to return? we can use generics and a struct
-// and that is what we are doing here
-// unfortunately there is no such thing as variadic return unless we put it in a slice
-// we will have to use structs with 2,3 fields
+// but what if we have more than one value to return?
+// we can use generics and a struct and that is what we are doing here
+// here we use struct and generics to store return values of a function
+// instead of storing it in a []interface{}
 
 type twoValueCtx[T1 any, T2 any] struct {
 	var1 T1

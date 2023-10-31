@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"strings"
 )
 
@@ -59,5 +60,5 @@ func WrapwithNil(err error, errx ...error) Error {
 // IsTimeout checks if error is timeout error
 func IsTimeout(err error) bool {
 	var net net.Error
-	return (errors.As(err, &net) && net.Timeout()) || errors.Is(err, context.DeadlineExceeded)
+	return (errors.As(err, &net) && net.Timeout()) || errors.Is(err, context.DeadlineExceeded) || errors.Is(err, os.ErrDeadlineExceeded)
 }
