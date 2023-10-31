@@ -1,7 +1,6 @@
 package reader
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -24,7 +23,7 @@ var (
 // ConnReadN reads at most N bytes from reader and it optimized
 // for connection based readers like net.Conn it should not be used
 // for file/buffer based reading, ConnReadN should be preferred
-// instead of 'conn.Read() without loop'
+// instead of 'conn.Read() without loop' . It ignores EOF, UnexpectedEOF and timeout errors
 // Note: you are responsible for adding a timeout to context
 func ConnReadN(ctx context.Context, reader io.Reader, N int64) ([]byte, error) {
 	if N == -1 {
@@ -36,21 +35,45 @@ func ConnReadN(ctx context.Context, reader io.Reader, N int64) ([]byte, error) {
 	} else if N > MaxReadSize {
 		return nil, ErrTooLarge
 	}
-	var buff bytes.Buffer
-	fn := func() (int64, error) {
-		return io.CopyN(&buff, io.LimitReader(reader, N), N)
+	var readErr error
+	pr, pw := io.Pipe()
+
+	// context: in nuclei network protocol when reading all available data
+	// from connection it might timeout after sending all data
+	// see: TestConnReadN#6 for example of this
+	// in such case what we desire is that even though it timeout out
+	// but returned some data then we should return that data and hide the error
+	// we use io.Pipe() with goroutine to avoid race conditions
+
+	go func() {
+		defer pw.Close()
+		fn := func() (int64, error) {
+			return io.CopyN(pw, io.LimitReader(reader, N), N)
+		}
+		// ExecFuncWithTwoReturns will execute the function but errors if context is done
+		_, readErr = contextutil.ExecFuncWithTwoReturns(ctx, fn)
+	}()
+
+	// read from pipe and return
+	bin, err2 := io.ReadAll(pr)
+	if err2 != nil {
+		return nil, errorutil.NewWithErr(err2).Msgf("something went wrong while reading from pipe")
 	}
-	_, err := contextutil.ExecFuncWithTwoReturns(ctx, fn)
-	if err != nil {
-		if IsAcceptedError(err) && buff.Len() > 0 {
-			// if error is accepted error and we have some data
-			// then return data
-			return buff.Bytes(), nil
+
+	if readErr != nil {
+		if errorutil.IsTimeout(readErr) && len(bin) > 0 {
+			// if error is a timeout error and we have some data already
+			// then return data and ignore error
+			return bin, nil
+		} else if IsAcceptedError(readErr) {
+			// if error is accepted error ex: EOF, UnexpectedEOF, connection refused
+			// then return data and ignore error
+			return bin, nil
 		} else {
-			return nil, errorutil.WrapfWithNil(err, "reader: error while reading from connection")
+			return nil, errorutil.WrapfWithNil(readErr, "reader: error while reading from connection")
 		}
 	} else {
-		return buff.Bytes(), nil
+		return bin, nil
 	}
 }
 
@@ -63,10 +86,10 @@ func ConnReadNWithTimeout(reader io.Reader, N int64, after time.Duration) ([]byt
 }
 
 // IsAcceptedError checks if the error is accepted error
-// for example: timeout, connection refused, io.EOF, io.ErrUnexpectedEOF
+// for example: connection refused, io.EOF, io.ErrUnexpectedEOF
 // while reading from connection
 func IsAcceptedError(err error) bool {
-	if err == io.EOF || err == io.ErrUnexpectedEOF || errorutil.IsTimeout(err) {
+	if err == io.EOF || err == io.ErrUnexpectedEOF {
 		// ideally we should error out if we get a timeout error but
 		// that's different for our use case
 		return true
