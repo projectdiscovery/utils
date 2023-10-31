@@ -11,9 +11,11 @@ import (
 )
 
 func TestConnReadN(t *testing.T) {
+	timeout := time.Duration(5) * time.Second
+
 	t.Run("Test with N as -1", func(t *testing.T) {
 		reader := strings.NewReader("Hello, World!")
-		data, err := ConnReadN(reader, -1)
+		data, err := ConnReadNWithTimeout(reader, -1, timeout)
 		if err != nil {
 			t.Errorf("Unexpected error: %v", err)
 		}
@@ -24,7 +26,7 @@ func TestConnReadN(t *testing.T) {
 
 	t.Run("Test with N as 0", func(t *testing.T) {
 		reader := strings.NewReader("Hello, World!")
-		data, err := ConnReadN(reader, 0)
+		data, err := ConnReadNWithTimeout(reader, 0, timeout)
 		if err != nil {
 			t.Errorf("Unexpected error: %v", err)
 		}
@@ -35,7 +37,7 @@ func TestConnReadN(t *testing.T) {
 
 	t.Run("Test with N greater than MaxReadSize", func(t *testing.T) {
 		reader := bytes.NewReader(make([]byte, MaxReadSize+1))
-		_, err := ConnReadN(reader, MaxReadSize+1)
+		_, err := ConnReadNWithTimeout(reader, MaxReadSize+1, timeout)
 		if err != ErrTooLarge {
 			t.Errorf("Expected 'ErrTooLarge', got '%v'", err)
 		}
@@ -43,7 +45,7 @@ func TestConnReadN(t *testing.T) {
 
 	t.Run("Test with N less than MaxReadSize", func(t *testing.T) {
 		reader := strings.NewReader("Hello, World!")
-		data, err := ConnReadN(reader, 5)
+		data, err := ConnReadNWithTimeout(reader, 5, timeout)
 		if err != nil {
 			t.Errorf("Unexpected error: %v", err)
 		}
@@ -58,7 +60,7 @@ func TestConnReadN(t *testing.T) {
 		defer conn.Close()
 		_, err = conn.Write([]byte("GET / HTTP/1.1\r\nHost: projectdiscovery.io\r\nConnection: close\r\n\r\n"))
 		require.Nil(t, err, "could not write to connection")
-		data, err := ConnReadN(conn, -1)
+		data, err := ConnReadNWithTimeout(conn, -1, timeout)
 		require.Nilf(t, err, "could not read from connection: %s", err)
 		require.NotEmpty(t, data, "could not read from connection")
 	})
