@@ -34,14 +34,29 @@ type threeValueCtx[T1 any, T2 any, T3 any] struct {
 	var3 T3
 }
 
+// ExecFunc implements context for a function which has no return values
+// and executes that function. if context is cancelled before function returns
+// it will return context error otherwise it will return nil
+func ExecFunc(ctx context.Context, fn func()) error {
+	ch := make(chan struct{})
+	go func() {
+		fn()
+		ch <- struct{}{}
+	}()
+	select {
+	case <-ch:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
 // ExecFuncWithTwoReturns wraps a function which has two return values given that last one is error
 // and executes that function in a goroutine there by implementing context
 // if context is cancelled before function returns it will return context error
 // otherwise it will return function's return values
 func ExecFuncWithTwoReturns[T1 any](ctx context.Context, fn func() (T1, error)) (T1, error) {
-	var (
-		ch = make(chan twoValueCtx[T1, error])
-	)
+	ch := make(chan twoValueCtx[T1, error])
 	go func() {
 		x, y := fn()
 		ch <- twoValueCtx[T1, error]{var1: x, var2: y}
@@ -60,9 +75,7 @@ func ExecFuncWithTwoReturns[T1 any](ctx context.Context, fn func() (T1, error)) 
 // if context is cancelled before function returns it will return context error
 // otherwise it will return function's return values
 func ExecFuncWithThreeReturns[T1 any, T2 any](ctx context.Context, fn func() (T1, T2, error)) (T1, T2, error) {
-	var (
-		ch = make(chan threeValueCtx[T1, T2, error])
-	)
+	ch := make(chan threeValueCtx[T1, T2, error])
 	go func() {
 		x, y, z := fn()
 		ch <- threeValueCtx[T1, T2, error]{var1: x, var2: y, var3: z}

@@ -78,3 +78,33 @@ func TestExecFuncWithThreeReturns(t *testing.T) {
 		}
 	})
 }
+
+func TestExecFunc(t *testing.T) {
+	t.Run("function completes before context cancellation", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
+		fn := func() {
+			time.Sleep(1 * time.Second)
+		}
+
+		err := contextutil.ExecFunc(ctx, fn)
+		if err != nil {
+			t.Errorf("Unexpected error: %v", err)
+		}
+	})
+
+	t.Run("context cancelled before function completes", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		fn := func() {
+			time.Sleep(2 * time.Second)
+		}
+
+		err := contextutil.ExecFunc(ctx, fn)
+		if err != context.DeadlineExceeded {
+			t.Errorf("Expected context deadline exceeded error, got: %v", err)
+		}
+	})
+}
