@@ -41,6 +41,13 @@ scanme.sh/%invalid/path
   - `.UpdateRelPath(newrelpath string, unsafe bool)` 
   - `.Clone()` and more
 
+- Dealing with Double URL Encoding of chars like `%0A` when `.Path` is directly updated
+
+    when `url.Parse` is used to parse url like `https://127.0.0.1/%0A` it internally calls `u.setPath` which decodes `%0A` to `\n` and saves it in `u.Path` and when final url is created at time of writing to connection in http.Request Path is then escaped again thus `\n` becomes `%0A` and final url becomes `https://127.0.0.1/%0A` which is expected/required behavior.
+
+    If `u.Path` is changed/updated directly after `url.Parse` ex: `u.Path = "%0A"` then at time of writing to connection in http.Request, Path is escaped again thus `%0A` becomes `%250A` and final url becomes `https://127.0.0.1/%250A` which is not expected/required behavior to avoid this we manually unescape/decode `u.Path` and we set `u.Path = unescape(u.Path)` which takes care of this edgecase.
+
+    This is how `utils/url/URL` handles this edgecase when `u.Path` is directly updated.
 
 ### Note
 

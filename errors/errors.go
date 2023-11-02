@@ -1,7 +1,11 @@
 package errorutil
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"net"
+	"os"
 	"strings"
 )
 
@@ -51,4 +55,10 @@ func WrapwithNil(err error, errx ...error) Error {
 	}
 	ee := NewWithErr(err)
 	return ee.Wrap(errx...)
+}
+
+// IsTimeout checks if error is timeout error
+func IsTimeout(err error) bool {
+	var net net.Error
+	return (errors.As(err, &net) && net.Timeout()) || errors.Is(err, context.DeadlineExceeded) || errors.Is(err, os.ErrDeadlineExceeded)
 }
