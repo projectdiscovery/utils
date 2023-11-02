@@ -1,4 +1,4 @@
-//go:build linux && !(armv7l || armv8l)
+//go:build linux && !(armv7l || armv8l) && !android
 
 package permissionutil
 
