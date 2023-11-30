@@ -14,6 +14,11 @@ import (
 // Ex: if input is admin url.Parse considers admin as host which is not a valid domain name
 var DisableAutoCorrect bool
 
+// disables autocorrect related to url.path
+// Ex: if input is admin url.Parse considers admin as path(when DisableAutoCorrect is false) and adds missing prefix('/')
+// On setting DisablePathAutoCorrection to true prefix is not added
+var DisablePathAutoCorrection bool
+
 // URL a wrapper around net/url.URL
 type URL struct {
 	*url.URL
@@ -172,7 +177,7 @@ func (u *URL) parseUnsafeRelativePath() {
 	// ex: /%20test%0a =?
 	// autocorrect if prefix is missing
 	defer func() {
-		if !strings.HasPrefix(u.Path, "/") && u.Path != "" {
+		if !DisablePathAutoCorrection && !strings.HasPrefix(u.Path, "/") && u.Path != "" {
 			u.Path = "/" + u.Path
 		}
 	}()
