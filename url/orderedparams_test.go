@@ -53,3 +53,17 @@ func TestGetOrderedParams(t *testing.T) {
 	require.Equalf(t, p.Get("sqli"), values.Get("sqli"), "malformed or missing value for param sqli expected %v but got %v", values.Get("sqli"), p.Get("sqli"))
 	require.Equalf(t, p.Get("xss"), values.Get("xss"), "malformed or missing value for param xss expected %v but got %v", values.Get("xss"), p.Get("xss"))
 }
+
+func TestIncludeEquals(t *testing.T) {
+	p := NewOrderedParams()
+	p.Add("key1", "")
+	p.Add("key2", "value2")
+	if encoded := p.Encode(); encoded != "key1&key2=value2" {
+		t.Errorf("Expected 'key1&key2=value2', got '%s'", encoded)
+	}
+
+	p.IncludeEquals = true
+	if encoded := p.Encode(); encoded != "key1=&key2=value2" {
+		t.Errorf("Expected 'key1=&key2=value2', got '%s'", encoded)
+	}
+}
