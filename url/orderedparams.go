@@ -13,6 +13,8 @@ import (
 // OrderedParams is a map that preserves the order of elements
 type OrderedParams struct {
 	om mapsutil.OrderedMap[string, []string]
+	// IncludeEquals is used to include = in encoded parameters, default is false
+	IncludeEquals bool
 }
 
 // NewOrderedParams creates a new ordered params
@@ -103,8 +105,8 @@ func (o *OrderedParams) Encode() string {
 			}
 			buf.WriteString(keyEscaped)
 			value := ParamEncode(v)
-			// donot specify = if parameter has no value (reference: nuclei-templates)
-			if value != "" {
+			//donot specify = if parameter has no value (reference: nuclei-templates)
+			if o.IncludeEquals || value != "" {
 				buf.WriteRune('=')
 				buf.WriteString(value)
 			}
