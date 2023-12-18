@@ -35,19 +35,22 @@ require (
 	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/akrylysov/pogreb v0.10.1 // indirect
 	github.com/alecthomas/chroma v0.10.0 // indirect
+	github.com/andybalholm/brotli v1.0.6 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/dlclark/regexp2 v1.8.1 // indirect
-	github.com/dsnet/compress v0.0.1 // indirect
+	github.com/dsnet/compress v0.0.2-0.20210315054119-f66993602bf5 // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/klauspost/compress v1.11.4 // indirect
+	github.com/klauspost/pgzip v1.2.5 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
-	github.com/mholt/archiver v3.1.1+incompatible // indirect
+	github.com/mholt/archiver/v3 v3.5.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/muesli/reflow v0.3.0 // indirect
@@ -55,7 +58,7 @@ require (
 	github.com/nwaples/rardecode v1.1.3 // indirect
 	github.com/nxadm/tail v1.4.11 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
-	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
+	github.com/pierrec/lz4/v4 v4.1.2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
@@ -89,7 +92,7 @@ require (
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/projectdiscovery/gologger v1.1.11
+	github.com/projectdiscovery/gologger v1.1.12
 	github.com/projectdiscovery/hmap v0.0.30
 	github.com/weppos/publicsuffix-go v0.15.1-0.20220724114530-e087fba66a37 // indirect
 	github.com/zmap/rc2 v0.0.0-20131011165748-24b9757f5521 // indirect
