@@ -190,10 +190,9 @@ func TestUnicodeEscapeWithUnsafe(t *testing.T) {
 	}{
 		{"https://scanme.sh/%u002e%u002e/%u002e%u002e/1.txt.it", "https://scanme.sh/%u002e%u002e/%u002e%u002e/1.txt.it"},
 	}
-	DisableAutoCorrect = true
 
 	for _, v := range testcases {
-		urlx, err := ParseURL(v.input, true)
+		urlx, err := ParseAbsoluteURL(v.input, true)
 		require.Nilf(t, err, "got error for url %v", v.input)
 		require.Equal(t, v.expected, urlx.String())
 	}
