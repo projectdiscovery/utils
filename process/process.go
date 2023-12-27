@@ -6,18 +6,18 @@ import (
 )
 
 // CloseProcesses part
-func CloseProcesses(filter func(process *ps.Process) bool, skipPids map[int32]struct{}) {
+func CloseProcesses(predicate func(process *ps.Process) bool, skipPids map[int32]struct{}) {
 	processes, err := ps.Processes()
 	if err != nil {
 		return
 	}
 
 	for _, process := range processes {
-		// skip non-chrome processes
-		if !IsChromeProcess(process) {
+		// skip processes that do not satisfy the predicate
+		if !predicate(process) {
 			continue
 		}
-		// skip chrome processes that were already running
+		// skip processes that are in the skip list
 		if _, ok := skipPids[process.Pid]; ok {
 			continue
 		}
@@ -26,11 +26,11 @@ func CloseProcesses(filter func(process *ps.Process) bool, skipPids map[int32]st
 }
 
 // FindProcesses finds chrome process running on host
-func FindProcesses(filter func(process *ps.Process) bool) map[int32]struct{} {
+func FindProcesses(predicate func(process *ps.Process) bool) map[int32]struct{} {
 	processes, _ := ps.Processes()
 	list := make(map[int32]struct{})
 	for _, process := range processes {
-		if filter(process) {
+		if predicate(process) {
 			list[process.Pid] = struct{}{}
 			if ppid, err := process.Ppid(); err == nil {
 				list[ppid] = struct{}{}
