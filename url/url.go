@@ -214,12 +214,14 @@ func (u *URL) fetchParams() {
 		return
 	} else {
 		encodedParams := u.Original[index+1:]
+		if encodedParams == "" {
+			return
+		}
 		u.Params.Decode(encodedParams)
 		u.Original = u.Original[:index]
 	}
 	u.Update()
 }
-
 
 // copy parsed data from src to dst this does not include fragment or params
 func copy(dst *url.URL, src *url.URL) {

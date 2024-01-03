@@ -48,6 +48,7 @@ func TestMergeUnsafePaths(t *testing.T) {
 		{"scanme.sh", "../../../etc/passwd", "/../../../etc/passwd"},
 		{"//scanme.sh", "/..%252F..%252F..%252F..%252F..%252F", "/..%252F..%252F..%252F..%252F..%252F"},
 		{"/?user=true", "/profile", "/profile?user=true"},
+		{"scanme.sh", "/?", "/?"},
 	}
 
 	for _, v := range testcase2 {
