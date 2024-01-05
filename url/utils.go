@@ -16,6 +16,7 @@ const (
 	// websocket + websocket over ssl
 	WEBSOCKET     = "ws"
 	WEBSOCKET_SSL = "wss"
+	FTP           = "ftp"
 
 	SchemeSeparator  = "://"
 	DefaultHTTPPort  = "80"
