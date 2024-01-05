@@ -138,7 +138,7 @@ func absoluteURLParser(u *URL) (*URL, error) {
 		return u, nil
 	}
 	// Try to parse host related input
-	if stringsutil.HasPrefixAny(u.Original, HTTP+SchemeSeparator, HTTPS+SchemeSeparator, "//") {
+	if stringsutil.HasPrefixAny(u.Original, HTTP+SchemeSeparator, HTTPS+SchemeSeparator, "//", WEBSOCKET+SchemeSeparator, WEBSOCKET_SSL+SchemeSeparator) {
 		u.IsRelative = false
 		urlparse, parseErr := url.Parse(u.Original)
 		if parseErr != nil {

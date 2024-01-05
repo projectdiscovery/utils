@@ -53,6 +53,13 @@ func TestParse(t *testing.T) {
 	require.Equal(t, "127.0.0.1", U.Hostname(), "different host")
 	require.Equal(t, "a", U.Fragment, "different fragment")
 	require.Equal(t, "http://127.0.0.1/#a", U.String(), "different full url")
+
+	// websocket
+	U, err = Parse("wss://127.0.0.1")
+	require.Nil(t, err, "could not parse url")
+	require.Equal(t, "wss", U.Scheme, "different scheme")
+	require.Equal(t, "127.0.0.1", U.Hostname(), "different host")
+	require.Equal(t, "wss://127.0.0.1", U.String(), "different full url")
 }
 
 func TestClone(t *testing.T) {
