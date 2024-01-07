@@ -8,8 +8,16 @@ import (
 )
 
 const (
-	HTTP             = "http"
-	HTTPS            = "https"
+	HTTP  = "http"
+	HTTPS = "https"
+
+	// Deny all protocols
+	// Allow:
+	// websocket + websocket over ssl
+	WEBSOCKET     = "ws"
+	WEBSOCKET_SSL = "wss"
+	FTP           = "ftp"
+
 	SchemeSeparator  = "://"
 	DefaultHTTPPort  = "80"
 	DefaultHTTPSPort = "443"
