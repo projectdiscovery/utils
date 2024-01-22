@@ -64,9 +64,9 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/pierrec/lz4/v4 v4.1.2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
-	github.com/projectdiscovery/fastdialer v0.0.50 // indirect
-	github.com/projectdiscovery/networkpolicy v0.0.6 // indirect
-	github.com/projectdiscovery/retryabledns v1.0.48 // indirect
+	github.com/projectdiscovery/fastdialer v0.0.53 // indirect
+	github.com/projectdiscovery/networkpolicy v0.0.7 // indirect
+	github.com/projectdiscovery/retryabledns v1.0.51 // indirect
 	github.com/quic-go/quic-go v0.37.7 // indirect
 	github.com/refraction-networking/utls v1.5.4 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
@@ -104,8 +104,8 @@ require (
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/projectdiscovery/gologger v1.1.12
-	github.com/projectdiscovery/hmap v0.0.33
-	github.com/projectdiscovery/retryablehttp-go v1.0.42
+	github.com/projectdiscovery/hmap v0.0.34
+	github.com/projectdiscovery/retryablehttp-go v1.0.43
 	github.com/weppos/publicsuffix-go v0.30.1-0.20230422193905-8fecedd899db // indirect
 	github.com/zmap/rc2 v0.0.0-20190804163417-abaa70531248 // indirect
 	golang.org/x/crypto v0.17.0 // indirect
