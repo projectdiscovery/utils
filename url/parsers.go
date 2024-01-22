@@ -146,7 +146,10 @@ func absoluteURLParser(u *URL) (*URL, error) {
 		FTP + SchemeSeparator,
 		"//",
 	}
-	if stringsutil.HasPrefixAny(u.Original, allowedSchemes...) {
+	if strings.Contains(u.Original, SchemeSeparator) || strings.HasPrefix(u.Original, "//") {
+		if !strings.HasPrefix(u.Original, "//") && !stringsutil.HasPrefixAny(u.Original, allowedSchemes...) {
+			return nil, errorutil.NewWithTag("urlutil", "failed to parse url got invalid scheme input=%v", u.Original)
+		}
 		u.IsRelative = false
 		urlparse, parseErr := url.Parse(u.Original)
 		if parseErr != nil {

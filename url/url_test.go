@@ -204,3 +204,23 @@ func TestUnicodeEscapeWithUnsafe(t *testing.T) {
 		require.Equal(t, v.expected, urlx.String())
 	}
 }
+
+func TestInvalidScheme(t *testing.T) {
+	testcases := []struct {
+		input       string
+		expectedErr bool
+	}{
+		{"//:foo", true},
+		{"://foo", true},
+	}
+	for _, v := range testcases {
+		urlx, err := ParseAbsoluteURL(v.input, true)
+		if v.expectedErr {
+			require.NotNil(t, err)
+			require.Nil(t, urlx)
+		} else {
+			require.Nil(t, err)
+			require.NotNil(t, urlx)
+		}
+	}
+}

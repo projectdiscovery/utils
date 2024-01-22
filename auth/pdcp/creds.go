@@ -74,7 +74,7 @@ func (p *PDCPCredHandler) GetCreds() (*PDCPCredentials, error) {
 // if not or incomplete credentials are found it return nil
 func (p *PDCPCredHandler) getCredsFromEnv() *PDCPCredentials {
 	apiKey := env.GetEnvOrDefault(apiKeyEnv, "")
-	apiServer := env.GetEnvOrDefault(apiServerEnv, "")
+	apiServer := env.GetEnvOrDefault(apiServerEnv, DefaultApiServer)
 	if apiKey == "" || apiServer == "" {
 		return nil
 	}
