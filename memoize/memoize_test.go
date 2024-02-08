@@ -16,8 +16,8 @@ func TestMemo(t *testing.T) {
 	m, err := New(WithMaxSize(5))
 	require.Nil(t, err)
 	start := time.Now()
-	m.Do("test", testingFunc)
-	m.Do("test", testingFunc)
+	_, _, _ = m.Do("test", testingFunc)
+	_, _, _ = m.Do("test", testingFunc)
 	require.True(t, time.Since(start) < time.Duration(15*time.Second))
 }
 

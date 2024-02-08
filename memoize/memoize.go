@@ -52,7 +52,7 @@ func (m *Memoizer) Do(funcHash string, fn func() (interface{}, error)) (interfac
 		data, err := fn()
 
 		if err == nil {
-			m.cache.Set(funcHash, data)
+			_ = m.cache.Set(funcHash, data)
 		}
 
 		return data, err
