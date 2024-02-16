@@ -154,6 +154,7 @@ func GetpdtmParams(version string) string {
 	params.Add("go_version", runtime.Version())
 	params.Add("v", version)
 	params.Add("machine_id", buildMachineId())
+	params.Add("utm_source", getUtmSource())
 	return params.Encode()
 }
 

@@ -2,6 +2,7 @@ package updateutils
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
@@ -98,4 +99,52 @@ func IsDevReleaseOutdated(current string, latest string) bool {
 		return true
 	}
 	return false
+}
+
+// getUtmSource returns utm_source from environment variable or "unknown" value
+func getUtmSource() string {
+	value := ""
+	switch {
+	case os.Getenv("GH_ACTION") != "":
+		value = "ghci"
+	case os.Getenv("TRAVIS") != "":
+		value = "travis"
+	case os.Getenv("CIRCLECI") != "":
+		value = "circleci"
+	case os.Getenv("CI") != "":
+		value = "gitlabci" // this also includes bitbucket
+	case os.Getenv("GITHUB_ACTIONS") != "":
+		value = "ghci"
+	case os.Getenv("AWS_EXECUTION_ENV") != "":
+		value = os.Getenv("AWS_EXECUTION_ENV")
+	case os.Getenv("JENKINS_URL") != "":
+		value = "jenkins"
+	case os.Getenv("FUNCTION_TARGET") != "":
+		value = "gcf"
+	case os.Getenv("GOOGLE_CLOUD_PROJECT") != "":
+		value = "gcp"
+	case os.Getenv("HEROKU_APP_NAME") != "":
+		value = "heroku"
+	case os.Getenv("DYNO") != "":
+		value = "heroku"
+	case os.Getenv("ECS_CONTAINER_METADATA_URI") != "":
+		value = "ecs"
+	case os.Getenv("EC2_INSTANCE_ID") != "":
+		value = "ec2"
+	case os.Getenv("KUBERNETES_SERVICE_HOST") != "":
+		value = "k8s"
+	case os.Getenv("KUBERNETES_PORT") != "":
+		value = "k8s"
+	case os.Getenv("AZURE_FUNCTIONS_ENVIRONMENT") != "":
+		value = "azure"
+	case os.Getenv("__OW_API_HOST") != "":
+		value = "ibmcf"
+	case os.Getenv("OCI_RESOURCE_PRINCIPAL_VERSION") != "":
+		value = "oracle"
+	case os.Getenv("GAE_RUNTIME") != "":
+		value = os.Getenv("GAE_RUNTIME")
+	default:
+		value = "unknown"
+	}
+	return value
 }
