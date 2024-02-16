@@ -14,20 +14,27 @@ import (
 	"text/template"
 
 	"github.com/Mzack9999/gcache"
-	"golang.org/x/sync/singleflight"
+	"github.com/cespare/xxhash"
+	singleflight "github.com/projectdiscovery/utils/memoize/simpleflight"
 	"golang.org/x/tools/imports"
 )
 
 type Memoizer struct {
-	cache gcache.Cache[string, interface{}]
-	group singleflight.Group
+	cache gcache.Cache[uint64, interface{}]
+	group singleflight.Group[uint64]
 }
 
 type MemoizeOption func(m *Memoizer) error
 
 func WithMaxSize(size int) MemoizeOption {
 	return func(m *Memoizer) error {
-		m.cache = gcache.New[string, interface{}](size).Build()
+		m.cache = gcache.
+			New[uint64, interface{}](size).
+			EvictedFunc(func(k uint64, _ interface{}) {
+				m.group.Forget(k)
+			}).
+			Build()
+
 		return nil
 	}
 }
@@ -44,15 +51,17 @@ func New(options ...MemoizeOption) (*Memoizer, error) {
 }
 
 func (m *Memoizer) Do(funcHash string, fn func() (interface{}, error)) (interface{}, error, bool) {
-	if value, err := m.cache.GetIFPresent(funcHash); !errors.Is(err, gcache.KeyNotFoundError) {
+	hash := xxhash.Sum64String(funcHash)
+
+	if value, err := m.cache.GetIFPresent(hash); !errors.Is(err, gcache.KeyNotFoundError) {
 		return value, err, true
 	}
 
-	value, err, _ := m.group.Do(funcHash, func() (interface{}, error) {
+	value, err, _ := m.group.Do(hash, func() (interface{}, error) {
 		data, err := fn()
 
 		if err == nil {
-			_ = m.cache.Set(funcHash, data)
+			_ = m.cache.Set(hash, data)
 		}
 
 		return data, err
