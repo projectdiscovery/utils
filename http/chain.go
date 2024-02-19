@@ -6,6 +6,7 @@ import (
 )
 
 // ChainItem request=>response
+// Deprecated: use ResponseChain instead which is more efficient and lazy
 type ChainItem struct {
 	Request    []byte
 	Response   []byte
@@ -15,6 +16,7 @@ type ChainItem struct {
 }
 
 // GetChain if redirects
+// Deprecated: use ResponseChain instead which is more efficient and lazy
 func GetChain(r *http.Response) (chain []ChainItem, err error) {
 	lastresp := r
 	for lastresp != nil {
@@ -40,6 +42,5 @@ func GetChain(r *http.Response) (chain []ChainItem, err error) {
 	for i, j := 0, len(chain)-1; i < j; i, j = i+1, j-1 {
 		chain[i], chain[j] = chain[j], chain[i]
 	}
-
 	return
 }
