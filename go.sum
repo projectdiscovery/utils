@@ -133,8 +133,6 @@ github.com/mattn/go-runewidth v0.0.9/go.mod h1:H031xJmbD/WCDINGzjvQ9THkh0rPKHF+m
 github.com/mattn/go-runewidth v0.0.12/go.mod h1:RAqKPSqVFrSLVXbA8x7dzmKdmGzieGRCM46jaSJTDAk=
 github.com/mattn/go-runewidth v0.0.14 h1:+xnbZSEeDbOIg5/mE6JF0w6n9duR1l3/WmbinWVwUuU=
 github.com/mattn/go-runewidth v0.0.14/go.mod h1:Jdepj2loyihRzMpdS35Xk/zdY8IAYHsh153qUoGf23w=
-github.com/metalim/jsonmap v0.4.1 h1:kvj9Q5oj+xne2APsoe34LmJGTUlrY3D9WYw2zwbVuVM=
-github.com/metalim/jsonmap v0.4.1/go.mod h1:Rlps8z72TXjyqKPAE7pttAsBfhiZ99FLn0qzxvT4jDs=
 github.com/mholt/archiver/v3 v3.5.1 h1:rDjOBX9JSF5BvoJGvjqK479aL70qh9DIpZCl+k7Clwo=
 github.com/mholt/archiver/v3 v3.5.1/go.mod h1:e3dqJ7H78uzsRSEACH1joayhuSyhnonssnDhppzS1L4=
 github.com/microcosm-cc/bluemonday v1.0.21/go.mod h1:ytNkv4RrDrLJ2pqlsSI46O6IVXmZOBBD4SaJyDwwTkM=
@@ -194,8 +192,8 @@ github.com/projectdiscovery/hmap v0.0.38 h1:H4eeVRC3Km4bN877V17RoYJe11Wa5M7U1o/F
 github.com/projectdiscovery/hmap v0.0.38/go.mod h1:kTeo8Qo+eDxZUrCBPHOy8qvFRrDNWWrJddf5i1hJHe0=
 github.com/projectdiscovery/networkpolicy v0.0.7 h1:AwHqBRXBqDQgnWzBMuoJtHBNEYBw+NFp/4qIK688x7o=
 github.com/projectdiscovery/networkpolicy v0.0.7/go.mod h1:CK0CnFoLF1Nou6mY7P4WODSAxhPN8g8g7XpapgEP8tI=
-github.com/projectdiscovery/retryabledns v1.0.55 h1:JrYaGtlxY5wA/kje6zgQUbfI/moi/0qbrzZQzrOOewU=
-github.com/projectdiscovery/retryabledns v1.0.55/go.mod h1:SBLjzTfG2SvWU0CdblN+z8TQq7u59QVm9qiEYEj5VSM=
+github.com/projectdiscovery/retryabledns v1.0.56 h1:Rk/fvBSNjw4vzbHRSSoFz3Bkn9uaRSk0UE/IsEBl0cQ=
+github.com/projectdiscovery/retryabledns v1.0.56/go.mod h1:y6uQuDe9i2tcysDV7BTfKcTlfA3g0xyH5XITKBEw3as=
 github.com/projectdiscovery/retryablehttp-go v1.0.47 h1:js0UuJ4+7/VoXRHtW5sslxLjzVAuMrtbzwq/8Onl+uw=
 github.com/projectdiscovery/retryablehttp-go v1.0.47/go.mod h1:HrZG3iFTI5pCaLOg1qBXn0SdOSYONgNJ8dO/g1lam18=
 github.com/quic-go/quic-go v0.37.7 h1:AgKsQLZ1+YCwZd2GYhBUsJDYZwEkA5gENtAjb+MxONU=
