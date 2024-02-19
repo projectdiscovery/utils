@@ -1,7 +1,9 @@
 package mapsutil
 
 import (
+	"encoding/json"
 	"fmt"
+	"reflect"
 	"strconv"
 	"testing"
 )
@@ -69,4 +71,73 @@ func TestOrderedMap(t *testing.T) {
 		}
 	}
 
+}
+
+func TestOrderedMapMarshalUnmarshal(t *testing.T) {
+	t.Run("TestSimpleStringToStringMapping", func(t *testing.T) {
+		orderedMap1 := NewOrderedMap[string, string]()
+		orderedMap1.Set("name", "John Doe")
+		orderedMap1.Set("occupation", "Software Developer")
+
+		marshaled1, err := json.Marshal(orderedMap1)
+		if err != nil {
+			t.Fatalf("Failed to marshal orderedMap1: %v", err)
+		}
+
+		unmarshaled1 := NewOrderedMap[string, string]()
+		err = json.Unmarshal(marshaled1, &unmarshaled1)
+		if err != nil {
+			t.Fatalf("Failed to unmarshal orderedMap1: %v", err)
+		}
+
+		if !reflect.DeepEqual(orderedMap1, unmarshaled1) {
+			t.Fatal("Unmarshaled map is not equal to the original map for orderedMap1")
+		}
+	})
+
+	t.Run("TestIntegerToStructMapping", func(t *testing.T) {
+		type Employee struct {
+			ID   int    `json:"id"`
+			Name string `json:"name"`
+		}
+		orderedMap2 := NewOrderedMap[int, Employee]()
+		orderedMap2.Set(1, Employee{ID: 1, Name: "Alice"})
+		orderedMap2.Set(2, Employee{ID: 2, Name: "Bob"})
+
+		marshaled2, err := json.Marshal(orderedMap2)
+		if err != nil {
+			t.Fatalf("Failed to marshal orderedMap2: %v", err)
+		}
+
+		unmarshaled2 := NewOrderedMap[int, Employee]()
+		err = json.Unmarshal(marshaled2, &unmarshaled2)
+		if err != nil {
+			t.Fatalf("Failed to unmarshal orderedMap2: %v", err)
+		}
+
+		if !reflect.DeepEqual(orderedMap2, unmarshaled2) {
+			t.Fatal("Unmarshaled map is not equal to the original map for orderedMap2")
+		}
+	})
+
+	t.Run("TestStringToSliceOfStringsMapping", func(t *testing.T) {
+		orderedMap3 := NewOrderedMap[string, []string]()
+		orderedMap3.Set("fruits", []string{"apple", "banana", "cherry"})
+		orderedMap3.Set("vegetables", []string{"tomato", "potato", "carrot"})
+
+		marshaled3, err := json.Marshal(orderedMap3)
+		if err != nil {
+			t.Fatalf("Failed to marshal orderedMap3: %v", err)
+		}
+
+		unmarshaled3 := NewOrderedMap[string, []string]()
+		err = json.Unmarshal(marshaled3, &unmarshaled3)
+		if err != nil {
+			t.Fatalf("Failed to unmarshal orderedMap3: %v", err)
+		}
+
+		if !reflect.DeepEqual(orderedMap3, unmarshaled3) {
+			t.Fatal("Unmarshaled map is not equal to the original map for orderedMap3")
+		}
+	})
 }
