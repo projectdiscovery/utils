@@ -11,6 +11,7 @@ import (
 
 var exampleCred = `
 - username: test
+  email: test@projectdiscovery.io
   api-key: testpassword
   server: https://scanme.sh
 `

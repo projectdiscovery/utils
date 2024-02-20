@@ -29,7 +29,7 @@ func CheckNValidateCredentials(toolName string) {
 		// validate by fetching user profile
 		gotCreds, err := h.ValidateAPIKey(creds.APIKey, creds.Server, toolName)
 		if err == nil {
-			gologger.Info().Msgf("You are logged in as (@%v)", gotCreds.Username)
+			gologger.Info().Msgf("You are logged in as (%v)", userIdentifier(gotCreds))
 			os.Exit(0)
 		}
 		gologger.Error().Msgf("Invalid API key found in file, please recheck or recreate your API key and retry.")
@@ -56,7 +56,7 @@ func CheckNValidateCredentials(toolName string) {
 	// validate by fetching user profile
 	validatedCreds, err := h.ValidateAPIKey(apiKey, apiServer, toolName)
 	if err == nil {
-		gologger.Info().Msgf("Successfully logged in as (@%v)", validatedCreds.Username)
+		gologger.Info().Msgf("Successfully logged in as (%v)", userIdentifier(validatedCreds))
 		if saveErr := h.SaveCreds(validatedCreds); saveErr != nil {
 			gologger.Warning().Msgf("Could not save credentials to file: %s\n", saveErr)
 		}
@@ -72,4 +72,14 @@ func maskKey(key string) string {
 		return key
 	}
 	return fmt.Sprintf("%v%v", key[:3], strings.Repeat("*", len(key)-3))
+}
+
+// userIdentifier returns user identifier in format @username
+// if username is empty, it returns email
+func userIdentifier(creds *PDCPCredentials) string {
+	user := fmt.Sprintf("@%v", creds.Username)
+	if creds.Username == "" {
+		user = creds.Email
+	}
+	return user
 }

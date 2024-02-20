@@ -31,12 +31,14 @@ const (
 
 type PDCPCredentials struct {
 	Username string `yaml:"username"`
+	Email    string `yaml:"email"`
 	APIKey   string `yaml:"api-key"`
 	Server   string `yaml:"server"`
 }
 
 type PDCPUserProfileResponse struct {
 	UserName string `json:"name"`
+	Email    string `json:"email"`
 	// there are more fields but we don't need them
 	/// below fields are added later on and not part of the response
 }
@@ -128,10 +130,10 @@ func (p *PDCPCredHandler) ValidateAPIKey(key string, host string, toolName strin
 	if err != nil {
 		return nil, err
 	}
-	if profile.UserName == "" {
+	if profile.Email == "" {
 		return nil, fmt.Errorf("invalid response from server got %v", string(bin))
 	}
-	return &PDCPCredentials{Username: profile.UserName, APIKey: key, Server: host}, nil
+	return &PDCPCredentials{Username: profile.UserName, Email: profile.Email, APIKey: key, Server: host}, nil
 }
 
 func init() {
