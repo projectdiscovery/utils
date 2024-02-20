@@ -66,11 +66,3 @@ func DumpResponseHeadersAndRaw(resp *http.Response) (headers, fullresp []byte, e
 	resp.Body = io.NopCloser(bytes.NewReader(buf1.Bytes()))
 	return
 }
-
-// DrainResponseBody drains and closes the response body
-func DrainResponseBody(resp *http.Response) {
-	if resp.Body != http.NoBody && resp.Body != nil {
-		_, _ = io.Copy(io.Discard, resp.Body)
-		resp.Body.Close()
-	}
-}
