@@ -9,6 +9,8 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
+	"go/types"
+	"log"
 	"os"
 	"strings"
 	"text/template"
@@ -16,6 +18,7 @@ import (
 	"github.com/Mzack9999/gcache"
 	"github.com/cespare/xxhash"
 	singleflight "github.com/projectdiscovery/utils/memoize/simpleflight"
+	stringsutil "github.com/projectdiscovery/utils/strings"
 	"golang.org/x/tools/imports"
 )
 
@@ -70,22 +73,22 @@ func (m *Memoizer) Do(funcHash string, fn func() (interface{}, error)) (interfac
 	return value, err, false
 }
 
-func File(sourceFile, packageName string) ([]byte, error) {
+func File(tpl, sourceFile, packageName string) ([]byte, error) {
 	data, err := os.ReadFile(sourceFile)
 	if err != nil {
 		return nil, err
 	}
 
-	return Src(sourceFile, data, packageName)
+	return Src(tpl, sourceFile, data, packageName)
 }
 
-func Src(sourcePath string, source []byte, packageName string) ([]byte, error) {
+func Src(tpl, sourcePath string, source []byte, packageName string) ([]byte, error) {
 	var (
 		fileData FileData
 		content  bytes.Buffer
 	)
 
-	tmpl, err := template.New("package_template").Parse(packageTemplate)
+	tmpl, err := template.New("package_template").Parse(tpl)
 	if err != nil {
 		return nil, err
 	}
@@ -116,15 +119,12 @@ func Src(sourcePath string, source []byte, packageName string) ([]byte, error) {
 	ast.Inspect(node, func(n ast.Node) bool {
 		switch nn := n.(type) {
 		case *ast.FuncDecl:
-			if !nn.Name.IsExported() {
-				return false
-			}
 			if nn.Doc == nil {
 				return false
 			}
 
 			var funcDeclaration FunctionDeclaration
-			funcDeclaration.IsExported = true
+			funcDeclaration.IsExported = nn.Name.IsExported()
 			funcDeclaration.Name = nn.Name.Name
 			funcDeclaration.SourcePackage = fileData.SourcePackage
 			var funcSign strings.Builder
@@ -152,20 +152,25 @@ func Src(sourcePath string, source []byte, packageName string) ([]byte, error) {
 							for _, name := range res.Names {
 								result.Name = name.String()
 							}
-							result.Type = fmt.Sprint(res.Type)
+							result.Type = types.ExprString(res.Type)
 							funcDeclaration.Results = append(funcDeclaration.Results, result)
 						}
 					}
+
+					fileData.Functions = append(fileData.Functions, funcDeclaration)
 				}
 			}
-			fileData.Functions = append(fileData.Functions, funcDeclaration)
 			return false
 		default:
 			return true
 		}
 	})
 
+	log.Printf("%#v\n", fileData)
+
 	err = tmpl.Execute(&content, fileData)
+	log.Println(string(content.String()))
+	log.Println(err)
 	if err != nil {
 		return nil, err
 	}
@@ -206,6 +211,10 @@ func (f FunctionDeclaration) HasParams() bool {
 	return len(f.Params) > 0
 }
 
+func (f FunctionDeclaration) SignatureWithPrefix(prefix string) string {
+	return strings.Replace(f.Signature, f.Name, prefix+f.Name, 1)
+}
+
 func (f FunctionDeclaration) ParamsNames() string {
 	var params []string
 	for _, param := range f.Params {
@@ -244,6 +253,40 @@ func (f FunctionDeclaration) ResultStructFields() string {
 		results = append(results, fmt.Sprintf("%s.%s", f.ResultStructVarName(), result.ResultName()))
 	}
 	return strings.Join(results, ",")
+}
+
+func (f FunctionDeclaration) ResultFields() string {
+	var results []string
+	for _, result := range f.Results {
+		results = append(results, result.ResultName())
+	}
+	return strings.Join(results, ",")
+}
+
+func (f FunctionDeclaration) ResultFirstFieldType() string {
+	if len(f.Results) > 0 {
+		fieldType := f.Results[0].Type
+		return fieldType
+	}
+	panic("invalid signature type")
+}
+
+func (f FunctionDeclaration) ResultFirstFieldDefaultValue() string {
+	if len(f.Results) > 0 {
+		fieldType := f.Results[0].Type
+		if stringsutil.HasPrefixAny(fieldType, "*") {
+			return "nil"
+		}
+		switch fieldType {
+		case "bool":
+			return "false"
+		case "string":
+			return `""`
+		default:
+			return fieldType + "{}"
+		}
+	}
+	panic("invalid signature type")
 }
 
 type FileData struct {

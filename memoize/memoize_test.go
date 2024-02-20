@@ -22,7 +22,7 @@ func TestMemo(t *testing.T) {
 }
 
 func TestSrc(t *testing.T) {
-	out, err := File("tests/test.go", "test")
+	out, err := File(PackageTemplate, "tests/test.go", "test")
 	require.Nil(t, err)
 	require.True(t, len(out) > 0)
 }

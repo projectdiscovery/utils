@@ -7,9 +7,9 @@ import (
 )
 
 func main() {
-	out, err := memoize.File("../tests/test.go", "test")
+	out, err := memoize.File(memoize.PackageTemplate, "../tests/test.go", "test")
 	if err != nil {
 		panic(err)
 	}
-	log.Println(out)
+	log.Println(string(out))
 }
