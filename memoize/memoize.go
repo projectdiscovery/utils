@@ -10,7 +10,6 @@ import (
 	"go/printer"
 	"go/token"
 	"go/types"
-	"log"
 	"os"
 	"strings"
 	"text/template"
@@ -166,11 +165,7 @@ func Src(tpl, sourcePath string, source []byte, packageName string) ([]byte, err
 		}
 	})
 
-	log.Printf("%#v\n", fileData)
-
 	err = tmpl.Execute(&content, fileData)
-	log.Println(string(content.String()))
-	log.Println(err)
 	if err != nil {
 		return nil, err
 	}
