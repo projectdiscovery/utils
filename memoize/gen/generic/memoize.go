@@ -5,6 +5,7 @@
 package main
 
 import (
+	"flag"
 	"io/fs"
 	"log"
 	"os"
@@ -14,12 +15,14 @@ import (
 	stringsutil "github.com/projectdiscovery/utils/strings"
 )
 
-const (
-	nucleiPath string = "/Users/marcornvh/go/src/github.com/projectdiscovery/nuclei/pkg/js/libs"
+var (
+	src = flag.String("src", "", "go sources")
 )
 
 func main() {
-	err := filepath.Walk(nucleiPath, walk)
+	flag.Parse()
+
+	err := filepath.Walk(*src, walk)
 	if err != nil {
 		log.Fatal(err)
 	}
