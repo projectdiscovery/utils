@@ -52,7 +52,7 @@ func Run(f func() error) error {
 		return f()
 	}
 
-	cmd := exec.Command(os.Args[0], DetachArg)
+	cmd := exec.Command(os.Args[0], append(os.Args[1:], DetachArg)...)
 
 	return cmd.Start()
 }
@@ -63,7 +63,7 @@ func RunSingleFlight(f func() error) error {
 		return f()
 	}
 
-	cmd := exec.Command(os.Args[0], DetachArg)
+	cmd := exec.Command(os.Args[0], append(os.Args[1:], DetachArg)...)
 
 	return cmd.Start()
 }
