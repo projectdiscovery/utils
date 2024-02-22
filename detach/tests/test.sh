@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 # start main go program
-pwd
 go run detach/tests/main.go
 
 # detached/orphane code `detachedFunc()` is still running and will write "/tmp/detach.test.txt"
@@ -9,9 +8,9 @@ go run detach/tests/main.go
 sleep 10
 
 if [ -f "/tmp/detach.test.txt" ]; then
-    echo "ko"
+    echo "ok"
     exit 0
 else
-    echo "ok"
+    echo "ko"
     exit 1
 fi
