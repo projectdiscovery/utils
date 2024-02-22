@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 # start main go program
+pwd
 go run main.go
 
 # detached/orphane code `detachedFunc()` is still running and will write "/tmp/detach.test.txt"
