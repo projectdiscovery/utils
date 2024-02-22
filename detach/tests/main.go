@@ -21,7 +21,7 @@ func main() {
 func detachedFunc() error {
 	time.Sleep(10 * time.Second)
 
-	os.WriteFile(targetFile, []byte("test"), fs.ModePerm)
+	_ = os.WriteFile(targetFile, []byte("test"), fs.ModePerm)
 
 	return nil
 }
