@@ -7,6 +7,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/logrusorgru/aurora"
+	"github.com/projectdiscovery/utils/process"
 )
 
 type AssetFormat uint
@@ -103,7 +104,7 @@ func IsDevReleaseOutdated(current string, latest string) bool {
 
 // getUtmSource returns utm_source from environment variable or "unknown" value
 func getUtmSource() string {
-	value := ""
+	value := "unknown"
 	switch {
 	case os.Getenv("GH_ACTION") != "":
 		value = "ghci"
@@ -144,7 +145,9 @@ func getUtmSource() string {
 	case os.Getenv("GAE_RUNTIME") != "":
 		value = os.Getenv("GAE_RUNTIME")
 	default:
-		value = "unknown"
+		if ok, val := process.RunningInContainer(); ok {
+			return val
+		}
 	}
 	return value
 }
