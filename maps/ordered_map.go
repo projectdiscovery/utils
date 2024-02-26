@@ -47,6 +47,9 @@ func (o *OrderedMap[k, v]) Get(key k) (v, bool) {
 // Iterate iterates over the OrderedMap in insertion order
 func (o *OrderedMap[k, v]) Iterate(f func(key k, value v) bool) {
 	o.inIter = true
+	defer func() {
+		o.inIter = false
+	}()
 	for _, key := range o.keys {
 		// silently discard any missing keys from the map
 		if _, ok := o.m[key]; !ok {
@@ -65,7 +68,6 @@ func (o *OrderedMap[k, v]) Iterate(f func(key k, value v) bool) {
 		}
 		o.keys = tmp
 		o.dirty = false
-		o.inIter = false
 	}
 }
 
