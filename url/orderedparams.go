@@ -85,6 +85,16 @@ func (o *OrderedParams) Del(key string) {
 	o.om.Delete(key)
 }
 
+// MarkDelete marks the key as deleted
+func (o *OrderedParams) MarkDelete(key string) {
+	o.om.MarkDelete(key)
+}
+
+// PruneDeleted prunes the deleted keys
+func (o *OrderedParams) PruneDeleted() {
+	o.om.PruneDeleted()
+}
+
 // Merges given paramset into existing one with base as priority
 func (o *OrderedParams) Merge(raw string) {
 	o.Decode(raw)

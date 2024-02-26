@@ -21,8 +21,9 @@ var (
 // Note: Order is only guaranteed for current level of OrderedMap
 // nested values only have order preserved if they are also OrderedMap
 type OrderedMap[k comparable, v any] struct {
-	keys []k
-	m    map[k]v
+	keys    []k
+	m       map[k]v
+	deleted map[int]bool
 }
 
 // Set sets a value in the OrderedMap (if the key already exists, it will be overwritten)
@@ -91,6 +92,36 @@ func (o *OrderedMap[k, v]) Delete(key k) {
 			break
 		}
 	}
+}
+
+// MarkDelete marks a key for deletion
+func (o *OrderedMap[k, v]) MarkDelete(key k) {
+	if o.deleted == nil {
+		o.deleted = map[int]bool{}
+	}
+	for i, k := range o.keys {
+		if k == key {
+			o.deleted[i] = true
+			break
+		}
+	}
+}
+
+// PruneDeleted prunes the deleted keys
+func (o *OrderedMap[k, v]) PruneDeleted() {
+	if o.deleted == nil {
+		return
+	}
+	var keys []k
+	for i, k := range o.keys {
+		if o.deleted[i] {
+			delete(o.m, k)
+		} else {
+			keys = append(keys, k)
+		}
+	}
+	o.keys = keys
+	o.deleted = nil
 }
 
 // Len returns the length of the OrderedMap
