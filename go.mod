@@ -6,7 +6,6 @@ require (
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/charmbracelet/glamour v0.6.0
-	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/google/go-github/v30 v30.1.0
 	github.com/hdm/jarm-go v0.0.7
 	github.com/julienschmidt/httprouter v1.3.0
@@ -18,6 +17,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/blackrock v0.0.1
 	github.com/projectdiscovery/fdmax v0.0.4
+	github.com/projectdiscovery/machineid v0.0.0-20240226150047-2e2c51e35983
 	github.com/remeh/sizedwaitgroup v1.0.0
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d
 	github.com/shirou/gopsutil/v3 v3.23.7

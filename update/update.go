@@ -14,9 +14,9 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/charmbracelet/glamour"
-	"github.com/denisbrodbeck/machineid"
 	"github.com/minio/selfupdate"
 	"github.com/projectdiscovery/gologger"
+	"github.com/projectdiscovery/machineid"
 	errorutil "github.com/projectdiscovery/utils/errors"
 )
 
