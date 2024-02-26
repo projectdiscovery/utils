@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strconv"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestOrderedMapBasic(t *testing.T) {
@@ -140,4 +142,25 @@ func TestOrderedMapMarshalUnmarshal(t *testing.T) {
 			t.Fatal("Unmarshaled map is not equal to the original map for orderedMap3")
 		}
 	})
+}
+
+func TestOrderedMapDeleteWhileIterating(t *testing.T) {
+	om := NewOrderedMap[string, string]()
+	om.Set("key1", "value1")
+	om.Set("key2", "value2")
+	om.Set("key3", "value3")
+
+	ignoreKey := "key1"
+
+	got := []string{}
+
+	om.Iterate(func(key string, value string) bool {
+		got = append(got, key)
+		if key == ignoreKey {
+			om.Delete(key)
+		}
+		return true
+	})
+
+	require.ElementsMatchf(t, []string{"key1", "key2", "key3"}, got, "inconsistent iteration order")
 }

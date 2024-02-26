@@ -21,8 +21,10 @@ var (
 // Note: Order is only guaranteed for current level of OrderedMap
 // nested values only have order preserved if they are also OrderedMap
 type OrderedMap[k comparable, v any] struct {
-	keys []k
-	m    map[k]v
+	keys   []k
+	m      map[k]v
+	dirty  bool // mark dirty if keys are modified while iterating
+	inIter bool // are we iterating now ?
 }
 
 // Set sets a value in the OrderedMap (if the key already exists, it will be overwritten)
@@ -31,6 +33,9 @@ func (o *OrderedMap[k, v]) Set(key k, value v) {
 		o.keys = append(o.keys, key)
 	}
 	o.m[key] = value
+	if o.inIter {
+		o.dirty = true
+	}
 }
 
 // Get gets a value from the OrderedMap
@@ -39,12 +44,30 @@ func (o *OrderedMap[k, v]) Get(key k) (v, bool) {
 	return value, ok
 }
 
-// Iterate iterates over the OrderedMap
+// Iterate iterates over the OrderedMap in insertion order
 func (o *OrderedMap[k, v]) Iterate(f func(key k, value v) bool) {
+	o.inIter = true
+	defer func() {
+		o.inIter = false
+	}()
 	for _, key := range o.keys {
+		// silently discard any missing keys from the map
+		if _, ok := o.m[key]; !ok {
+			continue
+		}
 		if !f(key, o.m[key]) {
 			break
 		}
+	}
+	if o.dirty {
+		tmp := make([]k, len(o.m))
+		for _, key := range o.keys {
+			if _, ok := o.m[key]; ok {
+				tmp = append(tmp, key)
+			}
+		}
+		o.keys = tmp
+		o.dirty = false
 	}
 }
 
@@ -85,6 +108,10 @@ func (o *OrderedMap[k, v]) GetByIndex(index int) (v, bool) {
 // Delete deletes a value from the OrderedMap
 func (o *OrderedMap[k, v]) Delete(key k) {
 	delete(o.m, key)
+	if o.inIter {
+		o.dirty = true
+		return // skip delete from keys if we are iterating
+	}
 	for i, k := range o.keys {
 		if k == key {
 			o.keys = append(o.keys[:i], o.keys[i+1:]...)
