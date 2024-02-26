@@ -13,7 +13,7 @@ import (
 // reference: https://www.baeldung.com/linux/is-process-running-inside-container
 func RunningInContainer() (bool, string) {
 	if fileutil.FileOrFolderExists("/.dockerenv") {
-		return true, ""
+		return true, "docker"
 	}
 	// fallback and check using controlgroup 1 detect
 	if !fileutil.FileExists("/proc/1/cgroup") {
