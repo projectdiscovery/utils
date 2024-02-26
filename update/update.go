@@ -153,12 +153,14 @@ func GetpdtmParams(version string) string {
 	params.Add("arch", runtime.GOARCH)
 	params.Add("go_version", runtime.Version())
 	params.Add("v", version)
-	params.Add("machine_id", buildMachineId())
+	params.Add("machine_id", GetMachineID())
 	params.Add("utm_source", getUtmSource())
 	return params.Encode()
 }
 
-func buildMachineId() string {
+// GetMachineID return a unique identifier that is unique to the machine
+// it is a sha256 hashed value with pdtm as salt
+func GetMachineID() string {
 	machineId, err := machineid.ProtectedID("pdtm")
 	if err != nil {
 		return "unknown"
