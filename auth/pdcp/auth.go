@@ -5,6 +5,7 @@ package pdcp
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/projectdiscovery/gologger"
@@ -42,11 +43,16 @@ func CheckNValidateCredentials(toolName string) {
 	// if we are here, we need to get credentials from user
 	gologger.Info().Msgf("Get your free api key by signing up at %v", DashBoardURL)
 	fmt.Printf("[*] Enter PDCP API Key (exit to abort): ")
-	bin, err := term.ReadPassword(int(os.Stdin.Fd()))
+	var apiKeyBytes []byte
+	if runtime.GOOS == "windows" {
+		apiKeyBytes, err = term.ReadPassword(int(os.Stdin.Fd()))
+	} else {
+		apiKeyBytes, err = readPasswordFromUnix()
+	}
 	if err != nil {
 		gologger.Fatal().Msgf("Could not read input from terminal: %s\n", err)
 	}
-	apiKey := string(bin)
+	apiKey := string(apiKeyBytes)
 	if strings.EqualFold(apiKey, "exit") {
 		os.Exit(0)
 	}
@@ -82,4 +88,14 @@ func userIdentifier(creds *PDCPCredentials) string {
 		user = creds.Email
 	}
 	return user
+}
+
+func readPasswordFromUnix() ([]byte, error) {
+	// Open /dev/tty for direct terminal input, bypassing stdin.
+	tty, err := os.Open("/dev/tty")
+	if err != nil {
+		return nil, err
+	}
+	defer tty.Close()
+	return term.ReadPassword(int(tty.Fd()))
 }
