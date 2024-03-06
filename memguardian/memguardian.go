@@ -11,6 +11,7 @@ import (
 
 type MemGuardianOption func(*MemGuardian) error
 
+// WithInterval defines the ticker interval of the memory monitor
 func WitInterval(d time.Duration) MemGuardianOption {
 	return func(mg *MemGuardian) error {
 		mg.t = time.NewTicker(d)
@@ -18,6 +19,7 @@ func WitInterval(d time.Duration) MemGuardianOption {
 	}
 }
 
+// WithCallback defines an optional callback if the warning ration is exceeded
 func WithCallback(f func()) MemGuardianOption {
 	return func(mg *MemGuardian) error {
 		mg.f = f
@@ -25,6 +27,7 @@ func WithCallback(f func()) MemGuardianOption {
 	}
 }
 
+// WithRatioWarning defines the threshold of the warning state (and optional callback invocation)
 func WithRatioWarning(ratio float64) MemGuardianOption {
 	return func(mg *MemGuardian) error {
 		if ratio == 0 || ratio > 100 {
@@ -44,6 +47,7 @@ type MemGuardian struct {
 	ratio   float64
 }
 
+// New mem guadian instance with user defined options
 func New(options ...MemGuardianOption) (*MemGuardian, error) {
 	mg := &MemGuardian{}
 	for _, option := range options {
@@ -57,6 +61,7 @@ func New(options ...MemGuardianOption) (*MemGuardian, error) {
 	return mg, nil
 }
 
+// Run the instance monitor (cancel using the Stop method or context parameter)
 func (mg *MemGuardian) Run(ctx context.Context) error {
 	for {
 		select {
@@ -84,11 +89,13 @@ func (mg *MemGuardian) Run(ctx context.Context) error {
 	}
 }
 
+// Close and stops the instance
 func (mg *MemGuardian) Close() {
 	mg.cancel()
 	mg.t.Stop()
 }
 
+// Calculate the system absolute ratio of used RAM vs total available (as of now doesn't consider swap)
 func UsedRamRatio() (float64, error) {
 	vms, err := mem.VirtualMemory()
 	if err != nil {
