@@ -6,8 +6,44 @@ import (
 	"sync/atomic"
 	"time"
 
+	units "github.com/docker/go-units"
+	"github.com/projectdiscovery/utils/env"
 	"github.com/shirou/gopsutil/mem"
 )
+
+var (
+	defaultInterval        time.Duration
+	defaultMaxUsedRamRatio float64
+
+	DefaultMemGuardian *MemGuardian
+)
+
+const (
+	MemGuardianEnabled            = "MEMGUARDIAN"
+	MemGuardianMaxUsedRamRatioENV = "MEMGUARDIAN_MAX_RAM_RATIO"
+	MemGuardianMaxUsedMemoryENV   = "MEMGUARDIAN_MAX_RAM"
+	MemGuardianIntervalENV        = "MEMGUARDIAN_INTERVAL"
+)
+
+func init() {
+	defaultInterval = env.GetEnvOrDefault(MemGuardianMaxUsedRamRatioENV, time.Duration(time.Second*30))
+	defaultMaxUsedRamRatio = env.GetEnvOrDefault(MemGuardianMaxUsedRamRatioENV, float64(75))
+	maxRam := env.GetEnvOrDefault(MemGuardianMaxUsedRamRatioENV, "")
+
+	options := []MemGuardianOption{
+		WitInterval(defaultInterval),
+		WithMaxRamRatioWarning(defaultMaxUsedRamRatio),
+	}
+	if maxRam != "" {
+		options = append(options, WithMaxRamAmountWarning(maxRam))
+	}
+
+	var err error
+	DefaultMemGuardian, err = New(options...)
+	if err != nil {
+		panic(err)
+	}
+}
 
 type MemGuardianOption func(*MemGuardian) error
 
@@ -27,8 +63,8 @@ func WithCallback(f func()) MemGuardianOption {
 	}
 }
 
-// WithRatioWarning defines the threshold of the warning state (and optional callback invocation)
-func WithRatioWarning(ratio float64) MemGuardianOption {
+// WithMaxRamRatioWarning defines the ratio (1-100) threshold of the warning state (and optional callback invocation)
+func WithMaxRamRatioWarning(ratio float64) MemGuardianOption {
 	return func(mg *MemGuardian) error {
 		if ratio == 0 || ratio > 100 {
 			return errors.New("ratio must be between 1 and 100")
@@ -38,13 +74,26 @@ func WithRatioWarning(ratio float64) MemGuardianOption {
 	}
 }
 
+// WithMaxRamAmountWarning defines the max amount of used RAM in bytes threshold of the warning state (and optional callback invocation)
+func WithMaxRamAmountWarning(maxRam string) MemGuardianOption {
+	return func(mg *MemGuardian) error {
+		size, err := units.FromHumanSize(maxRam)
+		if err != nil {
+			return err
+		}
+		mg.maxMemory = uint64(size)
+		return nil
+	}
+}
+
 type MemGuardian struct {
-	t       *time.Ticker
-	f       func()
-	ctx     context.Context
-	cancel  context.CancelFunc
-	Warning atomic.Bool
-	ratio   float64
+	t         *time.Ticker
+	f         func()
+	ctx       context.Context
+	cancel    context.CancelFunc
+	Warning   atomic.Bool
+	ratio     float64
+	maxMemory uint64
 }
 
 // New mem guadian instance with user defined options
@@ -72,12 +121,14 @@ func (mg *MemGuardian) Run(ctx context.Context) error {
 			mg.Close()
 			return nil
 		case <-mg.t.C:
-			usedRatio, err := UsedRamRatio()
+			usedRatio, used, err := UsedRam()
 			if err != nil {
 				return err
 			}
 
-			if usedRatio >= mg.ratio {
+			isRatioOverThreshold := mg.ratio > 0 && usedRatio >= mg.ratio
+			isAmountOverThreshold := mg.maxMemory > 0 && used >= mg.maxMemory
+			if isRatioOverThreshold || isAmountOverThreshold {
 				mg.Warning.Store(true)
 				if mg.f != nil {
 					mg.f()
@@ -95,12 +146,13 @@ func (mg *MemGuardian) Close() {
 	mg.t.Stop()
 }
 
-// Calculate the system absolute ratio of used RAM vs total available (as of now doesn't consider swap)
-func UsedRamRatio() (float64, error) {
-	vms, err := mem.VirtualMemory()
+// Calculate the system absolute ratio of used RAM
+func UsedRam() (ratio float64, used uint64, err error) {
+	var vms *mem.VirtualMemoryStat
+	vms, err = mem.VirtualMemory()
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
-	return vms.UsedPercent, nil
+	return vms.UsedPercent, vms.Used, nil
 }
