@@ -30,10 +30,6 @@ func (db *DiskBuffer) WriteString(s string) (int, error) {
 	return db.f.WriteString(s)
 }
 
-func (db *DiskBuffer) WriteTo(w io.Writer) (int64, error) {
-	return db.f.WriteTo(w)
-}
-
 func (db *DiskBuffer) Bytes() ([]byte, error) {
 	return os.ReadFile(db.f.Name())
 }
