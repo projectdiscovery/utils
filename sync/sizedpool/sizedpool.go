@@ -1,12 +1,11 @@
-package sync
+package sizedpool
 
 import (
 	"context"
 	"errors"
-	"math"
 	"sync"
 
-	"golang.org/x/sync/semaphore"
+	"github.com/projectdiscovery/utils/sync/semaphore"
 )
 
 type PoolOption[T any] func(*SizedPool[T]) error
@@ -16,10 +15,12 @@ func WithSize[T any](size int64) PoolOption[T] {
 		if size <= 0 {
 			return errors.New("size must be positive")
 		}
-		sz.initialSize = size
-		sz.maxSize = math.MaxInt64
-		sz.sem = semaphore.NewWeighted(sz.maxSize)
-		return sz.sem.Acquire(context.Background(), sz.maxSize-sz.initialSize)
+		var err error
+		sz.sem, err = semaphore.New(size)
+		if err != nil {
+			return err
+		}
+		return nil
 	}
 }
 
@@ -31,10 +32,8 @@ func WithPool[T any](p *sync.Pool) PoolOption[T] {
 }
 
 type SizedPool[T any] struct {
-	sem         *semaphore.Weighted
-	initialSize int64
-	maxSize     int64
-	pool        *sync.Pool
+	sem  *semaphore.Semaphore
+	pool *sync.Pool
 }
 
 func New[T any](options ...PoolOption[T]) (*SizedPool[T], error) {
@@ -67,13 +66,5 @@ func (sz *SizedPool[T]) Put(x T) {
 // Vary capacity by x - it's internally enqueued as a normal Acquire/Release operation as other Get/Put
 // but tokens are held internally
 func (sz *SizedPool[T]) Vary(ctx context.Context, x int64) error {
-	switch {
-	case x > 0:
-		sz.sem.Release(x)
-		return nil
-	case x < 0:
-		return sz.sem.Acquire(ctx, x)
-	default:
-		return errors.New("x is zero")
-	}
+	return sz.sem.Vary(ctx, x)
 }
