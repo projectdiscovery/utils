@@ -65,7 +65,7 @@ func (sz *SizedPool[T]) Put(x T) {
 	sz.pool.Put(x)
 }
 
-// Vary capacity by x - it's internally qneuqued as a normal Acquire/Release operation as other Get/Put
+// Vary capacity by x - it's internally enqueued as a normal Acquire/Release operation as other Get/Put
 // but tokens are held internally
 func (sz *SizedPool[T]) Vary(ctx context.Context, x int64) error {
 	switch {
