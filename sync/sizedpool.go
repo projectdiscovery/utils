@@ -19,8 +19,7 @@ func WithSize[T any](size int64) PoolOption[T] {
 		sz.initialSize = size
 		sz.maxSize = math.MaxInt64
 		sz.sem = semaphore.NewWeighted(sz.maxSize)
-		sz.sem.Acquire(context.Background(), sz.maxSize-sz.initialSize)
-		return nil
+		return sz.sem.Acquire(context.Background(), sz.maxSize-sz.initialSize)
 	}
 }
 
@@ -73,8 +72,7 @@ func (sz *SizedPool[T]) Vary(ctx context.Context, x int64) error {
 		sz.sem.Release(x)
 		return nil
 	case x < 0:
-		sz.sem.Acquire(ctx, x)
-		return nil
+		return sz.sem.Acquire(ctx, x)
 	default:
 		return errors.New("x is zero")
 	}
