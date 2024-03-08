@@ -20,7 +20,7 @@ func TestSizedPool(t *testing.T) {
 
 	// Create a new SizedPool with a max capacity of 2
 	pool, err := New[*testStruct](
-		WithMaxCapacity[*testStruct](2),
+		WithSize[*testStruct](2),
 		WithPool[*testStruct](p),
 	)
 	if err != nil {
