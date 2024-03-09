@@ -16,7 +16,7 @@ func getSysInfo() (*SysInfo, error) {
 		SharedRam:   vms.Shared,
 		TotalSwap:   vms.SwapTotal,
 		FreeSwap:    vms.SwapFree,
-		UsedPercent: vms.UsedPercent,
+		usedPercent: vms.UsedPercent,
 	}
 
 	return si, nil
