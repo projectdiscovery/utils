@@ -8,7 +8,6 @@ import (
 
 	units "github.com/docker/go-units"
 	"github.com/projectdiscovery/utils/env"
-	"github.com/shirou/gopsutil/mem"
 )
 
 var (
@@ -148,11 +147,10 @@ func (mg *MemGuardian) Close() {
 
 // Calculate the system absolute ratio of used RAM
 func UsedRam() (ratio float64, used uint64, err error) {
-	var vms *mem.VirtualMemoryStat
-	vms, err = mem.VirtualMemory()
+	si, err := GetSysInfo()
 	if err != nil {
 		return 0, 0, err
 	}
 
-	return vms.UsedPercent, vms.Used, nil
+	return si.UsedPercent(), si.UsedRam(), nil
 }
