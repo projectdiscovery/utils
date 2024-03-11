@@ -9,6 +9,7 @@ require (
 	github.com/cespare/xxhash v1.1.0
 	github.com/charmbracelet/glamour v0.6.0
 	github.com/docker/go-units v0.5.0
+	github.com/eapache/channels v1.1.0
 	github.com/google/go-github/v30 v30.1.0
 	github.com/hdm/jarm-go v0.0.7
 	github.com/julienschmidt/httprouter v1.3.0
@@ -48,6 +49,7 @@ require (
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.8.1 // indirect
 	github.com/dsnet/compress v0.0.2-0.20210315054119-f66993602bf5 // indirect
+	github.com/eapache/queue v1.1.0 // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/gaukas/godicttls v0.0.4 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
