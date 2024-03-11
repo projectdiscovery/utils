@@ -110,7 +110,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/projectdiscovery/gologger v1.1.12
 	github.com/projectdiscovery/hmap v0.0.41
-	github.com/projectdiscovery/retryablehttp-go v1.0.50
+	github.com/projectdiscovery/retryablehttp-go v1.0.51
 	github.com/weppos/publicsuffix-go v0.30.1-0.20230422193905-8fecedd899db // indirect
 	github.com/zmap/rc2 v0.0.0-20190804163417-abaa70531248 // indirect
 	golang.org/x/crypto v0.17.0 // indirect
