@@ -68,3 +68,8 @@ func (sz *SizedPool[T]) Put(x T) {
 func (sz *SizedPool[T]) Vary(ctx context.Context, x int64) error {
 	return sz.sem.Vary(ctx, x)
 }
+
+// Current size of the pool
+func (sz *SizedPool[T]) Size() int64 {
+	return sz.sem.Size()
+}

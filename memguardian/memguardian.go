@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	defaultInterval        time.Duration
-	defaultMaxUsedRamRatio float64
+	DefaultInterval        time.Duration
+	DefaultMaxUsedRamRatio float64
 
 	DefaultMemGuardian *MemGuardian
 )
@@ -25,13 +25,13 @@ const (
 )
 
 func init() {
-	defaultInterval = env.GetEnvOrDefault(MemGuardianMaxUsedRamRatioENV, time.Duration(time.Second*30))
-	defaultMaxUsedRamRatio = env.GetEnvOrDefault(MemGuardianMaxUsedRamRatioENV, float64(75))
+	DefaultInterval = env.GetEnvOrDefault(MemGuardianMaxUsedRamRatioENV, time.Duration(time.Second*30))
+	DefaultMaxUsedRamRatio = env.GetEnvOrDefault(MemGuardianMaxUsedRamRatioENV, float64(75))
 	maxRam := env.GetEnvOrDefault(MemGuardianMaxUsedRamRatioENV, "")
 
 	options := []MemGuardianOption{
-		WitInterval(defaultInterval),
-		WithMaxRamRatioWarning(defaultMaxUsedRamRatio),
+		WitInterval(DefaultInterval),
+		WithMaxRamRatioWarning(DefaultMaxUsedRamRatio),
 	}
 	if maxRam != "" {
 		options = append(options, WithMaxRamAmountWarning(maxRam))
