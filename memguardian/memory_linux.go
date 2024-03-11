@@ -12,13 +12,13 @@ func getSysInfo() (*SysInfo, error) {
 	}
 
 	si := &SysInfo{
-		Uptime:    sysInfo.Uptime,
-		totalRam:  sysInfo.Totalram,
-		freeRam:   sysInfo.Freeram,
-		SharedRam: sysInfo.Freeram,
-		BufferRam: sysInfo.Bufferram,
-		TotalSwap: sysInfo.Totalswap,
-		FreeSwap:  sysInfo.Freeswap,
+		Uptime:    int64(sysInfo.Uptime),
+		totalRam:  uint64(sysInfo.Totalram),
+		freeRam:   uint64(sysInfo.Freeram),
+		SharedRam: uint64(sysInfo.Freeram),
+		BufferRam: uint64(sysInfo.Bufferram),
+		TotalSwap: uint64(sysInfo.Totalswap),
+		FreeSwap:  uint64(sysInfo.Freeswap),
 		Unit:      uint64(sysInfo.Unit),
 	}
 
