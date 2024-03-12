@@ -101,11 +101,13 @@ func TestInvalidURLs(t *testing.T) {
 		"https://127.0.0.1:52272/%invalid",
 		"http.s3.amazonaws.com",
 		"https.s3.amazonaws.com",
+		"scanme.sh/xyz/invalid",
+		"scanme.sh/xyz/%u2s/%invalid",
 	}
 	for _, v := range testcases {
-		urlx, err := ParseURL(v, true)
+		urlx, err := ParseAbsoluteURL(v, true)
 		require.Nilf(t, err, "got error for url %v", v)
-		require.Equal(t, urlx.String(), v)
+		require.Equal(t, v, urlx.String())
 	}
 }
 

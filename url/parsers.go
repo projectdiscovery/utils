@@ -166,14 +166,47 @@ func absoluteURLParser(u *URL) (*URL, error) {
 		}
 		copy(u.URL, urlparse)
 	} else {
+
+		// try parsing with fallback if it is invalid URL escape error
+		// split and read until first / and then parse the url
+		parsed, err := url.Parse(HTTPS + SchemeSeparator + u.Original)
+		if err != nil {
+			if !strings.Contains(err.Error(), "invalid URL escape") {
+				// if it is not a invalid URL escape error then it is most likely a relative path
+				u.IsRelative = true
+				return u, nil
+			}
+		} else {
+			// successfully parsed absolute url
+			parsed.Scheme = "" // remove newly added scheme
+			copy(u.URL, parsed)
+			return u, nil
+		}
+
+		// this is most likely a url of type scanme.sh/%2s/%invalid
 		// if no prefix try to parse it with https
 		// if failed we consider it as a relative path and not a full url
-		urlparse, parseErr := url.Parse(HTTPS + SchemeSeparator + u.Original)
+		pathIndex := strings.IndexRune(u.Original, '/')
+		if pathIndex == -1 {
+			// no path found most likely a relative path or localhost path
+			urlparse, parseErr := url.Parse(HTTPS + SchemeSeparator + u.Original)
+			if parseErr != nil {
+				// most likely a relativeurls
+				u.IsRelative = true
+			} else {
+				urlparse.Scheme = "" // remove newly added scheme
+				copy(u.URL, urlparse)
+			}
+			return u, nil
+		}
+		// split until first / and then parse the url to handle invalid urls like
+		// scnme.sh/xyz/%u2s/%invalid
+		urlparse, parseErr := url.Parse(HTTPS + SchemeSeparator + u.Original[:pathIndex])
 		if parseErr != nil {
-			// most likely a relativeurl
+			// most likely a relativeurls
 			u.IsRelative = true
-			// TODO: investigate if prefix / should be added
 		} else {
+			urlparse.Path = u.Original[pathIndex:]
 			urlparse.Scheme = "" // remove newly added scheme
 			copy(u.URL, urlparse)
 		}
