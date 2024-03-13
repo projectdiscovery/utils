@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/andybalholm/brotli"
 	"github.com/pkg/errors"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
@@ -68,6 +69,8 @@ func wrapDecodeReader(resp *http.Response) (rc io.ReadCloser, err error) {
 		rc, err = gzip.NewReader(resp.Body)
 	case "deflate":
 		rc, err = zlib.NewReader(resp.Body)
+	case "br":
+		rc = io.NopCloser(brotli.NewReader(resp.Body))
 	default:
 		rc = resp.Body
 	}
