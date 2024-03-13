@@ -8,6 +8,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/cespare/xxhash v1.1.0
 	github.com/charmbracelet/glamour v0.6.0
+	github.com/docker/go-units v0.5.0
 	github.com/eapache/channels v1.1.0
 	github.com/google/go-github/v30 v30.1.0
 	github.com/hdm/jarm-go v0.0.7
@@ -23,6 +24,7 @@ require (
 	github.com/projectdiscovery/machineid v0.0.0-20240226150047-2e2c51e35983
 	github.com/remeh/sizedwaitgroup v1.0.0
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d
+	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/shirou/gopsutil/v3 v3.23.7
 	github.com/stretchr/testify v1.9.0
 	github.com/tidwall/gjson v1.14.3
@@ -31,7 +33,7 @@ require (
 	golang.org/x/exp v0.0.0-20221205204356-47842c84f3db
 	golang.org/x/oauth2 v0.11.0
 	golang.org/x/sync v0.6.0
-	golang.org/x/sys v0.16.0
+	golang.org/x/sys v0.17.0
 	golang.org/x/text v0.14.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -46,7 +48,6 @@ require (
 	github.com/cloudflare/circl v1.3.7 // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.8.1 // indirect
-	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dsnet/compress v0.0.2-0.20210315054119-f66993602bf5 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
 	github.com/fatih/color v1.15.0 // indirect
@@ -86,14 +87,14 @@ require (
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tidwall/rtred v0.1.2 // indirect
 	github.com/tidwall/tinyqueue v0.1.1 // indirect
-	github.com/tklauser/go-sysconf v0.3.11 // indirect
-	github.com/tklauser/numcpus v0.6.0 // indirect
+	github.com/tklauser/go-sysconf v0.3.12 // indirect
+	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/ulikunitz/xz v0.5.11 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	github.com/yl2chen/cidranger v1.0.2 // indirect
 	github.com/yuin/goldmark v1.5.4 // indirect
 	github.com/yuin/goldmark-emoji v1.0.1 // indirect
-	github.com/yusufpapurcu/wmi v1.2.3 // indirect
+	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.etcd.io/bbolt v1.3.7 // indirect
 	gopkg.in/djherbis/times.v1 v1.3.0 // indirect
 )

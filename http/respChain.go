@@ -2,25 +2,54 @@ package httputil
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net/http"
 	"sync"
+
+	"github.com/projectdiscovery/utils/sync/sizedpool"
 )
+
+var (
+	// reasonably high default allowed allocs
+	DefaultBytesBufferAlloc = int64(10000)
+)
+
+func ChangePoolSize(x int64) error {
+	return bufPool.Vary(context.Background(), x)
+}
+
+func GetPoolSize() int64 {
+	return bufPool.Size()
+}
 
 // use buffer pool for storing response body
 // and reuse it for each request
-var bufPool = sync.Pool{
-	New: func() any {
-		// The Pool's New function should generally only return pointer
-		// types, since a pointer can be put into the return interface
-		// value without an allocation:
-		return new(bytes.Buffer)
-	},
+var bufPool *sizedpool.SizedPool[*bytes.Buffer]
+
+func init() {
+	var p = &sync.Pool{
+		New: func() any {
+			// The Pool's New function should generally only return pointer
+			// types, since a pointer can be put into the return interface
+			// value without an allocation:
+			return new(bytes.Buffer)
+		},
+	}
+	var err error
+	bufPool, err = sizedpool.New[*bytes.Buffer](
+		sizedpool.WithPool[*bytes.Buffer](p),
+		sizedpool.WithSize[*bytes.Buffer](int64(DefaultBytesBufferAlloc)),
+	)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // getBuffer returns a buffer from the pool
 func getBuffer() *bytes.Buffer {
-	return bufPool.Get().(*bytes.Buffer)
+	buff, _ := bufPool.Get(context.Background())
+	return buff
 }
 
 // putBuffer returns a buffer to the pool
