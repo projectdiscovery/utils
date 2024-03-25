@@ -5,6 +5,7 @@ go 1.21
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/Mzack9999/gcache v0.0.0-20230410081825-519e28eab057
+	github.com/andybalholm/brotli v1.0.6
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/cespare/xxhash v1.1.0
 	github.com/charmbracelet/glamour v0.6.0
@@ -43,7 +44,6 @@ require (
 	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/akrylysov/pogreb v0.10.1 // indirect
 	github.com/alecthomas/chroma v0.10.0 // indirect
-	github.com/andybalholm/brotli v1.0.6 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
@@ -72,7 +72,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/pierrec/lz4/v4 v4.1.2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
-	github.com/projectdiscovery/fastdialer v0.0.63 // indirect
+	github.com/projectdiscovery/fastdialer v0.0.64 // indirect
 	github.com/projectdiscovery/networkpolicy v0.0.8 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.58 // indirect
 	github.com/quic-go/quic-go v0.37.7 // indirect
