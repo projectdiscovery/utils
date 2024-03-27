@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/docker/go-units"
 )
 
 var (
-	MaxBodyRead = int64(4 << 20) // 4MB
+	MaxBodyRead, _ = units.FromHumanSize("4mb")
 )
 
 // DumpResponseIntoBuffer dumps a http response without allocating a new buffer

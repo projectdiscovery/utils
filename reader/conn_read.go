@@ -7,13 +7,14 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/docker/go-units"
 	contextutil "github.com/projectdiscovery/utils/context"
 	errorutil "github.com/projectdiscovery/utils/errors"
 )
 
-const (
+var (
 	// although this is more than enough for most cases
-	MaxReadSize = 1 << 23 // 8MB
+	MaxReadSize, _ = units.FromHumanSize("8mb")
 )
 
 var (
