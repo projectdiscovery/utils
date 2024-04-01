@@ -1,17 +1,14 @@
 package updateutils
 
 import (
-	"encoding/base64"
 	"fmt"
 	"os"
-	"runtime"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/logrusorgru/aurora"
-	osutils "github.com/projectdiscovery/utils/os"
+
 	"github.com/projectdiscovery/utils/process"
-	"github.com/zcalusic/sysinfo"
 )
 
 type AssetFormat uint
@@ -157,27 +154,4 @@ func getUtmSource() string {
 		return getPlatformMetadata()
 	}
 	return value
-}
-
-// Get OS Vendor returns the linux distribution vendor
-// if not linux then returns runtime.GOOS
-func GetOSVendor() string {
-	if !osutils.IsLinux() {
-		return runtime.GOOS
-	}
-	var si sysinfo.SysInfo
-	si.GetSysInfo()
-	return si.OS.Vendor
-}
-
-// returns platform metadata
-func getPlatformMetadata() string {
-	var si sysinfo.SysInfo
-	si.GetSysInfo()
-	tmp := strings.ReplaceAll(si.Board.Vendor, " ", "_") + "|" + strings.ReplaceAll(si.Board.Name, " ", "_")
-	if tmp == "|" {
-		// instead of just empty string return os for more context
-		tmp = runtime.GOOS + "|" + runtime.GOARCH
-	}
-	return strings.TrimSuffix(base64.StdEncoding.EncodeToString([]byte(tmp)), "==")
 }
