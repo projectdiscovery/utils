@@ -149,7 +149,12 @@ func GetToolVersionCallback(toolName, version string) func() (string, error) {
 // GetpdtmParams returns encoded query parameters sent to update check endpoint
 func GetpdtmParams(version string) string {
 	params := &url.Values{}
-	params.Add("os", runtime.GOOS)
+	os := runtime.GOOS
+	if runtime.GOOS == "linux" {
+		// be more specific
+		os = GetOSVendor()
+	}
+	params.Add("os", os)
 	params.Add("arch", runtime.GOARCH)
 	params.Add("go_version", runtime.Version())
 	params.Add("v", version)

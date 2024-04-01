@@ -7,6 +7,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/logrusorgru/aurora"
+
 	"github.com/projectdiscovery/utils/process"
 )
 
@@ -148,6 +149,9 @@ func getUtmSource() string {
 		if ok, val := process.RunningInContainer(); ok {
 			return val
 		}
+	}
+	if value == "unknown" || value == "" {
+		return getPlatformMetadata()
 	}
 	return value
 }
