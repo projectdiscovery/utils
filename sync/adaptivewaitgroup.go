@@ -69,4 +69,5 @@ func (s *AdaptiveWaitGroup) Wait() {
 
 func (s *AdaptiveWaitGroup) Resize(size int) {
 	s.current.Resize(channels.BufferCap(size))
+	s.Size = int(s.current.Cap())
 }
