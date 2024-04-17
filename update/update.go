@@ -28,6 +28,7 @@ const (
 var (
 	// By default when tool is updated release notes of latest version are printed
 	HideReleaseNotes      = false
+	NoColorReleaseNotes   = false
 	HideProgressBar       = false
 	VersionCheckTimeout   = time.Duration(5) * time.Second
 	DownloadUpdateTimeout = time.Duration(30) * time.Second
@@ -90,8 +91,12 @@ func GetUpdateToolFromRepoCallback(toolName, version, repoName string) func() {
 
 		if !HideReleaseNotes {
 			output := gh.Latest.GetBody()
-			// adjust colors for both dark / light terminal themes
-			r, err := glamour.NewTermRenderer(glamour.WithAutoStyle())
+
+			style := glamour.WithAutoStyle()
+			if NoColorReleaseNotes {
+				style = glamour.WithStyles(glamour.ASCIIStyleConfig)
+			}
+			r, err := glamour.NewTermRenderer(style)
 			if err != nil {
 				gologger.Error().Msgf("markdown rendering not supported: %v", err)
 			}
