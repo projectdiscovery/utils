@@ -158,7 +158,7 @@ func GetpdtmParams(version string) string {
 	params.Add("arch", runtime.GOARCH)
 	params.Add("go_version", runtime.Version())
 	params.Add("v", version)
-	params.Add("machine_id", GetMachineID())
+	params.Add("machine_id", GetMachineID()) // for rate limiting
 	params.Add("utm_source", getUtmSource())
 	return params.Encode()
 }
@@ -168,7 +168,10 @@ func GetpdtmParams(version string) string {
 func GetMachineID() string {
 	machineId, err := machineid.ProtectedID("pdtm")
 	if err != nil {
-		return "unknown"
+		return getCustomMID()
+	}
+	if machineId == "" {
+		return getCustomMID()
 	}
 	return machineId
 }
