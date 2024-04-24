@@ -43,20 +43,20 @@ func readNNormalizeRespBody(rc *ResponseChain, body *bytes.Buffer) (err error) {
 	if err != nil {
 		if strings.Contains(err.Error(), "gzip: invalid header") {
 			// its invalid gzip but we will still use it from original body
-			_, err = body.ReadFrom(origBody)
-			if err != nil {
-				return errors.Wrap(err, "could not read response body after gzip error")
+			_, gErr := body.ReadFrom(origBody)
+			if gErr != nil {
+				return errors.Wrap(gErr, "could not read response body after gzip error")
 			}
-		}
-		if stringsutil.ContainsAnyI(err.Error(), "unexpected EOF", "read: connection reset by peer", "user canceled", "http: request body too large") {
+		} else if stringsutil.ContainsAnyI(err.Error(), "unexpected EOF", "read: connection reset by peer", "user canceled", "http: request body too large") {
 			// keep partial body and continue (skip error) (add meta header in response for debugging)
 			if response.Header == nil {
 				response.Header = make(http.Header)
 			}
 			response.Header.Set("x-nuclei-ignore-error", err.Error())
 			return nil
+		} else {
+			return errors.Wrap(err, "could not read response body")
 		}
-		return errors.Wrap(err, "could not read response body")
 	}
 	return nil
 }
