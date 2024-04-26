@@ -65,6 +65,7 @@ func (s *AdaptiveWaitGroup) Done() {
 
 func (s *AdaptiveWaitGroup) Wait() {
 	s.wg.Wait()
+	s.current.Close()
 }
 
 func (s *AdaptiveWaitGroup) Resize(size int) {
