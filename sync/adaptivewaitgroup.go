@@ -5,15 +5,19 @@ package sync
 import (
 	"context"
 	"errors"
+	"fmt"
+	"runtime"
 	"sync"
 
 	"github.com/eapache/channels"
+	"github.com/projectdiscovery/gologger"
 )
 
 type AdaptiveGroupOption func(*AdaptiveWaitGroup) error
 
 type AdaptiveWaitGroup struct {
-	Size int
+	caller string
+	Size   int
 
 	current *channels.ResizableChannel
 	wg      sync.WaitGroup
@@ -30,7 +34,14 @@ func WithSize(size int) AdaptiveGroupOption {
 }
 
 func New(options ...AdaptiveGroupOption) (*AdaptiveWaitGroup, error) {
-	wg := &AdaptiveWaitGroup{}
+	_, file, no, ok := runtime.Caller(1)
+	var caller string
+	if ok {
+		caller = fmt.Sprintf("called from %s#%d\n", file, no)
+	}
+	gologger.Info().Msgf("New AdaptiveWaitGroup %s\n", caller)
+
+	wg := &AdaptiveWaitGroup{caller: caller}
 	for _, option := range options {
 		if err := option(wg); err != nil {
 			return nil, err
@@ -66,6 +77,8 @@ func (s *AdaptiveWaitGroup) Done() {
 func (s *AdaptiveWaitGroup) Wait() {
 	s.wg.Wait()
 	s.current.Close()
+
+	gologger.Info().Msgf("Wait AdaptiveWaitGroup %s\n", s.caller)
 }
 
 func (s *AdaptiveWaitGroup) Resize(size int) {
