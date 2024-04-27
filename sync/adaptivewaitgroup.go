@@ -5,22 +5,16 @@ package sync
 import (
 	"context"
 	"errors"
-	"fmt"
-	"runtime"
-	"sync"
 
-	"github.com/eapache/channels"
-	"github.com/projectdiscovery/gologger"
+	"github.com/remeh/sizedwaitgroup"
 )
 
 type AdaptiveGroupOption func(*AdaptiveWaitGroup) error
 
 type AdaptiveWaitGroup struct {
-	caller string
-	Size   int
+	Size int
 
-	current *channels.ResizableChannel
-	wg      sync.WaitGroup
+	wg sizedwaitgroup.SizedWaitGroup
 }
 
 func WithSize(size int) AdaptiveGroupOption {
@@ -34,23 +28,14 @@ func WithSize(size int) AdaptiveGroupOption {
 }
 
 func New(options ...AdaptiveGroupOption) (*AdaptiveWaitGroup, error) {
-	_, file, no, ok := runtime.Caller(1)
-	var caller string
-	if ok {
-		caller = fmt.Sprintf("called from %s#%d\n", file, no)
-	}
-	gologger.Info().Msgf("New AdaptiveWaitGroup %s\n", caller)
-
-	wg := &AdaptiveWaitGroup{caller: caller}
+	wg := &AdaptiveWaitGroup{}
 	for _, option := range options {
 		if err := option(wg); err != nil {
 			return nil, err
 		}
 	}
 
-	wg.current = channels.NewResizableChannel()
-	wg.current.Resize(channels.BufferCap(wg.Size))
-	wg.wg = sync.WaitGroup{}
+	wg.wg = sizedwaitgroup.New(wg.Size)
 	return wg, nil
 }
 
@@ -59,29 +44,16 @@ func (s *AdaptiveWaitGroup) Add() {
 }
 
 func (s *AdaptiveWaitGroup) AddWithContext(ctx context.Context) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case s.current.In() <- struct{}{}:
-		break
-	}
-	s.wg.Add(1)
+	s.wg.Add()
 	return nil
 }
 
 func (s *AdaptiveWaitGroup) Done() {
-	<-s.current.Out()
 	s.wg.Done()
 }
 
 func (s *AdaptiveWaitGroup) Wait() {
 	s.wg.Wait()
-	s.current.Close()
-
-	gologger.Info().Msgf("Wait AdaptiveWaitGroup %s\n", s.caller)
 }
 
-func (s *AdaptiveWaitGroup) Resize(size int) {
-	s.current.Resize(channels.BufferCap(size))
-	s.Size = int(s.current.Cap())
-}
+func (s *AdaptiveWaitGroup) Resize(size int) {}
