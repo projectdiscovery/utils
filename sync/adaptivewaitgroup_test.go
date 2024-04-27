@@ -16,9 +16,8 @@ func Test_AdaptiveWaitGroup_Leak(t *testing.T) {
 
 	for i := 0; i < 100; i++ {
 		wg.Add()
-		go func(awg *AdaptiveWaitGroup) error {
+		go func(awg *AdaptiveWaitGroup) {
 			defer awg.Done()
-			return nil
 		}(wg)
 	}
 	wg.Wait()
