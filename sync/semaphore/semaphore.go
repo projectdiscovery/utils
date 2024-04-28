@@ -56,6 +56,29 @@ func (s *Semaphore) Vary(ctx context.Context, x int64) error {
 	}
 }
 
+func (s *Semaphore) Resize(ctx context.Context, newSize int64) error {
+	currentSize := s.currentSize.Load()
+	difference := newSize - currentSize
+
+	if difference == 0 {
+		return nil // No resizing needed if the new size is the same as the current size
+	}
+
+	if difference > 0 {
+		// Increase capacity
+		s.sem.Release(difference)
+	} else {
+		// Decrease capacity
+		err := s.sem.Acquire(ctx, -difference) // Acquire takes a positive number, so negate difference
+		if err != nil {
+			return err
+		}
+	}
+
+	s.currentSize.Store(newSize)
+	return nil
+}
+
 // Current size of the semaphore
 func (s *Semaphore) Size() int64 {
 	return s.currentSize.Load()
