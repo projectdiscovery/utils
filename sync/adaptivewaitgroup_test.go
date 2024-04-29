@@ -5,6 +5,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/fortytw2/leaktest"
 	"github.com/stretchr/testify/require"
 )
 
@@ -90,4 +91,52 @@ func TestAddWithContext(t *testing.T) {
 		t.Fatalf("AddContext returned non-context.Canceled error: %v", err)
 	}
 
+}
+
+func TestMultipleResizes(t *testing.T) {
+	var c atomic.Int32
+	swg, err := New(WithSize(2)) // Start with a size of 2
+	require.Nil(t, err)
+
+	for i := 0; i < 10000; i++ {
+		if i == 250 {
+			swg.Resize(context.TODO(), 5) // Increase size at 2500th iteration
+		}
+		if i == 500 {
+			swg.Resize(context.TODO(), 1) // Decrease size at 5000th iteration
+		}
+		if i == 750 {
+			swg.Resize(context.TODO(), 3) // Increase size again at 7500th iteration
+		}
+
+		swg.Add()
+		go func() {
+			defer swg.Done()
+			c.Add(1)
+		}()
+	}
+
+	swg.Wait()
+	if c.Load() != 10000 {
+		t.Fatalf("%d, not all routines have been executed.", c.Load())
+	}
+}
+
+func Test_AdaptiveWaitGroup_Leak(t *testing.T) {
+	defer leaktest.Check(t)()
+
+	for j := 0; j < 1000; j++ {
+		wg, err := New(WithSize(10))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		for i := 0; i < 10000; i++ {
+			wg.Add()
+			go func(awg *AdaptiveWaitGroup) {
+				defer awg.Done()
+			}(wg)
+		}
+		wg.Wait()
+	}
 }
