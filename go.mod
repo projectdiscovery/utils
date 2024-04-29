@@ -12,6 +12,7 @@ require (
 	github.com/docker/go-units v0.5.0
 	github.com/eapache/channels v1.1.0
 	github.com/google/go-github/v30 v30.1.0
+	github.com/google/uuid v1.3.1
 	github.com/hdm/jarm-go v0.0.7
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/kljensen/snowball v0.8.0
@@ -54,7 +55,6 @@ require (
 	github.com/gaukas/godicttls v0.0.4 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/uuid v1.3.1 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/klauspost/pgzip v1.2.5 // indirect
@@ -112,7 +112,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/projectdiscovery/gologger v1.1.12
 	github.com/projectdiscovery/hmap v0.0.41
-	github.com/projectdiscovery/retryablehttp-go v1.0.57
+	github.com/projectdiscovery/retryablehttp-go v1.0.58
 	github.com/weppos/publicsuffix-go v0.30.1-0.20230422193905-8fecedd899db // indirect
 	github.com/zcalusic/sysinfo v1.0.2
 	github.com/zmap/rc2 v0.0.0-20190804163417-abaa70531248 // indirect
