@@ -22,12 +22,11 @@ type AdaptiveWaitGroup struct {
 	mu  sync.Mutex // Mutex to protect access to the Size and semaphore
 }
 
+// WithSize sets the initial size of the waitgroup ()
 func WithSize(size int) AdaptiveGroupOption {
-	// size is 0 based
-	size = zeroBased(size)
 	return func(wg *AdaptiveWaitGroup) error {
-		if size < 0 {
-			return errors.New("size must be positive")
+		if err := validateSize(size); err != nil {
+			return err
 		}
 		sem, err := semaphore.New(int64(size))
 		if err != nil {
@@ -37,6 +36,13 @@ func WithSize(size int) AdaptiveGroupOption {
 		wg.Size = size
 		return nil
 	}
+}
+
+func validateSize(size int) error {
+	if size < 1 {
+		return errors.New("size must be at least 1")
+	}
+	return nil
 }
 
 func New(options ...AdaptiveGroupOption) (*AdaptiveWaitGroup, error) {
@@ -87,8 +93,9 @@ func (s *AdaptiveWaitGroup) Resize(ctx context.Context, size int) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// size is 0 based
-	size = zeroBased(size)
+	if err := validateSize(size); err != nil {
+		return err
+	}
 
 	// Resize the semaphore with the provided context and handle any errors
 	if err := s.sem.Resize(ctx, int64(size)); err != nil {
@@ -100,11 +107,4 @@ func (s *AdaptiveWaitGroup) Resize(ctx context.Context, size int) error {
 
 func (s *AdaptiveWaitGroup) Current() int {
 	return int(s.current.Load())
-}
-
-func zeroBased(size int) int {
-	if size > 1 {
-		size = size - 1
-	}
-	return size
 }

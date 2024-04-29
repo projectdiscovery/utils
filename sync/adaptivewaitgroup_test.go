@@ -48,7 +48,7 @@ func TestThrottling(t *testing.T) {
 			defer swg.Done()
 
 			c.Add(1)
-			require.False(t, swg.Current() > 4, "not the good amount of routines spawned.", swg.Current())
+			require.False(t, swg.Current() > 5, "not the good amount of routines spawned.", swg.Current())
 		}()
 	}
 
