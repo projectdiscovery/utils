@@ -100,13 +100,16 @@ func TestMultipleResizes(t *testing.T) {
 
 	for i := 0; i < 10000; i++ {
 		if i == 250 {
-			swg.Resize(context.TODO(), 5) // Increase size at 2500th iteration
+			err := swg.Resize(context.TODO(), 5) // Increase size at 2500th iteration
+			require.Nil(t, err)
 		}
 		if i == 500 {
-			swg.Resize(context.TODO(), 1) // Decrease size at 5000th iteration
+			err := swg.Resize(context.TODO(), 1) // Decrease size at 5000th iteration
+			require.Nil(t, err)
 		}
 		if i == 750 {
-			swg.Resize(context.TODO(), 3) // Increase size again at 7500th iteration
+			err := swg.Resize(context.TODO(), 3) // Increase size again at 7500th iteration
+			require.Nil(t, err)
 		}
 
 		swg.Add()
