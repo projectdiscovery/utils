@@ -143,3 +143,38 @@ func Test_AdaptiveWaitGroup_Leak(t *testing.T) {
 		wg.Wait()
 	}
 }
+
+func Test_AdaptiveWaitGroup_ContinuousResizeAndCheck(t *testing.T) {
+	defer leaktest.Check(t)() // Ensure no goroutines are leaked
+
+	var c atomic.Int32
+
+	wg, err := New(WithSize(1)) // Start with a size of 1
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Perform continuous resizing and goroutine execution
+	for j := 0; j < 100; j++ {
+		for i := 0; i < 1000; i++ {
+			wg.Add()
+			go func(awg *AdaptiveWaitGroup) {
+				defer awg.Done()
+				c.Add(1)
+			}(wg)
+		}
+
+		// Increase or decrease size
+		newSize := (j % 10) + 1 // Cycle sizes between 1 and 10
+		err := wg.Resize(context.TODO(), newSize)
+		if err != nil {
+			t.Fatalf("Resize returned error: %v", err)
+		}
+
+		wg.Wait() // Wait at each step to ensure all routines finish before resizing again
+	}
+
+	if c.Load() != 100000 {
+		t.Fatalf("%d, not all routines have been executed.", c.Load())
+	}
+}
