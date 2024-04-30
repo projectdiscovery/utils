@@ -6,27 +6,43 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"sync/atomic"
 
-	"github.com/eapache/channels"
+	"github.com/projectdiscovery/utils/sync/semaphore"
 )
 
 type AdaptiveGroupOption func(*AdaptiveWaitGroup) error
 
 type AdaptiveWaitGroup struct {
-	Size int
+	Size    int
+	current *atomic.Int64
 
-	current *channels.ResizableChannel
-	wg      sync.WaitGroup
+	sem *semaphore.Semaphore
+	wg  sync.WaitGroup
+	mu  sync.Mutex // Mutex to protect access to the Size and semaphore
 }
 
+// WithSize sets the initial size of the waitgroup ()
 func WithSize(size int) AdaptiveGroupOption {
 	return func(wg *AdaptiveWaitGroup) error {
-		if size < 0 {
-			return errors.New("size must be positive")
+		if err := validateSize(size); err != nil {
+			return err
 		}
+		sem, err := semaphore.New(int64(size))
+		if err != nil {
+			return err
+		}
+		wg.sem = sem
 		wg.Size = size
 		return nil
 	}
+}
+
+func validateSize(size int) error {
+	if size < 1 {
+		return errors.New("size must be at least 1")
+	}
+	return nil
 }
 
 func New(options ...AdaptiveGroupOption) (*AdaptiveWaitGroup, error) {
@@ -37,9 +53,8 @@ func New(options ...AdaptiveGroupOption) (*AdaptiveWaitGroup, error) {
 		}
 	}
 
-	wg.current = channels.NewResizableChannel()
-	wg.current.Resize(channels.BufferCap(wg.Size))
 	wg.wg = sync.WaitGroup{}
+	wg.current = &atomic.Int64{}
 	return wg, nil
 }
 
@@ -51,23 +66,45 @@ func (s *AdaptiveWaitGroup) AddWithContext(ctx context.Context) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
-	case s.current.In() <- struct{}{}:
-		break
+	default:
+		// Attempt to acquire a semaphore slot, handle error if acquisition fails
+		if err := s.sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
 	}
+
+	// Safely add to the waitgroup only after acquiring the semaphore
 	s.wg.Add(1)
+	s.current.Add(1)
 	return nil
 }
 
 func (s *AdaptiveWaitGroup) Done() {
-	<-s.current.Out()
+	s.sem.Release(1)
 	s.wg.Done()
+	s.current.Add(-1)
 }
 
 func (s *AdaptiveWaitGroup) Wait() {
 	s.wg.Wait()
 }
 
-func (s *AdaptiveWaitGroup) Resize(size int) {
-	s.current.Resize(channels.BufferCap(size))
-	s.Size = int(s.current.Cap())
+func (s *AdaptiveWaitGroup) Resize(ctx context.Context, size int) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if err := validateSize(size); err != nil {
+		return err
+	}
+
+	// Resize the semaphore with the provided context and handle any errors
+	if err := s.sem.Resize(ctx, int64(size)); err != nil {
+		return err
+	}
+	s.Size = size
+	return nil
+}
+
+func (s *AdaptiveWaitGroup) Current() int {
+	return int(s.current.Load())
 }
