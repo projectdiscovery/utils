@@ -38,8 +38,10 @@ func readNNormalizeRespBody(rc *ResponseChain, body *bytes.Buffer) (err error) {
 	if err != nil {
 		wrapped = origBody
 	}
+	limitReader := io.LimitReader(wrapped, 2*MaxBodyRead)
+
 	// read response body to buffer
-	_, err = body.ReadFrom(wrapped)
+	_, err = body.ReadFrom(limitReader)
 	if err != nil {
 		if strings.Contains(err.Error(), "gzip: invalid header") {
 			// its invalid gzip but we will still use it from original body
