@@ -12,11 +12,13 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/asaskevich/govalidator"
+	"github.com/mattn/go-isatty"
 	"github.com/pkg/errors"
 	sliceutil "github.com/projectdiscovery/utils/slice"
 	stringsutil "github.com/projectdiscovery/utils/strings"
@@ -177,6 +179,9 @@ func CreateFolder(path string) error {
 
 // HasStdin determines if the user has piped input
 func HasStdin() bool {
+	if runtime.GOOS == "windows" && (isatty.IsTerminal(os.Stdin.Fd()) || isatty.IsCygwinTerminal(os.Stdin.Fd())) {
+		return false
+	}
 	stat, err := os.Stdin.Stat()
 	if err != nil {
 		return false
