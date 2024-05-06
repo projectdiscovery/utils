@@ -17,7 +17,9 @@ import (
 	"time"
 
 	"github.com/asaskevich/govalidator"
+	"github.com/mattn/go-isatty"
 	"github.com/pkg/errors"
+	osutils "github.com/projectdiscovery/utils/os"
 	sliceutil "github.com/projectdiscovery/utils/slice"
 	stringsutil "github.com/projectdiscovery/utils/strings"
 	"gopkg.in/yaml.v3"
@@ -177,6 +179,9 @@ func CreateFolder(path string) error {
 
 // HasStdin determines if the user has piped input
 func HasStdin() bool {
+	if osutils.IsWindows() && (isatty.IsTerminal(os.Stdin.Fd()) || isatty.IsCygwinTerminal(os.Stdin.Fd())) {
+		return false
+	}
 	stat, err := os.Stdin.Stat()
 	if err != nil {
 		return false
