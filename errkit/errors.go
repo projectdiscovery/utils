@@ -85,6 +85,10 @@ func (e *ErrorX) Error() string {
 		sb.WriteString(e.kind.String())
 		sb.WriteString(" ")
 	}
+	if len(e.attrs) > 0 {
+		sb.WriteString(slog.GroupValue(e.attrs...).String())
+		sb.WriteString(" ")
+	}
 	for _, err := range e.errs {
 		sb.WriteString(err.Error())
 		sb.WriteString(ErrorSeperator)
