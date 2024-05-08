@@ -1,6 +1,9 @@
 package errkit
 
-import "errors"
+import (
+	"errors"
+	"log/slog"
+)
 
 // Proxy to StdLib errors.Is
 func Is(err error, target ...error) bool {
@@ -126,4 +129,66 @@ func IsNetworkTemporaryErr(err error) bool {
 	x := &ErrorX{}
 	parseError(x, err)
 	return isNetworkTemporaryErr(x)
+}
+
+// WithAttr wraps error with given attributes
+//
+// err = errkit.WithAttr(err,slog.Any("resource",domain))
+func WithAttr(err error, attrs ...slog.Attr) error {
+	if err == nil {
+		return nil
+	}
+	x := &ErrorX{}
+	parseError(x, err)
+	x.attrs = append(x.attrs, attrs...)
+	if len(x.attrs) > MaxErrorDepth {
+		x.attrs = x.attrs[:MaxErrorDepth]
+	}
+	return x
+}
+
+// SlogAttrGroup returns a slog attribute group for the given error
+// it is in format of:
+//
+//	{
+//		"data": {
+//			"kind": "<error-kind>",
+//			"cause": "<cause>",
+//			"errors": [
+//				<errs>...
+//			]
+//		}
+//	}
+func SlogAttrGroup(err error) slog.Attr {
+	attrs := SlogAttrs(err)
+	g := slog.GroupValue(
+		attrs..., // append all attrs
+	)
+	return slog.Any("data", g)
+}
+
+// SlogAttrs returns slog attributes for the given error
+// it is in format of:
+//
+//	{
+//		"kind": "<error-kind>",
+//		"cause": "<cause>",
+//		"errors": [
+//			<errs>...
+//		]
+//	}
+func SlogAttrs(err error) []slog.Attr {
+	x := &ErrorX{}
+	parseError(x, err)
+	attrs := []slog.Attr{}
+	if x.kind != nil {
+		attrs = append(attrs, slog.Any("kind", x.kind.String()))
+	}
+	if cause := x.Cause(); cause != nil {
+		attrs = append(attrs, slog.Any("cause", cause))
+	}
+	if len(x.errs) > 0 {
+		attrs = append(attrs, slog.Any("errors", x.errs))
+	}
+	return attrs
 }

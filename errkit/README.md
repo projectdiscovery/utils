@@ -4,30 +4,30 @@ why errkit when we already have errorutil ?
 
 ----
 
-errorutil was introduced a year ago with main goal to capture stack of error to identify underlying deeply nested errors. but it does not follow the go paradigm of error handling and implementation and is counter intuitive to that. i.e in golang looking at any error util/implementation library "errors" "pkg/errors" or "uber.go/multierr" etc, they all follow the same pattern i.e `.Error()` method is never used and instead it is wrapped with helper structs following a particular interface which allows traversing the error chain and using helper functions like `.Cause() error` or `.Unwrap() error` or `errors.Is()` and more. but errorutil marshalls the error to string which does not play well with the go error handling paradigm. Apart from that over time usage of errorutil has been cumbersome because it is not drop in replacement for any error package and it does not allow propogating/traversing error chain in a go idiomatic way.
+Introduced a year ago, `errorutil` aimed to capture error stacks for identifying deeply nested errors. However, its approach deviates from Go's error handling paradigm. In Go, libraries like "errors", "pkg/errors", and "uber.go/multierr" avoid using the `.Error()` method directly. Instead, they wrap errors with helper structs that implement specific interfaces, facilitating error chain traversal and the use of helper functions like `.Cause() error` or `.Unwrap() error` or `errors.Is()`. Contrarily, `errorutil` marshals errors to strings, which is incompatible with Go's error handling paradigm. Over time, the use of `errorutil` has become cumbersome due to its inability to replace any error package seamlessly and its lack of support for idiomatic error propagation or traversal in Go.
 
 
-`errkit` is new error library that is built upon learnings from `errorutil` and has following features:
+`errkit` is a new error library that addresses the shortcomings of `errorutil`. It offers the following features:
 
-- drop in replacement for (no syntax change / refactor required)
+- Seamless replacement for existing error packages, requiring no syntax changes or refactoring:
     - `errors` package
     - `pkg/errors` package (now deprecated)
     - `uber/multierr` package
-- is compatible with all known go error handling implementations and can parse errors from any library and is compatible with existing error handling libraries and helper functions like `Is()` , `As()` , `Cause()` and more.
-- is go idiomatic and follows the go error handling paradigm
-- Has Attributes support (see below)
-- Implements and categorizes errors into different classes (see below)
-    - `ErrClassNetworkTemporary`
-    - `ErrClassNetworkPermanent`
-    - `ErrClassDeadline`
-    - Custom Classes via `ErrClass` interface
-- Supports easy conversion to slog Item for structured logging reatining all error info
-- Helper functions to implement public/user facing errors by using error classes
+- `errkit` is compatible with all known Go error handling implementations. It can parse errors from any library and works with existing error handling libraries and helper functions like `Is()`, `As()`, `Cause()`, and more.
+- `errkit` is Go idiomatic and adheres to the Go error handling paradigm.
+- `errkit` supports attributes for structured error information or logging using `slog.Attr` (optional).
+- `errkit` implements and categorizes errors into different kinds, as detailed below.
+    - `ErrKindNetworkTemporary`
+    - `ErrKindNetworkPermanent`
+    - `ErrKindDeadline`
+    - Custom kinds via `ErrKind` interface
+- `errkit` provides helper functions for structured error logging using `SlogAttrs` and `SlogAttrGroup`.
+- `errkit` offers helper functions to implement public or user-facing errors by using error kinds interface.
 
 
 **Attributes Support**
 
-To strictly follow the go error handling paradigm and making it easy to traverse error chain, errkit support adding `Attr(key comparable,value any)` to error instead of wrapping it with a string message. This keeps extra error info minimal without being too verbose a good example of this is following
+`errkit` supports optional error wrapping with attributes `slog.Attr` for structured error logging, providing a more organized approach to error logging than string wrapping.
 
 ```go
 // normal way of error propogating through nested stack
@@ -47,12 +47,12 @@ with attributes support you can do following
 err := errkit.New("i/o timeout")
 
 // xyz.go
-err = errkit.WithAttr(err,&errkit.Resource{},errkit.Resource{type: "network",add: addr})
+err = errkit.WithAttr(err,slog.Any("resource",domain))
 
 // abc.go
-err = errkit.WithAttr(err,&errkit.Action{},errkit.Action{type: "download"})
+err = errkit.WithAttr(err,slog.Any("action","download"))
 ```
 
-the good part is that all attributes must implement a interface 'ErrAttr' that way all of them are compatible and can be consolidated into a struct/object of choice. for more example see `attr_test.go`
+## Note
 
-In case the same attribute types are added they are deduplicated / consolidated into parent attribute if it supports that.
+To keep errors concise and avoid unnecessary allocations, message wrapping and attributes count have a max depth set to 3. Adding more will not panic but will be simply ignored. This is configurable using the MAX_ERR_DEPTH env variable (default 3).

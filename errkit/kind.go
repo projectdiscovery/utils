@@ -3,13 +3,7 @@ package errkit
 import (
 	"strings"
 
-	"github.com/projectdiscovery/utils/env"
 	"golang.org/x/exp/maps"
-)
-
-var (
-	// MaxChainedKinds is the maximum number of error kinds that can be chained in a error
-	MaxChainedKinds = env.GetEnvOrDefault("MAX_CHAINED_ERR_KINDS", 3)
 )
 
 var (
@@ -180,8 +174,8 @@ func CombineErrKinds(kind ...ErrKind) ErrKind {
 		}
 	}
 	f.kinds = maps.Keys(uniq)
-	if len(f.kinds) > MaxChainedKinds {
-		f.kinds = f.kinds[:MaxChainedKinds]
+	if len(f.kinds) > MaxErrorDepth {
+		f.kinds = f.kinds[:MaxErrorDepth]
 	}
 	return f
 }
