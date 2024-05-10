@@ -583,7 +583,14 @@ func DedupeLines(filename string) error {
 	seenLines := make(map[string]struct{})
 	var deduplicatedLines []string
 
+	info, err := file.Stat()
+	if err != nil {
+		return err
+	}
 	scanner := bufio.NewScanner(file)
+	maxSize := int(info.Size())
+	buffer := make([]byte, 0, maxSize)
+	scanner.Buffer(buffer, maxSize)
 	for scanner.Scan() {
 		line := scanner.Text()
 		if _, exists := seenLines[line]; !exists {
