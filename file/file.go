@@ -570,3 +570,31 @@ func OpenOrCreateFile(name string) (*os.File, error) {
 	}
 	return os.OpenFile(name, os.O_RDWR|os.O_CREATE, 0666)
 }
+
+// DedupeLines reads a file and removes duplicate lines from it.
+// The function can be memory intensive for large files.
+func DedupeLines(filename string) error {
+	file, err := os.Open(filename)
+	if err != nil {
+		return errors.Wrapf(err, "could not open file: %s", filename)
+	}
+	defer file.Close()
+
+	seenLines := make(map[string]struct{})
+	var deduplicatedLines []string
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if _, exists := seenLines[line]; !exists {
+			seenLines[line] = struct{}{}
+			deduplicatedLines = append(deduplicatedLines, line)
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return errors.Wrapf(err, "could not read file: %s", filename)
+	}
+
+	return os.WriteFile(filename, []byte(strings.Join(deduplicatedLines, "\n")+"\n"), 0644)
+}

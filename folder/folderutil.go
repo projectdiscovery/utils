@@ -1,12 +1,12 @@
 package folderutil
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 
+	"github.com/pkg/errors"
 	fileutil "github.com/projectdiscovery/utils/file"
 	mapsutil "github.com/projectdiscovery/utils/maps"
 )
@@ -235,5 +235,23 @@ func SyncDirectory(source, destination string) error {
 		}
 	}
 
+	return nil
+}
+
+// DedupeLinesInFiles deduplicates lines in all files in a directory
+// The function can be memory intensive for directories with large files.
+func DedupeLinesInFiles(dir string) error {
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			return fileutil.DedupeLines(path)
+		}
+		return nil
+	})
+	if err != nil {
+		return errors.Wrapf(err, "error processing directory %s", dir)
+	}
 	return nil
 }
