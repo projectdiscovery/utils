@@ -110,7 +110,7 @@ require (
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/projectdiscovery/gologger v1.1.12
-	github.com/projectdiscovery/hmap v0.0.41
+	github.com/projectdiscovery/hmap v0.0.42
 	github.com/projectdiscovery/retryablehttp-go v1.0.60
 	github.com/weppos/publicsuffix-go v0.30.1-0.20230422193905-8fecedd899db // indirect
 	github.com/zcalusic/sysinfo v1.0.2
