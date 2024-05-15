@@ -168,7 +168,7 @@ func CombineErrKinds(kind ...ErrKind) ErrKind {
 	all := maps.Keys(uniq)
 	for _, k := range all {
 		for u := range uniq {
-			if k.IsParent(u) {
+			if k.IsParent(u)  || k.Is(u) {
 				delete(uniq, k)
 			}
 		}

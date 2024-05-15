@@ -76,5 +76,4 @@ func TestErrorUtil(t *testing.T) {
 	if len(x.errs) != 3 {
 		t.Fatal("expected 3 errors")
 	}
-	t.Log(x.errs)
 }
