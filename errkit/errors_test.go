@@ -16,7 +16,7 @@ import (
 
 func TestErrorAs(t *testing.T) {
 	// Create a new error with a specific class and wrap it
-	x := New("this is a nuclei error").SetKind(ErrClassNetworkPermanent).Build()
+	x := New("this is a nuclei error").SetKind(ErrKindNetworkPermanent).Build()
 	y := errors.Wrap(x, "this is a wrap error")
 
 	// Attempt to unwrap the error to a specific type
@@ -45,7 +45,7 @@ func TestErrorAs(t *testing.T) {
 
 func TestErrorIs(t *testing.T) {
 	// Create a new error, wrap it, and check if the original error can be found
-	x := New("this is a nuclei error").SetKind(ErrClassNetworkPermanent).Build()
+	x := New("this is a nuclei error").SetKind(ErrKindNetworkPermanent).Build()
 	y := errors.Wrap(x, "this is a wrap error")
 	if !errors.Is(y, x) {
 		t.Fatal("expected to be able to find the original error")

@@ -13,19 +13,19 @@ var (
 	// ErrClassNetwork indicates an error related to network operations
 	// these may be resolved by retrying the operation with exponential backoff
 	// ex: Timeout awaiting headers, i/o timeout etc
-	ErrClassNetworkTemporary ErrKind = NewPrimitiveErrKind("network-temporary-error", "temporary network error", isNetworkTemporaryErr)
-	// ErrClassNetworkPermanent indicates a permanent error related to network operations
+	ErrKindNetworkTemporary = NewPrimitiveErrKind("network-temporary-error", "temporary network error", isNetworkTemporaryErr)
+	// ErrKindNetworkPermanent indicates a permanent error related to network operations
 	// these may not be resolved by retrying and need manual intervention
 	// ex: no address found for host
-	ErrClassNetworkPermanent = NewPrimitiveErrKind("network-permanent-error", "permanent network error", isNetworkPermanentErr)
-	// ErrClassDeadline indicates a timeout error in logical operations
+	ErrKindNetworkPermanent = NewPrimitiveErrKind("network-permanent-error", "permanent network error", isNetworkPermanentErr)
+	// ErrKindDeadline indicates a timeout error in logical operations
 	// these are custom deadlines set by nuclei itself to prevent infinite hangs
 	// and in most cases are server side issues (ex: server connects but does not respond at all)
 	// a manual intervention is required
-	ErrClassDeadline = NewPrimitiveErrKind("deadline-error", "deadline error", isDeadlineErr)
-	// ErrClassUnknown indicates an unknown error class
+	ErrKindDeadline = NewPrimitiveErrKind("deadline-error", "deadline error", isDeadlineErr)
+	// ErrKindUnknown indicates an unknown error class
 	// that has not been implemented yet this is used as fallback when converting a slog Item
-	ErrClassUnknown = NewPrimitiveErrKind("unknown-error", "unknown error", nil)
+	ErrKindUnknown = NewPrimitiveErrKind("unknown-error", "unknown error", nil)
 )
 
 // ErrKind is an interface that represents a kind of error
@@ -216,4 +216,50 @@ func CombineErrKinds(kind ...ErrKind) ErrKind {
 		f.kinds = f.kinds[:MaxErrorDepth]
 	}
 	return f
+}
+
+// GetErrorKind returns the first error kind from the error
+// extra error kinds can be passed as optional arguments
+func GetErrorKind(err error, defs ...ErrKind) ErrKind {
+	x := &ErrorX{}
+	parseError(x, err)
+	if x.kind != nil {
+		if val, ok := x.kind.(*multiKind); ok {
+			// if multi kind return first kind
+			return val.kinds[0]
+		}
+		return x.kind
+	}
+	// if no kind is found return default error kind
+	// parse if defs are given
+	for _, def := range defs {
+		if def.Represents(x) {
+			return def
+		}
+	}
+	return ErrKindUnknown
+}
+
+// GetAllErrorKinds returns all error kinds from the error
+// this should not be used unless very good reason to do so
+func GetAllErrorKinds(err error, defs ...ErrKind) []ErrKind {
+	kinds := []ErrKind{}
+	x := &ErrorX{}
+	parseError(x, err)
+	if x.kind != nil {
+		if val, ok := x.kind.(*multiKind); ok {
+			kinds = append(kinds, val.kinds...)
+		} else {
+			kinds = append(kinds, x.kind)
+		}
+	}
+	for _, def := range defs {
+		if def.Represents(x) {
+			kinds = append(kinds, def)
+		}
+	}
+	if len(kinds) == 0 {
+		kinds = append(kinds, ErrKindUnknown)
+	}
+	return kinds
 }
