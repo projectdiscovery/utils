@@ -1,6 +1,9 @@
 package errkit
 
 import (
+	"context"
+	"errors"
+	"os"
 	"strings"
 
 	"golang.org/x/exp/maps"
@@ -80,18 +83,53 @@ func NewPrimitiveErrKind(id string, info string, represents func(*ErrorX) bool) 
 }
 
 func isNetworkTemporaryErr(err *ErrorX) bool {
+	if err.Cause() != nil {
+		return os.IsTimeout(err.Cause())
+	}
+	v := err.Cause()
+	switch {
+	case os.IsTimeout(v):
+		return true
+	case strings.Contains(v.Error(), "Client.Timeout exceeded while awaiting headers"):
+		return true
+	}
 	return false
 }
 
 // isNetworkPermanentErr checks if given error is a permanent network error
 func isNetworkPermanentErr(err *ErrorX) bool {
+	if err.Cause() == nil {
+		return false
+	}
+	v := err.Cause().Error()
 	// to implement
+	switch {
+	case strings.Contains(v, "no address found"):
+		return true
+	case strings.Contains(v, "no such host"):
+		return true
+	case strings.Contains(v, "could not resolve host"):
+		return true
+	}
 	return false
 }
 
 // isDeadlineErr checks if given error is a deadline error
 func isDeadlineErr(err *ErrorX) bool {
 	// to implement
+	if err.Cause() == nil {
+		return false
+	}
+	v := err.Cause()
+	switch {
+	case errors.Is(v, os.ErrDeadlineExceeded):
+		return true
+	case errors.Is(v, context.DeadlineExceeded):
+		return true
+	case errors.Is(v, context.Canceled):
+		return true
+	}
+
 	return false
 }
 
@@ -168,7 +206,7 @@ func CombineErrKinds(kind ...ErrKind) ErrKind {
 	all := maps.Keys(uniq)
 	for _, k := range all {
 		for u := range uniq {
-			if k.IsParent(u)  || k.Is(u) {
+			if k.IsParent(u) || k.Is(u) {
 				delete(uniq, k)
 			}
 		}
