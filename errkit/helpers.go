@@ -131,6 +131,26 @@ func IsNetworkTemporaryErr(err error) bool {
 	return isNetworkTemporaryErr(x)
 }
 
+// IsDeadlineErr checks if given error is a deadline error
+func IsDeadlineErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	x := &ErrorX{}
+	parseError(x, err)
+	return isDeadlineErr(x)
+}
+
+// IsNetworkPermanentErr checks if given error is a permanent network error
+func IsNetworkPermanentErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	x := &ErrorX{}
+	parseError(x, err)
+	return isNetworkPermanentErr(x)
+}
+
 // WithAttr wraps error with given attributes
 //
 // err = errkit.WithAttr(err,slog.Any("resource",domain))
