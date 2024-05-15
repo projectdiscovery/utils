@@ -42,6 +42,16 @@ type ErrorX struct {
 	errs  []error
 }
 
+// Errors returns all errors parsed by the error
+func (e *ErrorX) Errors() []error {
+	return e.errs
+}
+
+// Attrs returns all attributes associated with the error
+func (e *ErrorX) Attrs() []slog.Attr {
+	return e.attrs
+}
+
 // Build returns the object as error interface
 func (e *ErrorX) Build() error {
 	return e
