@@ -19,6 +19,17 @@ func (ss *SyncSlice[K]) Append(items ...K) {
 	ss.Slice = append(ss.Slice, items...)
 }
 
+func (ss *SyncSlice[K]) Each(f func(i int, k K) error) {
+	ss.mu.RLock()
+	defer ss.mu.RUnlock()
+
+	for i, k := range ss.Slice {
+		if err := f(i, k); err != nil {
+			break
+		}
+	}
+}
+
 func (ss *SyncSlice[K]) Empty() {
 	ss.mu.Lock()
 	defer ss.mu.Unlock()
