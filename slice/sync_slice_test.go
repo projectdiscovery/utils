@@ -3,6 +3,7 @@ package sliceutil
 import (
 	"sync"
 	"testing"
+	"time"
 )
 
 func TestSimpleUsage(t *testing.T) {
@@ -83,6 +84,9 @@ func TestConcurrentReadWriteAndIteration(t *testing.T) {
 	// Reader goroutine
 	go func() {
 		defer wg.Done()
+
+		time.Sleep(250 * time.Millisecond)
+
 		for i := 0; i < readWriteCount; i++ {
 			if value, ok := ss.Get(i % ss.Len()); !ok {
 				t.Errorf("Failed to get value at index %d", i%ss.Len())
