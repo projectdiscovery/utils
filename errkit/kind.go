@@ -224,7 +224,7 @@ func GetErrorKind(err error, defs ...ErrKind) ErrKind {
 	x := &ErrorX{}
 	parseError(x, err)
 	if x.kind != nil {
-		if val, ok := x.kind.(*multiKind); ok {
+		if val, ok := x.kind.(*multiKind); ok && len(val.kinds) > 0 {
 			// if multi kind return first kind
 			return val.kinds[0]
 		}

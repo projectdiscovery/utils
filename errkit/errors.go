@@ -184,9 +184,20 @@ func parseError(to *ErrorX, err error) {
 		to.errs = append(to.errs, v.errs...)
 		to.kind = CombineErrKinds(to.kind, v.kind)
 	case JoinedError:
-		to.errs = append(to.errs, v.Unwrap()...)
+		foundAny := false
+		for _, e := range v.Unwrap() {
+			to.errs = append(to.errs, e)
+			foundAny = true
+		}
+		if !foundAny {
+			parseError(to, errors.New(err.Error()))
+		}
 	case WrappedError:
-		to.errs = append(to.errs, v.Unwrap())
+		if v.Unwrap() != nil {
+			parseError(to, v.Unwrap())
+		} else {
+			parseError(to, errors.New(err.Error()))
+		}
 	case CauseError:
 		to.errs = append(to.errs, v.Cause())
 		remaining := strings.Replace(err.Error(), v.Cause().Error(), "", -1)
