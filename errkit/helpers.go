@@ -10,12 +10,46 @@ func Is(err error, target ...error) bool {
 	if err == nil {
 		return false
 	}
-	for _, t := range target {
-		if t == nil {
-			continue
-		}
+	for i := range target {
+		t := target[i]
 		if errors.Is(err, t) {
 			return true
+		}
+	}
+	return false
+}
+
+// IsKind checks if given error is equal to one of the given errkind
+// if error did not already have a kind, it tries to parse it
+// using default error kinds and given kinds
+func IsKind(err error, match ...ErrKind) bool {
+	if err == nil {
+		return false
+	}
+	x := &ErrorX{}
+	parseError(x, err)
+	// try to parse kind from error
+	if x.kind == nil {
+		// parse kind from error
+		tmp := []ErrKind{ErrKindDeadline, ErrKindNetworkPermanent, ErrKindNetworkTemporary}
+		tmp = append(tmp, match...)
+		x.kind = GetErrorKind(err, tmp...)
+	}
+	if x.kind != nil {
+		if val, ok := x.kind.(*multiKind); ok && len(val.kinds) > 0 {
+			// if multi kind return first kind
+			for _, kind := range val.kinds {
+				for _, k := range match {
+					if k.Is(kind) {
+						return true
+					}
+				}
+			}
+		}
+		for _, kind := range match {
+			if kind.Is(x.kind) {
+				return true
+			}
 		}
 	}
 	return false
@@ -89,6 +123,14 @@ func Append(errs ...error) error {
 	return x
 }
 
+// Join joins given errors and returns a new error
+// it ignores all nil errors
+// Note: unlike Other libraries, Join does not use `\n`
+// so it is equivalent to wrapping/Appending errors
+func Join(errs ...error) error {
+	return Append(errs...)
+}
+
 // Cause returns the original error that caused this error
 func Cause(err error) error {
 	if err == nil {
@@ -158,16 +200,25 @@ func WithAttr(err error, attrs ...slog.Attr) error {
 	if err == nil {
 		return nil
 	}
+	if len(attrs) == 0 {
+		return err
+	}
 	x := &ErrorX{}
 	parseError(x, err)
-	x.attrs = append(x.attrs, attrs...)
-	if len(x.attrs) > MaxErrorDepth {
-		x.attrs = x.attrs[:MaxErrorDepth]
-	}
-	return x
+	return x.SetAttr(attrs...)
 }
 
-// SlogAttrGroup returns a slog attribute group for the given error
+// GetAttr returns all attributes of given error if it has any
+func GetAttr(err error) []slog.Attr {
+	if err == nil {
+		return nil
+	}
+	x := &ErrorX{}
+	parseError(x, err)
+	return x.Attrs()
+}
+
+// ToSlogAttrGroup returns a slog attribute group for the given error
 // it is in format of:
 //
 //	{
@@ -179,15 +230,15 @@ func WithAttr(err error, attrs ...slog.Attr) error {
 //			]
 //		}
 //	}
-func SlogAttrGroup(err error) slog.Attr {
-	attrs := SlogAttrs(err)
+func ToSlogAttrGroup(err error) slog.Attr {
+	attrs := ToSlogAttrs(err)
 	g := slog.GroupValue(
 		attrs..., // append all attrs
 	)
 	return slog.Any("data", g)
 }
 
-// SlogAttrs returns slog attributes for the given error
+// ToSlogAttrs returns slog attributes for the given error
 // it is in format of:
 //
 //	{
@@ -197,7 +248,7 @@ func SlogAttrGroup(err error) slog.Attr {
 //			<errs>...
 //		]
 //	}
-func SlogAttrs(err error) []slog.Attr {
+func ToSlogAttrs(err error) []slog.Attr {
 	x := &ErrorX{}
 	parseError(x, err)
 	attrs := []slog.Attr{}

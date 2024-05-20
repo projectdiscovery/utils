@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/projectdiscovery/utils/env"
+	"golang.org/x/exp/maps"
 )
 
 const (
@@ -38,7 +39,7 @@ var (
 // which can be shown to client/users in more meaningful way
 type ErrorX struct {
 	kind  ErrKind
-	attrs []slog.Attr
+	attrs map[string]slog.Attr
 	errs  []error
 }
 
@@ -49,7 +50,10 @@ func (e *ErrorX) Errors() []error {
 
 // Attrs returns all attributes associated with the error
 func (e *ErrorX) Attrs() []slog.Attr {
-	return e.attrs
+	if e.attrs == nil {
+		return nil
+	}
+	return maps.Values(e.attrs)
 }
 
 // Build returns the object as error interface
@@ -74,7 +78,6 @@ func (e *ErrorX) Is(err error) bool {
 			}
 		}
 	}
-
 	return false
 }
 
@@ -83,6 +86,9 @@ func (e *ErrorX) MarshalJSON() ([]byte, error) {
 	m := map[string]interface{}{
 		"kind":   e.kind.String(),
 		"errors": e.errs,
+	}
+	if len(e.attrs) > 0 {
+		m["attrs"] = slog.GroupValue(maps.Values(e.attrs)...)
 	}
 	return json.Marshal(m)
 }
@@ -96,7 +102,7 @@ func (e *ErrorX) Error() string {
 		sb.WriteString(" ")
 	}
 	if len(e.attrs) > 0 {
-		sb.WriteString(slog.GroupValue(e.attrs...).String())
+		sb.WriteString(slog.GroupValue(maps.Values(e.attrs)...).String())
 		sb.WriteString(" ")
 	}
 	for _, err := range e.errs {
@@ -157,13 +163,18 @@ func (e *ErrorX) SetKind(kind ErrKind) *ErrorX {
 }
 
 // SetAttr sets additional attributes to a given error
-// Note: key must be comparable and key and value both cannot
-// be nil similar to context.WithValue
-func (e *ErrorX) SetAttr(s slog.Attr) *ErrorX {
-	if len(e.attrs) >= MaxErrorDepth {
-		return e
+// it only adds unique attributes and ignores duplicates
+// Note: only key is checked for uniqueness
+func (e *ErrorX) SetAttr(s ...slog.Attr) *ErrorX {
+	for _, attr := range s {
+		if e.attrs == nil {
+			e.attrs = make(map[string]slog.Attr)
+		}
+		// check if this exists
+		if _, ok := e.attrs[attr.Key]; !ok && len(e.attrs) < MaxErrorDepth {
+			e.attrs[attr.Key] = attr
+		}
 	}
-	e.attrs = append(e.attrs, s)
 	return e
 }
 
