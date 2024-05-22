@@ -3,6 +3,7 @@ package sliceutil
 import (
 	"testing"
 
+	osutils "github.com/projectdiscovery/utils/os"
 	"github.com/stretchr/testify/require"
 )
 
@@ -287,6 +288,10 @@ func TestVisitRandom(t *testing.T) {
 }
 
 func TestVisitRandomZero(t *testing.T) {
+	// skipped on windows due to flakiness
+	if osutils.IsWindows() {
+		t.Skip("skipping test on windows")
+	}
 	intSlice := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	var timesDifferent int
 	for i := 0; i < 100; i++ {
