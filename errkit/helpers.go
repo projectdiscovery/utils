@@ -263,3 +263,18 @@ func ToSlogAttrs(err error) []slog.Attr {
 	}
 	return attrs
 }
+
+// GetAttrValue returns the value of the attribute with given key
+func GetAttrValue(err error, key string) slog.Value {
+	if err == nil {
+		return slog.Value{}
+	}
+	x := &ErrorX{}
+	parseError(x, err)
+	for _, attr := range x.attrs {
+		if attr.Key == key {
+			return attr.Value
+		}
+	}
+	return slog.Value{}
+}

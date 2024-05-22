@@ -96,7 +96,7 @@ func (e *ErrorX) MarshalJSON() ([]byte, error) {
 // Error returns the error string
 func (e *ErrorX) Error() string {
 	var sb strings.Builder
-	if e.kind != nil {
+	if e.kind != nil && e.kind.String() != "" {
 		sb.WriteString("errKind=")
 		sb.WriteString(e.kind.String())
 		sb.WriteString(" ")
@@ -105,9 +105,13 @@ func (e *ErrorX) Error() string {
 		sb.WriteString(slog.GroupValue(maps.Values(e.attrs)...).String())
 		sb.WriteString(" ")
 	}
+	uniq := make(map[string]struct{})
 	for _, err := range e.errs {
-		sb.WriteString(err.Error())
-		sb.WriteString(ErrorSeperator)
+		if _, ok := uniq[err.Error()]; !ok {
+			uniq[err.Error()] = struct{}{}
+			sb.WriteString(err.Error())
+			sb.WriteString(ErrorSeperator)
+		}
 	}
 	return strings.TrimSuffix(sb.String(), ErrorSeperator)
 }
