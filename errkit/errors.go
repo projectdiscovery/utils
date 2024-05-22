@@ -38,9 +38,25 @@ var (
 // wrapping and joining strategies including custom ones and it supports error class
 // which can be shown to client/users in more meaningful way
 type ErrorX struct {
-	kind  ErrKind
-	attrs map[string]slog.Attr
-	errs  []error
+	kind     ErrKind
+	attrs    map[string]slog.Attr
+	errs     []error
+	uniqErrs map[string]struct{}
+}
+
+// append is internal method to append given
+// error to error slice , it removes duplicates
+func (e *ErrorX) append(errs ...error) {
+	if e.uniqErrs == nil {
+		e.uniqErrs = make(map[string]struct{})
+	}
+	for _, err := range errs {
+		if _, ok := e.uniqErrs[err.Error()]; ok {
+			continue
+		}
+		e.uniqErrs[err.Error()] = struct{}{}
+		e.errs = append(e.errs, err)
+	}
 }
 
 // Errors returns all errors parsed by the error
@@ -105,13 +121,9 @@ func (e *ErrorX) Error() string {
 		sb.WriteString(slog.GroupValue(maps.Values(e.attrs)...).String())
 		sb.WriteString(" ")
 	}
-	uniq := make(map[string]struct{})
 	for _, err := range e.errs {
-		if _, ok := uniq[err.Error()]; !ok {
-			uniq[err.Error()] = struct{}{}
-			sb.WriteString(err.Error())
-			sb.WriteString(ErrorSeperator)
-		}
+		sb.WriteString(err.Error())
+		sb.WriteString(ErrorSeperator)
 	}
 	return strings.TrimSuffix(sb.String(), ErrorSeperator)
 }
@@ -127,6 +139,9 @@ func (e *ErrorX) Cause() error {
 // Kind returns the errorkind associated with this error
 // if any
 func (e *ErrorX) Kind() ErrKind {
+	if e.kind == nil || e.kind.String() == "" {
+		return ErrKindUnknown
+	}
 	return e.kind
 }
 
@@ -151,7 +166,7 @@ func (e *ErrorX) Msgf(format string, args ...interface{}) {
 	if e == nil {
 		return
 	}
-	e.errs = append(e.errs, fmt.Errorf(format, args...))
+	e.append(fmt.Errorf(format, args...))
 }
 
 // SetClass sets the class of the error
@@ -196,12 +211,12 @@ func parseError(to *ErrorX, err error) {
 
 	switch v := err.(type) {
 	case *ErrorX:
-		to.errs = append(to.errs, v.errs...)
+		to.append(v.errs...)
 		to.kind = CombineErrKinds(to.kind, v.kind)
 	case JoinedError:
 		foundAny := false
 		for _, e := range v.Unwrap() {
-			to.errs = append(to.errs, e)
+			to.append(e)
 			foundAny = true
 		}
 		if !foundAny {
@@ -214,7 +229,7 @@ func parseError(to *ErrorX, err error) {
 			parseError(to, errors.New(err.Error()))
 		}
 	case CauseError:
-		to.errs = append(to.errs, v.Cause())
+		to.append(v.Cause())
 		remaining := strings.Replace(err.Error(), v.Cause().Error(), "", -1)
 		parseError(to, errors.New(remaining))
 	default:
@@ -251,7 +266,7 @@ func parseError(to *ErrorX, err error) {
 			}
 		} else {
 			// this cannot be furthur unwrapped
-			to.errs = append(to.errs, err)
+			to.append(err)
 		}
 	}
 }
