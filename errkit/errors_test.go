@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 	errorutil "github.com/projectdiscovery/utils/errors"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/multierr"
 
 	stderrors "errors"
@@ -76,4 +77,31 @@ func TestErrorUtil(t *testing.T) {
 	if len(x.errs) != 3 {
 		t.Fatal("expected 3 errors")
 	}
+}
+
+func TestErrKindCheck(t *testing.T) {
+	x := New("port closed or filtered").SetKind(ErrKindNetworkPermanent)
+	t.Run("Errkind With Normal Error", func(t *testing.T) {
+		wrapped := Wrap(x, "this is a wrapped error")
+		if !IsKind(wrapped, ErrKindNetworkPermanent) {
+			t.Fatal("expected to be able to find the original error")
+		}
+	})
+
+	// mix of multiple kinds
+	tmp := New("i/o timeout").SetKind(ErrKindNetworkTemporary)
+	t.Run("Errkind With Multiple Kinds", func(t *testing.T) {
+		wrapped := Append(x, tmp)
+		errx := FromError(wrapped)
+		val, ok := errx.kind.(*multiKind)
+		require.True(t, ok, "expected to be able to find the original error")
+		require.Equal(t, 2, len(val.kinds))
+	})
+
+	// duplicate kinds
+	t.Run("Errkind With Duplicate Kinds", func(t *testing.T) {
+		wrapped := Append(x, x)
+		errx := FromError(wrapped)
+		require.True(t, errx.kind.Is(ErrKindNetworkPermanent), "expected to be able to find the original error")
+	})
 }

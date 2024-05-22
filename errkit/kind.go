@@ -28,6 +28,17 @@ var (
 	ErrKindUnknown = NewPrimitiveErrKind("unknown-error", "unknown error", nil)
 )
 
+var (
+	// DefaultErrorKinds is the default error kinds used in classification
+	// if one intends to add more default error kinds it must be done in init() function
+	// of that package to avoid race conditions
+	DefaultErrorKinds = []ErrKind{
+		ErrKindNetworkTemporary,
+		ErrKindNetworkPermanent,
+		ErrKindDeadline,
+	}
+)
+
 // ErrKind is an interface that represents a kind of error
 type ErrKind interface {
 	// Is checks if current error kind is same as given error kind
@@ -109,6 +120,11 @@ func isNetworkPermanentErr(err *ErrorX) bool {
 	case strings.Contains(v, "no such host"):
 		return true
 	case strings.Contains(v, "could not resolve host"):
+		return true
+	case strings.Contains(v, "port closed or filtered"):
+		// pd standard error for port closed or filtered
+		return true
+	case strings.Contains(v, "connect: connection refused"):
 		return true
 	}
 	return false
@@ -192,7 +208,7 @@ func CombineErrKinds(kind ...ErrKind) ErrKind {
 	f := &multiKind{}
 	uniq := map[ErrKind]struct{}{}
 	for _, k := range kind {
-		if k == nil {
+		if k == nil || k.String() == "" {
 			continue
 		}
 		if val, ok := k.(*multiKind); ok {
@@ -206,14 +222,26 @@ func CombineErrKinds(kind ...ErrKind) ErrKind {
 	all := maps.Keys(uniq)
 	for _, k := range all {
 		for u := range uniq {
-			if k.IsParent(u) || k.Is(u) {
+			if k.IsParent(u) {
+				delete(uniq, u)
+			}
+		}
+	}
+	if len(uniq) > 1 {
+		// check and remove unknown error kind
+		for k := range uniq {
+			if k.Is(ErrKindUnknown) {
 				delete(uniq, k)
 			}
 		}
 	}
+
 	f.kinds = maps.Keys(uniq)
 	if len(f.kinds) > MaxErrorDepth {
 		f.kinds = f.kinds[:MaxErrorDepth]
+	}
+	if len(f.kinds) == 1 {
+		return f.kinds[0]
 	}
 	return f
 }
@@ -233,6 +261,12 @@ func GetErrorKind(err error, defs ...ErrKind) ErrKind {
 	// if no kind is found return default error kind
 	// parse if defs are given
 	for _, def := range defs {
+		if def.Represents(x) {
+			return def
+		}
+	}
+	// check in default error kinds
+	for _, def := range DefaultErrorKinds {
 		if def.Represents(x) {
 			return def
 		}
