@@ -1,6 +1,7 @@
 package errkit
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -104,4 +105,12 @@ func TestErrKindCheck(t *testing.T) {
 		errx := FromError(wrapped)
 		require.True(t, errx.kind.Is(ErrKindNetworkPermanent), "expected to be able to find the original error")
 	})
+}
+
+func TestMarshalError(t *testing.T) {
+	x := New("port closed or filtered").SetKind(ErrKindNetworkPermanent)
+	wrapped := Wrap(x, "this is a wrapped error")
+	marshalled, err := json.Marshal(wrapped)
+	require.NoError(t, err, "expected to be able to marshal the error")
+	require.Equal(t, `{"errors":["port closed or filtered","this is a wrapped error"],"kind":"network-permanent-error"}`, string(marshalled))
 }

@@ -59,6 +59,21 @@ func (e *ErrorX) append(errs ...error) {
 	}
 }
 
+func (e ErrorX) MarshalJSON() ([]byte, error) {
+	tmp := []string{}
+	for _, err := range e.errs {
+		tmp = append(tmp, err.Error())
+	}
+	m := map[string]interface{}{
+		"kind":   e.kind.String(),
+		"errors": tmp,
+	}
+	if len(e.attrs) > 0 {
+		m["attrs"] = slog.GroupValue(maps.Values(e.attrs)...)
+	}
+	return json.Marshal(m)
+}
+
 // Errors returns all errors parsed by the error
 func (e *ErrorX) Errors() []error {
 	return e.errs
@@ -95,18 +110,6 @@ func (e *ErrorX) Is(err error) bool {
 		}
 	}
 	return false
-}
-
-// MarshalJSON returns the json representation of the error
-func (e *ErrorX) MarshalJSON() ([]byte, error) {
-	m := map[string]interface{}{
-		"kind":   e.kind.String(),
-		"errors": e.errs,
-	}
-	if len(e.attrs) > 0 {
-		m["attrs"] = slog.GroupValue(maps.Values(e.attrs)...)
-	}
-	return json.Marshal(m)
 }
 
 // Error returns the error string
@@ -158,7 +161,9 @@ func FromError(err error) *ErrorX {
 
 // New creates a new error with the given message
 func New(format string, args ...interface{}) *ErrorX {
-	return &ErrorX{errs: []error{fmt.Errorf(format, args...)}}
+	e := &ErrorX{}
+	e.append(fmt.Errorf(format, args...))
+	return e
 }
 
 // Msgf adds a message to the error
