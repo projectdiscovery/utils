@@ -605,3 +605,13 @@ func DedupeLines(filename string) error {
 
 	return os.WriteFile(filename, []byte(strings.Join(deduplicatedLines, "\n")+"\n"), 0644)
 }
+
+// IsEmpty checks if the file is empty
+func IsEmpty(filename string) (bool, error) {
+	fileInfo, err := os.Stat(filename)
+	if err != nil {
+		return false, err
+	}
+
+	return fileInfo.Size() == 0, nil
+}
