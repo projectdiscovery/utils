@@ -633,9 +633,9 @@ func IsEmpty(filename string) (bool, error) {
 
 	// Check if all read characters are spaces, null characters, new lines, or carriage returns
 	for i := 0; i < n; i++ {
-		if unicode.IsSpace(rune(buffer[i])) || buffer[i] == 0 || buffer[i] == '\n' || buffer[i] == '\r' {
-			return true, nil
+		if !unicode.IsSpace(rune(buffer[i])) && buffer[i] != 0 && buffer[i] != '\n' && buffer[i] != '\r' {
+			return false, nil
 		}
 	}
-	return false, nil
+	return true, nil
 }
