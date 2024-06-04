@@ -632,3 +632,38 @@ func TestFileExistsIn(t *testing.T) {
 		})
 	}
 }
+
+func TestIsEmpty(t *testing.T) {
+	// Create a temporary directory
+	tempDir := t.TempDir()
+
+	// Test case: File not existent
+	t.Run("file not existent", func(t *testing.T) {
+		nonExistentFile := filepath.Join(tempDir, "nonexistent.txt")
+		isEmpty, err := IsEmpty(nonExistentFile)
+		require.Error(t, err, "expected an error for non-existent file")
+		require.False(t, isEmpty, "non-existent file should not be considered empty")
+	})
+
+	// Test case: Empty file
+	t.Run("empty file", func(t *testing.T) {
+		emptyFile := filepath.Join(tempDir, "empty.txt")
+		err := os.WriteFile(emptyFile, []byte(""), 0644)
+		require.NoError(t, err, "failed to create empty file")
+		defer os.Remove(emptyFile) // Clean up the created file
+		isEmpty, err := IsEmpty(emptyFile)
+		require.NoError(t, err, "should not error for an empty file")
+		require.True(t, isEmpty, "empty file should be considered empty")
+	})
+
+	// Test case: File containing only spaces
+	t.Run("file with spaces", func(t *testing.T) {
+		spacesFile := filepath.Join(tempDir, "spaces.txt")
+		err := os.WriteFile(spacesFile, []byte("   "), 0644)
+		require.NoError(t, err, "failed to create file with spaces")
+		defer os.Remove(spacesFile) // Clean up the created file
+		isEmpty, err := IsEmpty(spacesFile)
+		require.NoError(t, err, "should not error for a file with only spaces")
+		require.True(t, isEmpty, "file with only spaces should be considered empty")
+	})
+}
