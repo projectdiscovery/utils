@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/mattn/go-isatty"
@@ -604,4 +605,37 @@ func DedupeLines(filename string) error {
 	}
 
 	return os.WriteFile(filename, []byte(strings.Join(deduplicatedLines, "\n")+"\n"), 0644)
+}
+
+// IsEmpty checks if the file is empty
+func IsEmpty(filename string) (bool, error) {
+	fileInfo, err := os.Stat(filename)
+	if err != nil {
+		return false, err
+	}
+
+	if fileInfo.Size() == 0 {
+		return true, nil
+	}
+
+	file, err := os.Open(filename)
+	if err != nil {
+		return false, err
+	}
+	defer file.Close()
+
+	// Read up to 512 bytes to check for non-space characters
+	buffer := make([]byte, 16)
+	n, err := file.Read(buffer)
+	if err != nil && err != io.EOF {
+		return false, err
+	}
+
+	// Check if all read characters are spaces, null characters, new lines, or carriage returns
+	for i := 0; i < n; i++ {
+		if unicode.IsSpace(rune(buffer[i])) || buffer[i] == 0 || buffer[i] == '\n' || buffer[i] == '\r' {
+			return true, nil
+		}
+	}
+	return false, nil
 }
