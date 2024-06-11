@@ -186,6 +186,11 @@ func (e *ErrorX) SetKind(kind ErrKind) *ErrorX {
 	return e
 }
 
+func (e *ErrorX) ResetKind() *ErrorX {
+	e.kind = nil
+	return e
+}
+
 // SetAttr sets additional attributes to a given error
 // it only adds unique attributes and ignores duplicates
 // Note: only key is checked for uniqueness
