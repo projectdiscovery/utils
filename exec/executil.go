@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/pkg/errors"
+	"github.com/projectdiscovery/utils/errkit"
 	"golang.org/x/text/encoding/unicode"
 )
 
@@ -126,8 +126,7 @@ func RunSafe(cmd ...string) (string, error) {
 	execpath, err := exec.LookPath(cmd[0])
 	if err != nil {
 		if runtime.GOOS == "windows" {
-			patherror := errors.New("RunSafe does not allow relative exection of binaries (ex ./main) due to security reasons")
-			return "", errors.Wrap(err, patherror.Error())
+			return "", errkit.WithMessage(err, "RunSafe does not allow relative exection of binaries (ex ./main) due to security reasons")
 		}
 		return "", err
 	}
@@ -145,15 +144,25 @@ func RunSafe(cmd ...string) (string, error) {
 
 	cmdExec := exec.Command(execpath, cmdArgs...)
 
-	in, _ := cmdExec.StdinPipe()
-	errorOut, _ := cmdExec.StderrPipe()
-	out, _ := cmdExec.StdoutPipe()
+	in, err := cmdExec.StdinPipe()
+	if err != nil {
+		return "", errkit.WithMessage(err, "failed to create stdin pipe")
+	}
+	errorOut, err := cmdExec.StderrPipe()
+	if err != nil {
+		return "", errkit.WithMessage(err, "failed to create stderr pipe")
+	}
+	out, err := cmdExec.StdoutPipe()
+	if err != nil {
+		return "", errkit.WithMessage(err, "failed to create stdout pipe")
+	}
+
 	defer in.Close()
 	defer errorOut.Close()
 	defer out.Close()
 
 	if err := cmdExec.Start(); err != nil {
-		return "", errors.Wrapf(err, "failed to start command:\n%v", strings.Join(cmd, " "))
+		return "", errkit.Wrap(err, "failed to start command")
 	}
 
 	outData, _ := io.ReadAll(out)
@@ -163,10 +172,10 @@ func RunSafe(cmd ...string) (string, error) {
 
 	if err := cmdExec.Wait(); err != nil {
 		if _, ok := err.(*exec.ExitError); ok {
-			adbError = errors.New("return error")
+			adbError = errkit.Append(err, errkit.New(string(errorData)), errkit.New("exit error"))
 			outData = errorData
 		} else {
-			return "", errors.Wrap(err, "process i/o error")
+			return "", errkit.Wrap(err, "process i/o error")
 		}
 	}
 
@@ -176,16 +185,27 @@ func RunSafe(cmd ...string) (string, error) {
 // RunSh the specified command through sh
 func RunSh(cmd ...string) (string, error) {
 	cmdExec := exec.Command("sh", "-c", strings.Join(cmd, " "))
-	in, _ := cmdExec.StdinPipe()
-	errorOut, _ := cmdExec.StderrPipe()
-	out, _ := cmdExec.StdoutPipe()
+
+	in, err := cmdExec.StdinPipe()
+	if err != nil {
+		return "", errkit.WithMessage(err, "failed to create stdin pipe")
+	}
+	errorOut, err := cmdExec.StderrPipe()
+	if err != nil {
+		return "", errkit.WithMessage(err, "failed to create stderr pipe")
+	}
+	out, err := cmdExec.StdoutPipe()
+	if err != nil {
+		return "", errkit.WithMessage(err, "failed to create stdout pipe")
+	}
+
 	defer in.Close()
 	defer errorOut.Close()
 	defer out.Close()
 
 	if err := cmdExec.Start(); err != nil {
 		errorData, _ := io.ReadAll(errorOut)
-		return "", errors.Wrapf(err, "failed to start process %v", string(errorData))
+		return "", errkit.Wrapf(err, "failed to start process %v", string(errorData))
 	}
 
 	outData, _ := io.ReadAll(out)
@@ -195,10 +215,10 @@ func RunSh(cmd ...string) (string, error) {
 
 	if err := cmdExec.Wait(); err != nil {
 		if _, ok := err.(*exec.ExitError); ok {
-			adbError = errors.New("sh return error")
+			adbError = errkit.Append(err, errkit.New(string(errorData)), errkit.New("exit error"))
 			outData = errorData
 		} else {
-			return "", errors.New("start sh process error")
+			return "", errkit.Wrap(err, "process i/o error")
 		}
 	}
 
@@ -224,15 +244,25 @@ func RunPS(cmd string) (string, error) {
 
 	cmdExec := exec.Command("powershell.exe", "-EncodedCommand", b64cmd)
 
-	in, _ := cmdExec.StdinPipe()
-	errorOut, _ := cmdExec.StderrPipe()
-	out, _ := cmdExec.StdoutPipe()
+	in, err := cmdExec.StdinPipe()
+	if err != nil {
+		return "", errkit.WithMessage(err, "failed to create stdin pipe")
+	}
+	errorOut, err := cmdExec.StderrPipe()
+	if err != nil {
+		return "", errkit.WithMessage(err, "failed to create stderr pipe")
+	}
+	out, err := cmdExec.StdoutPipe()
+	if err != nil {
+		return "", errkit.WithMessage(err, "failed to create stdout pipe")
+	}
+
 	defer in.Close()
 	defer errorOut.Close()
 	defer out.Close()
 
 	if err := cmdExec.Start(); err != nil {
-		return "", errors.New("start powershell.exe process error")
+		return "", errkit.WithMessage(err, "start powershell.exe process error")
 	}
 
 	outData, _ := io.ReadAll(out)
@@ -242,10 +272,10 @@ func RunPS(cmd string) (string, error) {
 
 	if err := cmdExec.Wait(); err != nil {
 		if _, ok := err.(*exec.ExitError); ok {
-			adbError = errors.New("powershell.exe return error")
+			adbError = errkit.Append(err, errkit.New(string(errorData)), errkit.New("exit error"))
 			outData = errorData
 		} else {
-			return "", errors.New("start powershell.exe process error")
+			return "", errkit.Wrap(err, "process i/o error")
 		}
 	}
 
