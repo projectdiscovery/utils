@@ -144,9 +144,19 @@ func RunSafe(cmd ...string) (string, error) {
 
 	cmdExec := exec.Command(execpath, cmdArgs...)
 
-	in, _ := cmdExec.StdinPipe()
-	errorOut, _ := cmdExec.StderrPipe()
-	out, _ := cmdExec.StdoutPipe()
+	in, err := cmdExec.StdinPipe()
+	if err != nil {
+		return "", errkit.WithMessage(err, "failed to create stdin pipe")
+	}
+	errorOut, err := cmdExec.StderrPipe()
+	if err != nil {
+		return "", errkit.WithMessage(err, "failed to create stderr pipe")
+	}
+	out, err := cmdExec.StdoutPipe()
+	if err != nil {
+		return "", errkit.WithMessage(err, "failed to create stdout pipe")
+	}
+
 	defer in.Close()
 	defer errorOut.Close()
 	defer out.Close()
@@ -175,9 +185,20 @@ func RunSafe(cmd ...string) (string, error) {
 // RunSh the specified command through sh
 func RunSh(cmd ...string) (string, error) {
 	cmdExec := exec.Command("sh", "-c", strings.Join(cmd, " "))
-	in, _ := cmdExec.StdinPipe()
-	errorOut, _ := cmdExec.StderrPipe()
-	out, _ := cmdExec.StdoutPipe()
+
+	in, err := cmdExec.StdinPipe()
+	if err != nil {
+		return "", errkit.WithMessage(err, "failed to create stdin pipe")
+	}
+	errorOut, err := cmdExec.StderrPipe()
+	if err != nil {
+		return "", errkit.WithMessage(err, "failed to create stderr pipe")
+	}
+	out, err := cmdExec.StdoutPipe()
+	if err != nil {
+		return "", errkit.WithMessage(err, "failed to create stdout pipe")
+	}
+
 	defer in.Close()
 	defer errorOut.Close()
 	defer out.Close()
@@ -223,9 +244,19 @@ func RunPS(cmd string) (string, error) {
 
 	cmdExec := exec.Command("powershell.exe", "-EncodedCommand", b64cmd)
 
-	in, _ := cmdExec.StdinPipe()
-	errorOut, _ := cmdExec.StderrPipe()
-	out, _ := cmdExec.StdoutPipe()
+	in, err := cmdExec.StdinPipe()
+	if err != nil {
+		return "", errkit.WithMessage(err, "failed to create stdin pipe")
+	}
+	errorOut, err := cmdExec.StderrPipe()
+	if err != nil {
+		return "", errkit.WithMessage(err, "failed to create stderr pipe")
+	}
+	out, err := cmdExec.StdoutPipe()
+	if err != nil {
+		return "", errkit.WithMessage(err, "failed to create stdout pipe")
+	}
+
 	defer in.Close()
 	defer errorOut.Close()
 	defer out.Close()
