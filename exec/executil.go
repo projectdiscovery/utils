@@ -126,8 +126,7 @@ func RunSafe(cmd ...string) (string, error) {
 	execpath, err := exec.LookPath(cmd[0])
 	if err != nil {
 		if runtime.GOOS == "windows" {
-			patherror := errkit.New("RunSafe does not allow relative exection of binaries (ex ./main) due to security reasons")
-			return "", errkit.Append(patherror, err)
+			return "", errkit.WithMessage(err, "RunSafe does not allow relative exection of binaries (ex ./main) due to security reasons")
 		}
 		return "", err
 	}
@@ -232,7 +231,7 @@ func RunPS(cmd string) (string, error) {
 	defer out.Close()
 
 	if err := cmdExec.Start(); err != nil {
-		return "", errkit.New("start powershell.exe process error")
+		return "", errkit.WithMessage(err, "start powershell.exe process error")
 	}
 
 	outData, _ := io.ReadAll(out)
