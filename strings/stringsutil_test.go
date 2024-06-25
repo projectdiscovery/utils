@@ -390,3 +390,20 @@ func TestIndexAny(t *testing.T) {
 		require.Equal(t, test.expectedSep, sep)
 	}
 }
+
+func TestContainsAll(t *testing.T) {
+	tests := []struct {
+		s      string
+		ss     []string
+		result bool
+	}{
+		{"abcdefg", []string{"a", "b"}, true},
+		{"abcdefg", []string{"a", "z"}, false},
+		{"abcdefg", []string{"a", "b", "c", "d", "e", "f", "g"}, true},
+		{"abcdefg", []string{"a", "b", "c", "d", "e", "f", "g", "z"}, false},
+	}
+	for _, test := range tests {
+		res := ContainsAll(test.s, test.ss...)
+		require.Equal(t, test.result, res)
+	}
+}
