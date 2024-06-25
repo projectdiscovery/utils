@@ -407,3 +407,20 @@ func TestContainsAll(t *testing.T) {
 		require.Equal(t, test.result, res)
 	}
 }
+
+func TestContainsAllI(t *testing.T) {
+	tests := []struct {
+		s      string
+		ss     []string
+		result bool
+	}{
+		{"abcdefg", []string{"A", "b"}, true},
+		{"abcdefg", []string{"A", "z"}, false},
+		{"abcdefg", []string{"A", "b", "c", "d", "e", "f", "g"}, true},
+		{"abcdefg", []string{"A", "b", "c", "d", "e", "f", "g", "z"}, false},
+	}
+	for _, test := range tests {
+		res := ContainsAllI(test.s, test.ss...)
+		require.Equal(t, test.result, res)
+	}
+}
