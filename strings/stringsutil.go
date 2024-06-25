@@ -312,3 +312,13 @@ func ContainsAll(s string, ss ...string) bool {
 	}
 	return true
 }
+
+// ContainsAllI returns true if s contains all specified substrings (case-insensitive).
+func ContainsAllI(s string, ss ...string) bool {
+	for _, sub := range ss {
+		if !strings.Contains(strings.ToLower(s), strings.ToLower(sub)) {
+			return false
+		}
+	}
+	return true
+}
