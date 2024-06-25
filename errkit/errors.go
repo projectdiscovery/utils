@@ -64,6 +64,9 @@ func (e ErrorX) MarshalJSON() ([]byte, error) {
 	for _, err := range e.errs {
 		tmp = append(tmp, err.Error())
 	}
+	if e.kind == nil {
+		e.kind = ErrKindUnknown
+	}
 	m := map[string]interface{}{
 		"kind":   e.kind.String(),
 		"errors": tmp,
@@ -143,7 +146,7 @@ func (e *ErrorX) Cause() error {
 // if any
 func (e *ErrorX) Kind() ErrKind {
 	if e.kind == nil || e.kind.String() == "" {
-		return ErrKindUnknown
+		e.kind = ErrKindUnknown
 	}
 	return e.kind
 }
