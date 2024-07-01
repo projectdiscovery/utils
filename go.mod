@@ -3,7 +3,6 @@ module github.com/projectdiscovery/utils
 go 1.21
 
 require (
-	github.com/DmitriyVTitov/size v1.5.0
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/Mzack9999/gcache v0.0.0-20230410081825-519e28eab057
 	github.com/andybalholm/brotli v1.0.6

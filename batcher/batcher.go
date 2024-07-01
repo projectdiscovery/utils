@@ -4,7 +4,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/DmitriyVTitov/size"
+	reflectutil "github.com/projectdiscovery/utils/reflect"
 )
 
 // FlushCallback is the callback function that will be called when the batcher is full or the flush interval is reached
@@ -83,7 +83,7 @@ func New[T any](opts ...BatcherOption[T]) *Batcher[T] {
 // Append appends data to the batcher
 func (b *Batcher[T]) Append(d ...T) {
 	for _, item := range d {
-		sizeofItem := size.Of(item)
+		sizeofItem := reflectutil.SizeOf(item)
 		currentSize := b.currentSize.Load()
 
 		if b.maxSize > 0 && currentSize+int32(sizeofItem) > int32(b.maxSize) {
@@ -176,7 +176,7 @@ func (b *Batcher[T]) doCallback() {
 	for item := range b.incomingData {
 		items[k] = item
 		k++
-		b.currentSize.Add(-int32(size.Of(item)))
+		b.currentSize.Add(-int32(reflectutil.SizeOf(item)))
 		if k >= n {
 			break
 		}
