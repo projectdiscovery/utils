@@ -1,7 +1,10 @@
 package batcher
 
 import (
+	"sync/atomic"
 	"time"
+
+	"github.com/DmitriyVTitov/size"
 )
 
 // FlushCallback is the callback function that will be called when the batcher is full or the flush interval is reached
@@ -9,7 +12,11 @@ type FlushCallback[T any] func([]T)
 
 // Batcher is a batcher for any type of data
 type Batcher[T any] struct {
-	maxCapacity   int
+	maxCapacity int
+	maxSize     int32
+
+	currentSize atomic.Int32
+
 	flushInterval *time.Duration
 	flushCallback FlushCallback[T]
 
@@ -26,6 +33,13 @@ type BatcherOption[T any] func(*Batcher[T])
 func WithMaxCapacity[T any](maxCapacity int) BatcherOption[T] {
 	return func(b *Batcher[T]) {
 		b.maxCapacity = maxCapacity
+	}
+}
+
+// WithMaxSize sets the max size of the batcher
+func WithMaxSize[T any](maxSize int32) BatcherOption[T] {
+	return func(b *Batcher[T]) {
+		b.maxSize = maxSize
 	}
 }
 
@@ -53,6 +67,9 @@ func New[T any](opts ...BatcherOption[T]) *Batcher[T] {
 	for _, opt := range opts {
 		opt(batcher)
 	}
+	if batcher.maxSize > 0 {
+		batcher.currentSize = atomic.Int32{}
+	}
 	batcher.incomingData = make(chan T, batcher.maxCapacity)
 	if batcher.flushCallback == nil {
 		panic("batcher: flush callback is required")
@@ -66,11 +83,22 @@ func New[T any](opts ...BatcherOption[T]) *Batcher[T] {
 // Append appends data to the batcher
 func (b *Batcher[T]) Append(d ...T) {
 	for _, item := range d {
+		sizeofItem := size.Of(item)
+		currentSize := b.currentSize.Load()
+
+		if b.maxSize > 0 && currentSize+int32(sizeofItem) > int32(b.maxSize) {
+			b.full <- true
+			b.incomingData <- item
+			b.currentSize.Add(int32(sizeofItem))
+			continue
+		}
+
 		if !b.put(item) {
 			// will wait until space available
 			b.full <- true
 			b.incomingData <- item
 		}
+		b.currentSize.Add(int32(sizeofItem))
 	}
 }
 
@@ -148,6 +176,7 @@ func (b *Batcher[T]) doCallback() {
 	for item := range b.incomingData {
 		items[k] = item
 		k++
+		b.currentSize.Add(-int32(size.Of(item)))
 		if k >= n {
 			break
 		}
