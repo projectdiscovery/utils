@@ -1,6 +1,7 @@
 package batcher
 
 import (
+	"crypto/rand"
 	"testing"
 	"time"
 
@@ -73,4 +74,49 @@ func TestBatcherWithInterval(t *testing.T) {
 
 	require.Equal(t, wanted, got)
 	require.True(t, minWantedBatches <= gotBatches)
+}
+
+type exampleBatcherStruct struct {
+	Value []byte
+}
+
+func TestBatcherWithSizeLimit(t *testing.T) {
+	var (
+		batchSize  = 100
+		maxSize    = 1000
+		wanted     = 10
+		gotBatches int
+	)
+	var failedIteration bool
+
+	callback := func(ta []exampleBatcherStruct) {
+		gotBatches++
+
+		totalValueSize := 0
+		for _, t := range ta {
+			totalValueSize += len(t.Value)
+		}
+		if totalValueSize > maxSize {
+			failedIteration = true
+		}
+	}
+	bat := New[exampleBatcherStruct](
+		WithMaxCapacity[exampleBatcherStruct](batchSize),
+		WithMaxSize[exampleBatcherStruct](int32(maxSize)),
+		WithFlushCallback[exampleBatcherStruct](callback),
+	)
+
+	bat.Run()
+
+	for i := 0; i < wanted; i++ {
+		randData := make([]byte, 200)
+		_, _ = rand.Read(randData)
+		bat.Append(exampleBatcherStruct{Value: randData})
+	}
+
+	bat.Stop()
+
+	bat.WaitDone()
+
+	require.False(t, failedIteration)
 }
