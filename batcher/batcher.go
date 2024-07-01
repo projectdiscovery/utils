@@ -83,14 +83,18 @@ func New[T any](opts ...BatcherOption[T]) *Batcher[T] {
 // Append appends data to the batcher
 func (b *Batcher[T]) Append(d ...T) {
 	for _, item := range d {
-		sizeofItem := reflectutil.SizeOf(item)
-		currentSize := b.currentSize.Load()
+		var sizeofItem int
 
-		if b.maxSize > 0 && currentSize+int32(sizeofItem) > int32(b.maxSize) {
-			b.full <- true
-			b.incomingData <- item
-			b.currentSize.Add(int32(sizeofItem))
-			continue
+		if b.maxSize > 0 {
+			sizeofItem = reflectutil.SizeOf(item)
+			currentSize := b.currentSize.Load()
+
+			if currentSize+int32(sizeofItem) > int32(b.maxSize) {
+				b.full <- true
+				b.incomingData <- item
+				b.currentSize.Add(int32(sizeofItem))
+				continue
+			}
 		}
 
 		if !b.put(item) {
@@ -98,7 +102,9 @@ func (b *Batcher[T]) Append(d ...T) {
 			b.full <- true
 			b.incomingData <- item
 		}
-		b.currentSize.Add(int32(sizeofItem))
+		if b.maxSize > 0 {
+			b.currentSize.Add(int32(sizeofItem))
+		}
 	}
 }
 
@@ -176,7 +182,9 @@ func (b *Batcher[T]) doCallback() {
 	for item := range b.incomingData {
 		items[k] = item
 		k++
-		b.currentSize.Add(-int32(reflectutil.SizeOf(item)))
+		if b.maxSize > 0 {
+			b.currentSize.Add(-int32(reflectutil.SizeOf(item)))
+		}
 		if k >= n {
 			break
 		}
