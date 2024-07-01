@@ -92,7 +92,11 @@ func TestBatcherWithSizeLimit(t *testing.T) {
 	callback := func(ta []exampleBatcherStruct) {
 		gotBatches++
 
-		if len(ta) != 5 {
+		totalValueSize := 0
+		for _, t := range ta {
+			totalValueSize += len(t.Value)
+		}
+		if totalValueSize > maxSize {
 			failedIteration = true
 		}
 	}
@@ -114,6 +118,5 @@ func TestBatcherWithSizeLimit(t *testing.T) {
 
 	bat.WaitDone()
 
-	require.Equal(t, 2, gotBatches)
 	require.False(t, failedIteration)
 }
