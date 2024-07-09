@@ -126,6 +126,12 @@ func isNetworkPermanentErr(err *ErrorX) bool {
 		return true
 	case strings.Contains(v, "connect: connection refused"):
 		return true
+	case strings.Contains(v, "Unable to connect"):
+		// occurs when HTTP(S) proxy is used
+		return true
+	case strings.Contains(v, "host unreachable"):
+		// occurs when SOCKS proxy is used
+		return true
 	}
 	return false
 }
