@@ -2,14 +2,14 @@ package httputil
 
 import (
 	"bytes"
-	"compress/gzip"
-	"compress/zlib"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
 
-	"github.com/andybalholm/brotli"
+	"github.com/dsnet/compress/brotli"
+	"github.com/klauspost/compress/gzip"
+	"github.com/klauspost/compress/zlib"
 	"github.com/klauspost/compress/zstd"
 	"github.com/pkg/errors"
 	"golang.org/x/text/encoding/simplifiedchinese"
@@ -73,7 +73,7 @@ func wrapDecodeReader(resp *http.Response) (rc io.ReadCloser, err error) {
 	case "deflate":
 		rc, err = zlib.NewReader(resp.Body)
 	case "br":
-		rc = io.NopCloser(brotli.NewReader(resp.Body))
+		rc, err = brotli.NewReader(resp.Body, nil)
 	case "zstd":
 		var zstdReader *zstd.Decoder
 		zstdReader, err = zstd.NewReader(resp.Body)
