@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/andybalholm/brotli"
+	"github.com/klauspost/compress/zstd"
 	"github.com/pkg/errors"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
@@ -73,6 +74,13 @@ func wrapDecodeReader(resp *http.Response) (rc io.ReadCloser, err error) {
 		rc, err = zlib.NewReader(resp.Body)
 	case "br":
 		rc = io.NopCloser(brotli.NewReader(resp.Body))
+	case "zstd":
+		var zstdReader *zstd.Decoder
+		zstdReader, err = zstd.NewReader(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+		rc = io.NopCloser(zstdReader)
 	default:
 		rc = resp.Body
 	}
