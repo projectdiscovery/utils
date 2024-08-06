@@ -3,6 +3,7 @@ package errkit
 import (
 	"errors"
 	"log/slog"
+	"strings"
 )
 
 // Proxy to StdLib errors.Is
@@ -277,4 +278,21 @@ func GetAttrValue(err error, key string) slog.Value {
 		}
 	}
 	return slog.Value{}
+}
+
+// GetErrorOnly returns the error without any attributes or error kind
+// This is useful for particular use cases where we are interested in cause only and not
+// the whole error message with attributes and error kind
+func GetErrorOnly(err error) string {
+	if err == nil {
+		return ""
+	}
+	x := &ErrorX{}
+	parseError(x, err)
+	var sb strings.Builder
+	for _, err := range x.errs {
+		sb.WriteString(err.Error())
+		sb.WriteString(ErrorSeperator)
+	}
+	return strings.TrimSuffix(sb.String(), ErrorSeperator)
 }
