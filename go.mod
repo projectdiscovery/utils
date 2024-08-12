@@ -73,7 +73,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/pierrec/lz4/v4 v4.1.2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
-	github.com/projectdiscovery/fastdialer v0.2.3 // indirect
+	github.com/projectdiscovery/fastdialer v0.2.4 // indirect
 	github.com/projectdiscovery/networkpolicy v0.0.9 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.71 // indirect
 	github.com/refraction-networking/utls v1.6.7 // indirect
@@ -109,7 +109,7 @@ require (
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/projectdiscovery/gologger v1.1.19
-	github.com/projectdiscovery/hmap v0.0.52
+	github.com/projectdiscovery/hmap v0.0.53
 	github.com/projectdiscovery/retryablehttp-go v1.0.72
 	github.com/weppos/publicsuffix-go v0.30.1-0.20230422193905-8fecedd899db // indirect
 	github.com/zcalusic/sysinfo v1.0.2
