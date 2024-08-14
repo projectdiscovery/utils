@@ -62,7 +62,7 @@ func TestCloneCounter(t *testing.T) {
 		cloner := channelutil.NewCloneChannels[struct{}](cloneOpts)
 		err := cloner.Clone(context.TODO(), source, sinks...)
 		if err != nil {
-			t.Fatalf(err.Error())
+			t.Fatalf("%s", err.Error())
 		}
 	}
 }
