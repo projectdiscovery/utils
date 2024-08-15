@@ -82,7 +82,7 @@ func Wrap(err error, message string) error {
 	}
 	x := &ErrorX{}
 	parseError(x, err)
-	x.Msgf(message)
+	x.Msgf("%s", message)
 	return x
 }
 
@@ -148,7 +148,7 @@ func WithMessage(err error, message string) error {
 	}
 	x := &ErrorX{}
 	parseError(x, err)
-	x.Msgf(message)
+	x.Msgf("%s", message)
 	return x
 }
 

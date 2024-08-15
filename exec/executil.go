@@ -172,7 +172,7 @@ func RunSafe(cmd ...string) (string, error) {
 
 	if err := cmdExec.Wait(); err != nil {
 		if _, ok := err.(*exec.ExitError); ok {
-			adbError = errkit.Append(err, errkit.New(string(errorData)), errkit.New("exit error"))
+			adbError = errkit.Append(err, errkit.New("%s", string(errorData)), errkit.New("exit error"))
 			outData = errorData
 		} else {
 			return "", errkit.Wrap(err, "process i/o error")
@@ -215,7 +215,7 @@ func RunSh(cmd ...string) (string, error) {
 
 	if err := cmdExec.Wait(); err != nil {
 		if _, ok := err.(*exec.ExitError); ok {
-			adbError = errkit.Append(err, errkit.New(string(errorData)), errkit.New("exit error"))
+			adbError = errkit.Append(err, errkit.New("%s", string(errorData)), errkit.New("exit error"))
 			outData = errorData
 		} else {
 			return "", errkit.Wrap(err, "process i/o error")
@@ -272,7 +272,7 @@ func RunPS(cmd string) (string, error) {
 
 	if err := cmdExec.Wait(); err != nil {
 		if _, ok := err.(*exec.ExitError); ok {
-			adbError = errkit.Append(err, errkit.New(string(errorData)), errkit.New("exit error"))
+			adbError = errkit.Append(err, errkit.New("%s", string(errorData)), errkit.New("exit error"))
 			outData = errorData
 		} else {
 			return "", errkit.Wrap(err, "process i/o error")

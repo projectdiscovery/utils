@@ -424,3 +424,46 @@ func TestContainsAllI(t *testing.T) {
 		require.Equal(t, test.result, res)
 	}
 }
+
+func TestNormalizeWithOptions(t *testing.T) {
+	tests := []struct {
+		data    string
+		options NormalizeOptions
+		result  string
+	}{
+		{
+			data:    "  Hello World!  ",
+			options: NormalizeOptions{TrimSpaces: true},
+			result:  "Hello World!",
+		},
+		{
+			data:    "\n\t\"'` Hello World! \n\t\"'` ",
+			options: NormalizeOptions{TrimCutset: "\n\t\"'` "},
+			result:  "Hello World!",
+		},
+		{
+			data:    "  Hello World!  ",
+			options: NormalizeOptions{Lowercase: true},
+			result:  "  hello world!  ",
+		},
+		{
+			data:    "  Hello World!  ",
+			options: NormalizeOptions{Uppercase: true},
+			result:  "  HELLO WORLD!  ",
+		},
+		{
+			data:    "<b>Hello World!</b>",
+			options: NormalizeOptions{StripHTML: true},
+			result:  "Hello World!",
+		},
+		{
+			data:    "Hello World! # Comment",
+			options: NormalizeOptions{StripComments: true},
+			result:  "Hello World!",
+		},
+	}
+	for _, test := range tests {
+		res := NormalizeWithOptions(test.data, test.options)
+		require.Equal(t, test.result, res)
+	}
+}
