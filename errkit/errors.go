@@ -38,10 +38,11 @@ var (
 // wrapping and joining strategies including custom ones and it supports error class
 // which can be shown to client/users in more meaningful way
 type ErrorX struct {
-	kind     ErrKind
-	attrs    map[string]slog.Attr
-	errs     []error
-	uniqErrs map[string]struct{}
+	kind          ErrKind
+	attrs         map[string]slog.Attr
+	errs          []error
+	uniqErrs      map[string]struct{}
+	disableExtras bool
 }
 
 // append is internal method to append given
@@ -118,14 +119,16 @@ func (e *ErrorX) Is(err error) bool {
 // Error returns the error string
 func (e *ErrorX) Error() string {
 	var sb strings.Builder
-	if e.kind != nil && e.kind.String() != "" {
-		sb.WriteString("errKind=")
-		sb.WriteString(e.kind.String())
-		sb.WriteString(" ")
-	}
-	if len(e.attrs) > 0 {
-		sb.WriteString(slog.GroupValue(maps.Values(e.attrs)...).String())
-		sb.WriteString(" ")
+	if !e.disableExtras {
+		if e.kind != nil && e.kind.String() != "" {
+			sb.WriteString("errKind=")
+			sb.WriteString(e.kind.String())
+			sb.WriteString(" ")
+		}
+		if len(e.attrs) > 0 {
+			sb.WriteString(slog.GroupValue(maps.Values(e.attrs)...).String())
+			sb.WriteString(" ")
+		}
 	}
 	for _, err := range e.errs {
 		sb.WriteString(err.Error())
@@ -191,6 +194,15 @@ func (e *ErrorX) SetKind(kind ErrKind) *ErrorX {
 
 func (e *ErrorX) ResetKind() *ErrorX {
 	e.kind = nil
+	return e
+}
+
+// NoExtras resets and disables attributes and error kinds
+// and only keep the error message
+func (e *ErrorX) NoExtras() *ErrorX {
+	e.attrs = nil
+	e.kind = nil
+	e.disableExtras = true
 	return e
 }
 
