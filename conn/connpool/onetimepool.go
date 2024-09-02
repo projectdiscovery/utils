@@ -75,7 +75,11 @@ func (p *OneTimePool) Run() error {
 			}
 			if err == nil {
 				p.InFlightConns.Add(conn)
-				p.idleConnections <- conn
+				select {
+				case <-p.ctx.Done():
+					return p.ctx.Err()
+				case p.idleConnections <- conn:
+				}
 			}
 		}
 	}
