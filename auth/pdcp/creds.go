@@ -16,9 +16,8 @@ import (
 )
 
 var (
-	PDCPDir      = filepath.Join(folderutil.HomeDirOrDefault(""), ".pdcp")
-	PDCPCredFile = filepath.Join(PDCPDir, "credentials.yaml")
-	ErrNoCreds   = fmt.Errorf("no credentials found in %s", PDCPDir)
+	PDCPCredFile = filepath.Join(folderutil.HomeDirOrDefault(""), ".pdcp", "credentials.yaml")
+	ErrNoCreds   = fmt.Errorf("no credentials found in %s", filepath.Dir(PDCPCredFile))
 )
 
 const (
@@ -53,7 +52,7 @@ func (p *PDCPCredHandler) GetCreds() (*PDCPCredentials, error) {
 	if credsFromEnv != nil {
 		return credsFromEnv, nil
 	}
-	if !fileutil.FolderExists(PDCPDir) || !fileutil.FileExists(PDCPCredFile) {
+	if !fileutil.FolderExists(filepath.Dir(PDCPCredFile)) || !fileutil.FileExists(PDCPCredFile) {
 		return nil, ErrNoCreds
 	}
 	bin, err := os.Open(PDCPCredFile)
@@ -88,8 +87,10 @@ func (p *PDCPCredHandler) SaveCreds(resp *PDCPCredentials) error {
 	if resp == nil {
 		return fmt.Errorf("invalid response")
 	}
-	if !fileutil.FolderExists(PDCPDir) {
-		_ = fileutil.CreateFolder(PDCPDir)
+	if !fileutil.FolderExists(filepath.Dir(PDCPCredFile)) {
+		if err := fileutil.CreateFolder(filepath.Dir(PDCPCredFile)); err != nil {
+			return err
+		}
 	}
 	bin, err := yaml.Marshal([]*PDCPCredentials{resp})
 	if err != nil {
