@@ -75,7 +75,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/projectdiscovery/fastdialer v0.2.8 // indirect
 	github.com/projectdiscovery/networkpolicy v0.0.9 // indirect
-	github.com/projectdiscovery/retryabledns v1.0.75 // indirect
+	github.com/projectdiscovery/retryabledns v1.0.76 // indirect
 	github.com/refraction-networking/utls v1.6.7 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
@@ -111,7 +111,7 @@ require (
 	github.com/projectdiscovery/gologger v1.1.23
 	github.com/projectdiscovery/hmap v0.0.58
 	github.com/projectdiscovery/retryablehttp-go v1.0.77
-	github.com/weppos/publicsuffix-go v0.30.1-0.20230422193905-8fecedd899db // indirect
+	github.com/weppos/publicsuffix-go v0.30.1-0.20230422193905-8fecedd899db
 	github.com/zcalusic/sysinfo v1.0.2
 	github.com/zmap/rc2 v0.0.0-20190804163417-abaa70531248 // indirect
 	golang.org/x/crypto v0.21.0 // indirect
