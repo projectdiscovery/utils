@@ -4,12 +4,12 @@ import (
 	"testing"
 )
 
-func TestDecomposeDomain(t *testing.T) {
+func TestSplit(t *testing.T) {
 	tests := []struct {
-		name string
-		subdomain  string
-		domain     string
-		expectErr  bool
+		name      string
+		subdomain string
+		domain    string
+		expectErr bool
 	}{
 		{"www.example.com", "www", "example.com", false},
 		{"http://www.example.com", "www", "example.com", false},
@@ -20,7 +20,7 @@ func TestDecomposeDomain(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		subdomain, domain, err := DecomposeDomain(test.name)
+		subdomain, domain, err := Split(test.name)
 		if test.expectErr && err == nil {
 			t.Errorf("expected error for domain %s, but got none", test.name)
 		}
