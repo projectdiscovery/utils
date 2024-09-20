@@ -14,6 +14,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/charmbracelet/glamour"
+	styles "github.com/charmbracelet/glamour/styles"
 	"github.com/minio/selfupdate"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/machineid"
@@ -94,7 +95,7 @@ func GetUpdateToolFromRepoCallback(toolName, version, repoName string) func() {
 
 			style := glamour.WithAutoStyle()
 			if NoColorReleaseNotes {
-				style = glamour.WithStyles(glamour.ASCIIStyleConfig)
+				style = glamour.WithStyles(styles.ASCIIStyleConfig)
 			}
 			r, err := glamour.NewTermRenderer(style)
 			if err != nil {
@@ -142,10 +143,7 @@ func GetToolVersionCallback(toolName, version string) func() (string, error) {
 		}
 		if toolDetails.Version == "" {
 			msg := fmt.Sprintf("something went wrong, expected version string but got empty string for GET `%v` response `%v`", updateURL, string(body))
-			if err == nil {
-				return "", errorutil.New("%s", msg)
-			}
-			return "", errorutil.NewWithErr(err).Msgf("%s", msg)
+			return "", errorutil.New("%s", msg)
 		}
 		return toolDetails.Version, nil
 	}
