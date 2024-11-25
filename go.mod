@@ -74,7 +74,7 @@ require (
 	github.com/nxadm/tail v1.4.11 // indirect
 	github.com/pierrec/lz4/v4 v4.1.2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
-	github.com/projectdiscovery/fastdialer v0.2.9 // indirect
+	github.com/projectdiscovery/fastdialer v0.2.10 // indirect
 	github.com/projectdiscovery/networkpolicy v0.0.9 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.86 // indirect
 	github.com/refraction-networking/utls v1.6.7 // indirect
@@ -110,7 +110,7 @@ require (
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/projectdiscovery/gologger v1.1.32
-	github.com/projectdiscovery/hmap v0.0.66
+	github.com/projectdiscovery/hmap v0.0.67
 	github.com/projectdiscovery/retryablehttp-go v1.0.87
 	github.com/weppos/publicsuffix-go v0.30.1-0.20230422193905-8fecedd899db
 	github.com/zcalusic/sysinfo v1.0.2
