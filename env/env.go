@@ -8,14 +8,8 @@ import (
 )
 
 var (
-	TLS_VERIFY     = os.Getenv("TLS_VERIFY") == "true"
-	DEBUG          = os.Getenv("DEBUG") == "true"
-	OS_MAX_THREADS = func() int {
-		if value, err := strconv.Atoi(os.Getenv("OS_MAX_THREADS")); err == nil && value != 0 {
-			return value
-		}
-		return 10000
-	}()
+	TLS_VERIFY = os.Getenv("TLS_VERIFY") == "true"
+	DEBUG      = os.Getenv("DEBUG") == "true"
 )
 
 // ExpandWithEnv updates string variables to their corresponding environment values.
