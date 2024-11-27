@@ -114,3 +114,15 @@ func TestMarshalError(t *testing.T) {
 	require.NoError(t, err, "expected to be able to marshal the error")
 	require.Equal(t, `{"errors":["port closed or filtered","this is a wrapped error"],"kind":"network-permanent-error"}`, string(marshalled))
 }
+
+func TestErrorString(t *testing.T) {
+	var x error = New("i/o timeout")
+	x = With(x, "ip", "10.0.0.1", "port", 80)
+	x = WithMessage(x, "tcp dial error")
+	x = Append(x, errors.New("some other error"))
+
+	require.Equal(t,
+		`cause="i/o timeout" ip=10.0.0.1 port=80 chain="tcp dial error; some other error"`,
+		x.Error(),
+	)
+}
