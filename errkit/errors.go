@@ -7,9 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"strings"
 
 	"github.com/projectdiscovery/utils/env"
+	mapsutil "github.com/projectdiscovery/utils/maps"
 	"golang.org/x/exp/maps"
 )
 
@@ -24,14 +26,18 @@ const (
 	DelimMultiLine = "\n -  "
 	// MultiLinePrefix is the prefix used for multiline errors
 	MultiLineErrPrefix = "the following errors occurred:"
+	// Tab
+	Tab = '\t'
 )
 
 var (
 	// MaxErrorDepth is the maximum depth of errors to be unwrapped or maintained
 	// all errors beyond this depth will be ignored
 	MaxErrorDepth = env.GetEnvOrDefault("MAX_ERROR_DEPTH", 3)
-	// ErrorSeperator is the seperator used to join errors
-	ErrorSeperator = env.GetEnvOrDefault("ERROR_SEPERATOR", "; ")
+	// FieldSeperator
+	ErrFieldSeparator = env.GetEnvOrDefault("ERR_FIELD_SEPERATOR", Tab)
+	// ErrChainSeperator
+	ErrChainSeperator = env.GetEnvOrDefault("ERR_CHAIN_SEPERATOR", DelimSemiColon)
 )
 
 // ErrorX is a custom error type that can handle all known types of errors
@@ -118,20 +124,25 @@ func (e *ErrorX) Is(err error) bool {
 // Error returns the error string
 func (e *ErrorX) Error() string {
 	var sb strings.Builder
-	if e.kind != nil && e.kind.String() != "" {
-		sb.WriteString("errKind=")
-		sb.WriteString(e.kind.String())
-		sb.WriteString(" ")
-	}
+	sb.WriteString("cause=")
+	sb.WriteString(strconv.Quote(e.errs[0].Error()))
 	if len(e.attrs) > 0 {
-		sb.WriteString(slog.GroupValue(maps.Values(e.attrs)...).String())
-		sb.WriteString(" ")
+		values := []string{}
+		for _, key := range mapsutil.GetSortedKeys(e.attrs) {
+			values = append(values, key+"="+strconv.Quote(e.attrs[key].String()))
+		}
+		sb.WriteRune(ErrFieldSeparator)
+		sb.WriteString(strings.Join(values, " "))
 	}
-	for _, err := range e.errs {
-		sb.WriteString(err.Error())
-		sb.WriteString(ErrorSeperator)
+	if len(e.errs) > 1 {
+		chain := []string{}
+		for _, value := range e.errs[1:] {
+			chain = append(chain, strings.TrimSpace(value.Error()))
+		}
+		sb.WriteRune(ErrFieldSeparator)
+		sb.WriteString("chain=" + strconv.Quote(strings.Join(chain, ErrChainSeperator)))
 	}
-	return strings.TrimSuffix(sb.String(), ErrorSeperator)
+	return sb.String()
 }
 
 // Cause return the original error that caused this without any wrapping
@@ -165,6 +176,9 @@ func FromError(err error) *ErrorX {
 // New creates a new error with the given message
 func New(format string, args ...interface{}) *ErrorX {
 	e := &ErrorX{}
+	if len(args) == 0 {
+		e.append(errors.New(format))
+	}
 	e.append(fmt.Errorf(format, args...))
 	return e
 }
@@ -173,6 +187,9 @@ func New(format string, args ...interface{}) *ErrorX {
 func (e *ErrorX) Msgf(format string, args ...interface{}) {
 	if e == nil {
 		return
+	}
+	if len(args) == 0 {
+		e.append(errors.New(format))
 	}
 	e.append(fmt.Errorf(format, args...))
 }
