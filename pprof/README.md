@@ -1,6 +1,13 @@
 ## PProfiling Usage Guide
 
-### Environment Variables
+Two types of profiling are supported:
+
+1. **pprof**: Standard go profiling writing to files in a directory.
+2. **server**: Profiling server listening on a port with pprof and fgprof endpoints.
+
+### pprof
+
+#### Environment Variables
 
 - `PPROF`: Enable or disable profiling. Set to 1 to enable.
 - `MEM_PROFILE_DIR`: Directory to write memory profiles to.
@@ -9,7 +16,7 @@
 - `MEM_PROFILE_RATE`: Memory profiling rate (default 4096).
 
 
-## How to Use
+### How to Use
 
 1. Set the environment variables as per your requirements.
 
@@ -30,7 +37,7 @@ export MEM_PROFILE_RATE=4096
 - Profiles will be written at intervals specified by PPROF_TIME.
 - Memory profiling rate is controlled by MEM_PROFILE_RATE.
 
-### Example
+#### Example
 
 ```bash
 [+] GOOS: linux
@@ -46,7 +53,31 @@ profile: ticker enabled (rate 10s)
 profile: cpu profiling enabled (ticker 10s)
 ```
 
-### Note
+#### Note
 
 - The polling time (PPROF_TIME) should be set according to your application's performance and profiling needs.
 - The memory profiling rate (MEM_PROFILE_RATE) controls the granularity of the memory profiling. Higher values provide more detail but consume more resources.
+
+### server
+
+Server is a simple HTTP server listening on a port with pprof and fgprof endpoints.
+
+#### Environment Variables
+
+- `PPROF_SERVER_ADDR`: Address to listen on for pprof and fgprof server (default 127.0.0.1:6060).
+
+#### Endpoints
+
+- /debug/pprof/
+- /debug/pprof/cmdline
+- /debug/pprof/profile
+- /debug/pprof/profile
+- /debug/pprof/symbol
+- /debug/pprof/trace
+- /debug/fgprof
+
+#### Example
+
+```console
+go tool pprof http://127.0.0.1:8086/debug/fgprof
+```

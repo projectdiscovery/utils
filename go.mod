@@ -56,9 +56,11 @@ require (
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.11.4 // indirect
 	github.com/fatih/color v1.15.0 // indirect
+	github.com/felixge/fgprof v0.9.5 // indirect
 	github.com/gaissmai/bart v0.9.5 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/google/pprof v0.0.0-20240227163752-401108e1b7e7 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/pgzip v1.2.5 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
