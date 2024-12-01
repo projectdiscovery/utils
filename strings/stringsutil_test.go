@@ -303,11 +303,20 @@ func TestLongestRepeatingSequence(t *testing.T) {
 		s        string
 		expected string
 	}{
-		{"abcdefg", ""},
-		{"abcabcabc", "abc"},
-		{"abcdefabcdef", "abcdef"},
-		{"abcdefgabcdefg", "abcdefg"},
-		{"abcabcdefdef", "abc"},
+		{s: "abcabca", expected: "abc"},
+		{s: "abcdefg", expected: ""},
+		{s: "abcabcabc", expected: "abc"},
+		{s: "abcdefabcdef", expected: "abcdef"},
+		{s: "abcdefgabcdefg", expected: "abcdefg"},
+		{s: "abcabcdefdef", expected: "abc"},
+
+		// edge cases
+		{s: "aaa", expected: "a"},
+		{s: "aaaa", expected: "aa"},
+		{s: "abababab", expected: "abab"},
+		{s: "test test test", expected: "test "},
+		{s: "AbcAbcAbc", expected: "Abc"},
+		{s: "!@#$!@#$", expected: "!@#$"},
 	}
 
 	for _, test := range tests {
@@ -465,5 +474,14 @@ func TestNormalizeWithOptions(t *testing.T) {
 	for _, test := range tests {
 		res := NormalizeWithOptions(test.data, test.options)
 		require.Equal(t, test.result, res)
+	}
+}
+
+func BenchmarkLongestRepeatingSequence(b *testing.B) {
+	s := "AAAAAAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBBBBB" // 40 chars test string
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		LongestRepeatingSequence(s)
 	}
 }
