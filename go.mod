@@ -10,6 +10,7 @@ require (
 	github.com/charmbracelet/glamour v0.8.0
 	github.com/docker/go-units v0.5.0
 	github.com/dsnet/compress v0.0.2-0.20210315054119-f66993602bf5
+	github.com/felixge/fgprof v0.9.5
 	github.com/fortytw2/leaktest v1.3.0
 	github.com/google/go-github/v30 v30.1.0
 	github.com/google/uuid v1.3.1
@@ -56,7 +57,6 @@ require (
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.11.4 // indirect
 	github.com/fatih/color v1.15.0 // indirect
-	github.com/felixge/fgprof v0.9.5 // indirect
 	github.com/gaissmai/bart v0.9.5 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
@@ -112,7 +112,7 @@ require (
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/projectdiscovery/gologger v1.1.33
-	github.com/projectdiscovery/hmap v0.0.68
+	github.com/projectdiscovery/hmap v0.0.69
 	github.com/projectdiscovery/retryablehttp-go v1.0.88
 	github.com/weppos/publicsuffix-go v0.30.1-0.20230422193905-8fecedd899db
 	github.com/zcalusic/sysinfo v1.0.2
