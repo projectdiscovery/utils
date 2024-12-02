@@ -30,3 +30,9 @@ type ComparableError interface {
 	// Is checks if current error contains given error
 	Is(err error) bool
 }
+
+// WrappedError is implemented by errors that are wrapped
+type WrappedError interface {
+	// Unwrap returns the underlying error
+	Unwrap() error
+}

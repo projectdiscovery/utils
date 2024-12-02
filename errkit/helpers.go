@@ -193,19 +193,21 @@ func IsNetworkPermanentErr(err error) bool {
 	return isNetworkPermanentErr(x)
 }
 
-// WithAttr wraps error with given attributes
+// With adds extra attributes to the error
 //
-// err = errkit.WithAttr(err,slog.Any("resource",domain))
-func WithAttr(err error, attrs ...slog.Attr) error {
+//	err = errkit.With(err,"resource",domain)
+func With(err error, args ...any) error {
 	if err == nil {
 		return nil
 	}
-	if len(attrs) == 0 {
+	if len(args) == 0 {
 		return err
 	}
 	x := &ErrorX{}
+	x.init()
 	parseError(x, err)
-	return x.SetAttr(attrs...)
+	x.record.Add(args...)
+	return x
 }
 
 // GetAttr returns all attributes of given error if it has any
@@ -271,7 +273,7 @@ func GetAttrValue(err error, key string) slog.Value {
 	}
 	x := &ErrorX{}
 	parseError(x, err)
-	for _, attr := range x.attrs {
+	for _, attr := range x.Attrs() {
 		if attr.Key == key {
 			return attr.Value
 		}

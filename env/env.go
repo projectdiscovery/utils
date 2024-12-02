@@ -25,7 +25,7 @@ func ExpandWithEnv(variables ...*string) {
 
 // EnvType is a type that can be used as a type for environment variables.
 type EnvType interface {
-	~string | ~int | ~bool | ~float64 | time.Duration
+	~string | ~int | ~bool | ~float64 | time.Duration | ~rune
 }
 
 // GetEnvOrDefault returns the value of the environment variable or the default value if the variable is not set.
