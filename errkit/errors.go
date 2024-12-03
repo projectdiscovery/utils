@@ -327,15 +327,17 @@ func parseError(to *ErrorX, err error) {
 	switch v := err.(type) {
 	case *ErrorX:
 		to.append(v.errs...)
-		if to.record == nil {
-			to.record = v.record
-		} else {
-			v.record.Attrs(func(a slog.Attr) bool {
-				to.record.Add(a)
-				return true
-			})
+		if v.record != nil {
+			if to.record == nil {
+				to.record = v.record
+			} else {
+				v.record.Attrs(func(a slog.Attr) bool {
+					to.record.Add(a)
+					return true
+				})
+			}
 		}
-		if to.source == nil {
+		if to.source == nil && v.source != nil {
 			to.source = v.source
 		}
 		to.kind = CombineErrKinds(to.kind, v.kind)
