@@ -111,7 +111,7 @@ require (
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/projectdiscovery/gologger v1.1.39
+	github.com/projectdiscovery/gologger v1.1.40
 	github.com/projectdiscovery/hmap v0.0.75
 	github.com/projectdiscovery/retryablehttp-go v1.0.95
 	github.com/weppos/publicsuffix-go v0.30.1-0.20230422193905-8fecedd899db
