@@ -22,14 +22,14 @@ var (
 func main() {
 	flag.Parse()
 
-	err := filepath.Walk(*src, walk)
+	err := filepath.WalkDir(*src, walkDir)
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-func walk(path string, info fs.FileInfo, err error) error {
-	if info.IsDir() {
+func walkDir(path string, d fs.DirEntry, err error) error {
+	if d.IsDir() {
 		return nil
 	}
 
