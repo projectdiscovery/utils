@@ -54,6 +54,7 @@ require (
 	github.com/charmbracelet/lipgloss v0.13.0 // indirect
 	github.com/charmbracelet/x/ansi v0.3.2 // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
+	github.com/cockroachdb/swiss v0.0.0-20240612210725-f4de07ae6964 // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.11.4 // indirect
 	github.com/fatih/color v1.15.0 // indirect
