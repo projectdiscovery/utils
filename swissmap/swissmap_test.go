@@ -40,7 +40,7 @@ func TestMap(t *testing.T) {
 	})
 
 	t.Run("Concurrent operations", func(t *testing.T) {
-		m := New[int, int]()
+		m := New(WithThreadSafety[int, int]())
 		var wg sync.WaitGroup
 		n := 1000
 
