@@ -3,25 +3,9 @@ package swissmap
 import (
 	"sync"
 
+	"github.com/bytedance/sonic"
 	"github.com/cockroachdb/swiss"
 )
-
-// Option represents a configuration option for the Map
-type Option[K, V comparable] func(*Map[K, V])
-
-// WithCapacity sets the initial capacity of the map
-func WithCapacity[K, V comparable](capacity int) Option[K, V] {
-	return func(m *Map[K, V]) {
-		m.data.Init(capacity)
-	}
-}
-
-// WithThreadSafety enables thread-safety for the map
-func WithThreadSafety[K, V comparable]() Option[K, V] {
-	return func(m *Map[K, V]) {
-		m.threadSafe = true
-	}
-}
 
 // Map is a generic map implementation using swiss.Map with optional thread-safety
 type Map[K, V comparable] struct {
@@ -41,34 +25,6 @@ func New[K, V comparable](options ...Option[K, V]) *Map[K, V] {
 	return m
 }
 
-// lock conditionally acquires the read lock if thread-safety is enabled
-func (m *Map[K, V]) lock() {
-	if m.threadSafe {
-		m.mutex.Lock()
-	}
-}
-
-// unlock conditionally releases the read lock if thread-safety is enabled
-func (m *Map[K, V]) unlock() {
-	if m.threadSafe {
-		m.mutex.Unlock()
-	}
-}
-
-// rLock conditionally acquires the read lock if thread-safety is enabled
-func (m *Map[K, V]) rLock() {
-	if m.threadSafe {
-		m.mutex.RLock()
-	}
-}
-
-// rUnlock conditionally releases the read lock if thread-safety is enabled
-func (m *Map[K, V]) rUnlock() {
-	if m.threadSafe {
-		m.mutex.RUnlock()
-	}
-}
-
 // Clear removes all elements from the map
 func (m *Map[K, V]) Clear() bool {
 	m.lock()
@@ -76,6 +32,7 @@ func (m *Map[K, V]) Clear() bool {
 
 	hadElements := m.data.Len() > 0
 	m.data.Clear()
+
 	return hadElements
 }
 
@@ -185,4 +142,36 @@ func (m *Map[K, V]) Set(key K, value V) {
 	defer m.unlock()
 
 	m.data.Put(key, value)
+}
+
+// MarshalJSON marshals the map to JSON
+func (m *Map[K, V]) MarshalJSON() ([]byte, error) {
+	m.rLock()
+	defer m.rUnlock()
+
+	target := make(map[K]V)
+
+	m.data.All(func(key K, value V) bool {
+		target[key] = value
+
+		return true
+	})
+
+	return sonic.Marshal(target)
+}
+
+// UnmarshalJSON unmarshals the map from JSON
+func (m *Map[K, V]) UnmarshalJSON(buf []byte) error {
+	m.lock()
+	defer m.unlock()
+
+	target := make(map[K]V)
+
+	if err := sonic.Unmarshal(buf, &target); err != nil {
+		return err
+	}
+
+	m.Merge(target)
+
+	return nil
 }

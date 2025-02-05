@@ -122,3 +122,85 @@ func TestMap(t *testing.T) {
 		}
 	})
 }
+
+func TestMapJSON(t *testing.T) {
+	t.Run("Marshal and Unmarshal", func(t *testing.T) {
+		m := New[string, int]()
+		m.Set("one", 1)
+		m.Set("two", 2)
+		m.Set("three", 3)
+
+		// Test marshaling
+		data, err := m.MarshalJSON()
+		if err != nil {
+			t.Fatalf("MarshalJSON failed: %v", err)
+		}
+		t.Logf("marshaled data: %s", data)
+
+		// Test unmarshaling into new map
+		newMap := New[string, int]()
+		err = newMap.UnmarshalJSON(data)
+		if err != nil {
+			t.Fatalf("UnmarshalJSON failed: %v", err)
+		}
+
+		data2, err := newMap.MarshalJSON()
+		if err != nil {
+			t.Fatalf("MarshalJSON failed for unmarshaled map: %v", err)
+		}
+
+		t.Logf("unmarshaled data: %s", data2)
+
+		// Verify contents
+		expected := map[string]int{"one": 1, "two": 2, "three": 3}
+		for k, v := range expected {
+			if val, ok := newMap.Get(k); !ok || val != v {
+				t.Errorf("expected %s=%d, got %d (exists: %v)", k, v, val, ok)
+			}
+		}
+	})
+
+	t.Run("Empty map", func(t *testing.T) {
+		m := New[string, string]()
+
+		data, err := m.MarshalJSON()
+		if err != nil {
+			t.Fatalf("MarshalJSON failed for empty map: %v", err)
+		}
+
+		newMap := New[string, string]()
+		err = newMap.UnmarshalJSON(data)
+		if err != nil {
+			t.Fatalf("UnmarshalJSON failed for empty map: %v", err)
+		}
+
+		if !newMap.IsEmpty() {
+			t.Error("unmarshaled map should be empty")
+		}
+	})
+
+	t.Run("Complex types", func(t *testing.T) {
+		type Complex struct {
+			ID   int
+			Name string
+		}
+		m := New[string, Complex]()
+		m.Set("item1", Complex{ID: 1, Name: "test1"})
+		m.Set("item2", Complex{ID: 2, Name: "test2"})
+
+		data, err := m.MarshalJSON()
+		if err != nil {
+			t.Fatalf("MarshalJSON failed for complex types: %v", err)
+		}
+
+		newMap := New[string, Complex]()
+		err = newMap.UnmarshalJSON(data)
+		if err != nil {
+			t.Fatalf("UnmarshalJSON failed for complex types: %v", err)
+		}
+
+		if val, ok := newMap.Get("item1"); !ok || val.ID != 1 || val.Name != "test1" {
+			t.Error("complex type was not correctly unmarshaled")
+		}
+	})
+}
