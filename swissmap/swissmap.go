@@ -55,9 +55,10 @@ func (m *Map[K, V]) Clear() bool {
 	defer m.unlock()
 
 	hadElements := m.data.Len() > 0
-
 	m.data.Clear()
-	m.keys = []K{}
+
+	// Reuse existing slice capacity
+	m.keys = m.keys[:0]
 
 	return hadElements
 }
