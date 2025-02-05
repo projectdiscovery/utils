@@ -21,10 +21,10 @@ type ComparableOrdered interface {
 type Map[K ComparableOrdered, V any] struct {
 	api        sonic.API
 	data       *swiss.Map[K, V]
+	keys       []K
 	mutex      sync.RWMutex
 	threadSafe bool
 	sorted     bool
-	keys       []K
 }
 
 // New creates a new Map with the given options
