@@ -3,6 +3,7 @@ package swissmap
 import (
 	"cmp"
 	"reflect"
+	"slices"
 	"sync"
 
 	"github.com/bytedance/sonic"
@@ -23,6 +24,7 @@ type Map[K ComparableOrdered, V any] struct {
 	mutex      sync.RWMutex
 	threadSafe bool
 	sorted     bool
+	keys       []K
 }
 
 // New creates a new Map with the given options
@@ -36,6 +38,14 @@ func New[K ComparableOrdered, V any](options ...Option[K, V]) *Map[K, V] {
 		opt(m)
 	}
 
+	// TODO(dwisiswant0): Add check for comparable key type
+	// if m.sorted {
+	// 	var k K
+	// 	if !reflect.TypeOf(k).Comparable() {
+	// 		panic("key type must be comparable for sorted map")
+	// 	}
+	// }
+
 	return m
 }
 
@@ -45,7 +55,9 @@ func (m *Map[K, V]) Clear() bool {
 	defer m.unlock()
 
 	hadElements := m.data.Len() > 0
+
 	m.data.Clear()
+	m.keys = []K{}
 
 	return hadElements
 }
@@ -126,11 +138,17 @@ func (m *Map[K, V]) GetOrDefault(key K, defaultValue V) V {
 //
 // The index is 0-based and must be less than the number of elements in the map
 func (m *Map[K, V]) GetByIndex(idx int) (V, bool) {
-	// TODO(dwisiswant0): Implement this method
+	m.rLock()
+	defer m.rUnlock()
 
 	var value V
 
-	return value, false
+	// Return early if index out of range
+	if idx < 0 || idx >= m.data.Len() {
+		return value, false
+	}
+
+	return m.data.Get(m.keys[idx])
 }
 
 // Has checks if a key exists in the map
@@ -162,6 +180,16 @@ func (m *Map[K, V]) Merge(n map[K]V) {
 func (m *Map[K, V]) Set(key K, value V) {
 	m.lock()
 	defer m.unlock()
+
+	if !m.Has(key) {
+		m.keys = append(m.keys, key)
+		if m.sorted {
+			// NOTE(dwisiswant0): It may cause a panic if the key is not comparable
+			slices.SortStableFunc(m.keys, func(a, b K) int {
+				return cmp.Compare(a, b)
+			})
+		}
+	}
 
 	m.data.Put(key, value)
 }

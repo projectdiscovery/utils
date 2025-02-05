@@ -161,7 +161,7 @@ func TestMapJSON(t *testing.T) {
 	})
 
 	t.Run("WithSortMapKeys", func(t *testing.T) {
-		t.SkipNow()
+		// t.SkipNow()
 
 		m := New(WithSortMapKeys[string, int]())
 
