@@ -7,7 +7,7 @@ import (
 
 var benchNumItems = []int{1000, 5000, 10_000, 100_000, 250_000, 500_000, 1_000_000}
 
-func createMaps[K, V comparable](numItems int, threadSafe bool) *Map[K, V] {
+func createMaps[K ComparableOrdered, V any](numItems int, threadSafe bool) *Map[K, V] {
 	options := []Option[K, V]{
 		WithCapacity[K, V](numItems),
 	}

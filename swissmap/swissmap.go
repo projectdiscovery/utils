@@ -1,14 +1,23 @@
 package swissmap
 
 import (
+	"cmp"
+	"reflect"
 	"sync"
 
 	"github.com/bytedance/sonic"
 	"github.com/cockroachdb/swiss"
 )
 
+// ComparableOrdered is an interface that extends [cmp.Ordered] with the
+// comparable interface
+type ComparableOrdered interface {
+	cmp.Ordered
+	comparable
+}
+
 // Map is a generic map implementation using swiss.Map with additional [Option]s
-type Map[K, V comparable] struct {
+type Map[K ComparableOrdered, V any] struct {
 	api        sonic.API
 	data       *swiss.Map[K, V]
 	mutex      sync.RWMutex
@@ -17,7 +26,7 @@ type Map[K, V comparable] struct {
 }
 
 // New creates a new Map with the given options
-func New[K, V comparable](options ...Option[K, V]) *Map[K, V] {
+func New[K ComparableOrdered, V any](options ...Option[K, V]) *Map[K, V] {
 	m := &Map[K, V]{
 		data: swiss.New[K, V](0),
 		api:  getDefaultSonicConfig().Froze(),
@@ -73,7 +82,7 @@ func (m *Map[K, V]) GetKeyWithValue(value V) (K, bool) {
 	var found bool
 
 	m.data.All(func(key K, v V) bool {
-		if v == value {
+		if reflect.DeepEqual(v, value) {
 			foundKey = key
 			found = true
 
