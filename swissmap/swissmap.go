@@ -178,10 +178,12 @@ func (m *Map[K, V]) Merge(n map[K]V) {
 
 // Set inserts or updates a key/value pair
 func (m *Map[K, V]) Set(key K, value V) {
+	exists := m.Has(key)
+
 	m.lock()
 	defer m.unlock()
 
-	if !m.Has(key) {
+	if !exists {
 		m.keys = append(m.keys, key)
 		if m.sorted {
 			// NOTE(dwisiswant0): It may cause a panic if the key is not comparable
