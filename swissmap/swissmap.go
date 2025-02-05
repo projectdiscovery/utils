@@ -7,16 +7,21 @@ import (
 	"github.com/cockroachdb/swiss"
 )
 
-// Map is a generic map implementation using swiss.Map with optional thread-safety
+// Map is a generic map implementation using swiss.Map with additional [Option]s
 type Map[K, V comparable] struct {
+	api        sonic.API
+	data       *swiss.Map[K, V]
 	mutex      sync.RWMutex
 	threadSafe bool
-	data       *swiss.Map[K, V]
+	sorted     bool
 }
 
 // New creates a new Map with the given options
 func New[K, V comparable](options ...Option[K, V]) *Map[K, V] {
-	m := &Map[K, V]{data: swiss.New[K, V](0)}
+	m := &Map[K, V]{
+		data: swiss.New[K, V](0),
+		api:  getDefaultSonicConfig().Froze(),
+	}
 
 	for _, opt := range options {
 		opt(m)
@@ -108,6 +113,17 @@ func (m *Map[K, V]) GetOrDefault(key K, defaultValue V) V {
 	return defaultValue
 }
 
+// GetByIndex retrieves a value by its index
+//
+// The index is 0-based and must be less than the number of elements in the map
+func (m *Map[K, V]) GetByIndex(idx int) (V, bool) {
+	// TODO(dwisiswant0): Implement this method
+
+	var value V
+
+	return value, false
+}
+
 // Has checks if a key exists in the map
 func (m *Map[K, V]) Has(key K) bool {
 	m.rLock()
@@ -128,11 +144,8 @@ func (m *Map[K, V]) IsEmpty() bool {
 
 // Merge adds all key/value pairs from the input map
 func (m *Map[K, V]) Merge(n map[K]V) {
-	m.lock()
-	defer m.unlock()
-
 	for k, v := range n {
-		m.data.Put(k, v)
+		m.Set(k, v)
 	}
 }
 
@@ -157,17 +170,19 @@ func (m *Map[K, V]) MarshalJSON() ([]byte, error) {
 		return true
 	})
 
-	return sonic.Marshal(target)
+	return m.api.Marshal(target)
 }
 
 // UnmarshalJSON unmarshals the map from JSON
+//
+// The map is merged with the input data.
 func (m *Map[K, V]) UnmarshalJSON(buf []byte) error {
 	m.lock()
 	defer m.unlock()
 
 	target := make(map[K]V)
 
-	if err := sonic.Unmarshal(buf, &target); err != nil {
+	if err := m.api.Unmarshal(buf, &target); err != nil {
 		return err
 	}
 

@@ -160,6 +160,46 @@ func TestMapJSON(t *testing.T) {
 		}
 	})
 
+	t.Run("WithSortMapKeys", func(t *testing.T) {
+		t.SkipNow()
+
+		m := New(WithSortMapKeys[string, int]())
+
+		// Insert items in random order
+		m.Set("zebra", 1)
+		m.Set("alpha", 2)
+		m.Set("beta", 3)
+
+		data, err := m.MarshalJSON()
+		if err != nil {
+			t.Fatalf("MarshalJSON failed with sorted keys: %v", err)
+		}
+		t.Logf("marshaled data with sorted keys: %s", data)
+
+		// Test getting by index with sorted keys
+		if v, ok := m.GetByIndex(0); !ok || v != 2 {
+			t.Errorf("GetByIndex(0) = (%v, %v), want (2, true)", v, ok)
+		}
+
+		if v, ok := m.GetByIndex(1); !ok || v != 3 {
+			t.Errorf("GetByIndex(1) = (%v, %v), want (3, true)", v, ok)
+		}
+
+		if v, ok := m.GetByIndex(2); !ok || v != 1 {
+			t.Errorf("GetByIndex(2) = (%v, %v), want (1, true)", v, ok)
+		}
+
+		// Test out of bounds index
+		if _, ok := m.GetByIndex(3); ok {
+			t.Error("GetByIndex(3) should return false for out of bounds index")
+		}
+
+		// Test negative index
+		if _, ok := m.GetByIndex(-1); ok {
+			t.Error("GetByIndex(-1) should return false for negative index")
+		}
+	})
+
 	t.Run("Empty map", func(t *testing.T) {
 		m := New[string, string]()
 
@@ -181,8 +221,8 @@ func TestMapJSON(t *testing.T) {
 
 	t.Run("Complex types", func(t *testing.T) {
 		type Complex struct {
-			ID   int
 			Name string
+			ID   int
 		}
 		m := New[string, Complex]()
 		m.Set("item1", Complex{ID: 1, Name: "test1"})

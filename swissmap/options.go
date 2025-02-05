@@ -16,3 +16,14 @@ func WithThreadSafety[K, V comparable]() Option[K, V] {
 		m.threadSafe = true
 	}
 }
+
+// WithSortMapKeys enables sorting of map keys
+func WithSortMapKeys[K, V comparable]() Option[K, V] {
+	cfg := getDefaultSonicConfig()
+	cfg.SortMapKeys = true
+
+	return func(m *Map[K, V]) {
+		m.sorted = true
+		m.api = cfg.Froze()
+	}
+}
