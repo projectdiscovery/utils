@@ -4,7 +4,7 @@ package swissmap
 func (m *Map[K, V]) lock() bool {
 	var locked bool
 
-	if m.threadSafe {
+	if m.concurrent {
 		m.mutex.Lock()
 		locked = true
 	}
@@ -14,7 +14,7 @@ func (m *Map[K, V]) lock() bool {
 
 // unlock conditionally releases the read lock if thread-safety is enabled
 func (m *Map[K, V]) unlock() {
-	if m.threadSafe {
+	if m.concurrent {
 		m.mutex.Unlock()
 	}
 }
@@ -23,7 +23,7 @@ func (m *Map[K, V]) unlock() {
 func (m *Map[K, V]) rLock() bool {
 	var locked bool
 
-	if m.threadSafe {
+	if m.concurrent {
 		m.mutex.RLock()
 		locked = true
 	}
@@ -33,7 +33,7 @@ func (m *Map[K, V]) rLock() bool {
 
 // rUnlock conditionally releases the read lock if thread-safety is enabled
 func (m *Map[K, V]) rUnlock() {
-	if m.threadSafe {
+	if m.concurrent {
 		m.mutex.RUnlock()
 	}
 }

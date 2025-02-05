@@ -23,7 +23,7 @@ type Map[K ComparableOrdered, V any] struct {
 	data       *swiss.Map[K, V]
 	keys       []K
 	mutex      sync.RWMutex
-	threadSafe bool
+	concurrent bool
 	sorted     bool
 }
 

@@ -13,7 +13,7 @@ func createMaps[K ComparableOrdered, V any](numItems int, threadSafe bool) *Map[
 	}
 
 	if threadSafe {
-		options = append(options, WithThreadSafety[K, V]())
+		options = append(options, WithConcurrentAccess[K, V]())
 	}
 
 	return New[K, V](options...)
@@ -45,7 +45,7 @@ func BenchmarkGet(b *testing.B) {
 				})
 			})
 
-			b.Run("WithThreadSafety", func(b *testing.B) {
+			b.Run("WithConcurrentAccess", func(b *testing.B) {
 				m := createMaps[string, int](numItems, true)
 				for i := 0; i < numItems; i++ {
 					m.Set(fmt.Sprint(i), i)

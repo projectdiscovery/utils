@@ -11,10 +11,10 @@ func WithCapacity[K ComparableOrdered, V any](capacity int) Option[K, V] {
 	}
 }
 
-// WithThreadSafety enables thread-safety for the map
-func WithThreadSafety[K ComparableOrdered, V any]() Option[K, V] {
+// WithConcurrentAccess enables safe concurrent access to the [Map]
+func WithConcurrentAccess[K ComparableOrdered, V any]() Option[K, V] {
 	return func(m *Map[K, V]) {
-		m.threadSafe = true
+		m.concurrent = true
 	}
 }
 
