@@ -1,10 +1,15 @@
 package swissmap
 
 // lock conditionally acquires the read lock if thread-safety is enabled
-func (m *Map[K, V]) lock() {
+func (m *Map[K, V]) lock() bool {
+	var locked bool
+
 	if m.threadSafe {
 		m.mutex.Lock()
+		locked = true
 	}
+
+	return locked
 }
 
 // unlock conditionally releases the read lock if thread-safety is enabled
@@ -15,10 +20,15 @@ func (m *Map[K, V]) unlock() {
 }
 
 // rLock conditionally acquires the read lock if thread-safety is enabled
-func (m *Map[K, V]) rLock() {
+func (m *Map[K, V]) rLock() bool {
+	var locked bool
+
 	if m.threadSafe {
 		m.mutex.RLock()
+		locked = true
 	}
+
+	return locked
 }
 
 // rUnlock conditionally releases the read lock if thread-safety is enabled

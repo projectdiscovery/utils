@@ -51,8 +51,9 @@ func New[K ComparableOrdered, V any](options ...Option[K, V]) *Map[K, V] {
 
 // Clear removes all elements from the map
 func (m *Map[K, V]) Clear() bool {
-	m.lock()
-	defer m.unlock()
+	if m.lock() {
+		defer m.unlock()
+	}
 
 	hadElements := m.data.Len() > 0
 	m.data.Clear()
@@ -65,8 +66,9 @@ func (m *Map[K, V]) Clear() bool {
 
 // Clone returns a new Map with a copy of the underlying data
 func (m *Map[K, V]) Clone() *Map[K, V] {
-	m.rLock()
-	defer m.rUnlock()
+	if m.rLock() {
+		defer m.rUnlock()
+	}
 
 	clone := New[K, V]()
 	m.data.All(func(key K, value V) bool {
@@ -80,16 +82,18 @@ func (m *Map[K, V]) Clone() *Map[K, V] {
 
 // Get retrieves a value from the map
 func (m *Map[K, V]) Get(key K) (V, bool) {
-	m.rLock()
-	defer m.rUnlock()
+	if m.rLock() {
+		defer m.rUnlock()
+	}
 
 	return m.data.Get(key)
 }
 
 // GetKeyWithValue retrieves the first key associated with the given value
 func (m *Map[K, V]) GetKeyWithValue(value V) (K, bool) {
-	m.rLock()
-	defer m.rUnlock()
+	if m.rLock() {
+		defer m.rUnlock()
+	}
 
 	var foundKey K
 	var found bool
@@ -110,8 +114,9 @@ func (m *Map[K, V]) GetKeyWithValue(value V) (K, bool) {
 
 // GetKeys returns values for the given keys
 func (m *Map[K, V]) GetKeys(keys ...K) []V {
-	m.rLock()
-	defer m.rUnlock()
+	if m.rLock() {
+		defer m.rUnlock()
+	}
 
 	result := make([]V, 0, len(keys))
 	for _, key := range keys {
@@ -125,8 +130,9 @@ func (m *Map[K, V]) GetKeys(keys ...K) []V {
 
 // GetOrDefault returns the value for key or defaultValue if key is not found
 func (m *Map[K, V]) GetOrDefault(key K, defaultValue V) V {
-	m.rLock()
-	defer m.rUnlock()
+	if m.rLock() {
+		defer m.rUnlock()
+	}
 
 	if val, ok := m.data.Get(key); ok {
 		return val
@@ -139,8 +145,9 @@ func (m *Map[K, V]) GetOrDefault(key K, defaultValue V) V {
 //
 // The index is 0-based and must be less than the number of elements in the map
 func (m *Map[K, V]) GetByIndex(idx int) (V, bool) {
-	m.rLock()
-	defer m.rUnlock()
+	if m.rLock() {
+		defer m.rUnlock()
+	}
 
 	var value V
 
@@ -154,8 +161,9 @@ func (m *Map[K, V]) GetByIndex(idx int) (V, bool) {
 
 // Has checks if a key exists in the map
 func (m *Map[K, V]) Has(key K) bool {
-	m.rLock()
-	defer m.rUnlock()
+	if m.rLock() {
+		defer m.rUnlock()
+	}
 
 	_, ok := m.data.Get(key)
 
@@ -164,8 +172,9 @@ func (m *Map[K, V]) Has(key K) bool {
 
 // IsEmpty returns true if the map contains no elements
 func (m *Map[K, V]) IsEmpty() bool {
-	m.rLock()
-	defer m.rUnlock()
+	if m.rLock() {
+		defer m.rUnlock()
+	}
 
 	return m.data.Len() == 0
 }
@@ -181,8 +190,9 @@ func (m *Map[K, V]) Merge(n map[K]V) {
 func (m *Map[K, V]) Set(key K, value V) {
 	exists := m.Has(key)
 
-	m.lock()
-	defer m.unlock()
+	if m.lock() {
+		defer m.unlock()
+	}
 
 	if !exists {
 		m.keys = append(m.keys, key)
@@ -199,8 +209,9 @@ func (m *Map[K, V]) Set(key K, value V) {
 
 // MarshalJSON marshals the map to JSON
 func (m *Map[K, V]) MarshalJSON() ([]byte, error) {
-	m.rLock()
-	defer m.rUnlock()
+	if m.rLock() {
+		defer m.rUnlock()
+	}
 
 	target := make(map[K]V)
 
@@ -217,8 +228,9 @@ func (m *Map[K, V]) MarshalJSON() ([]byte, error) {
 //
 // The map is merged with the input data.
 func (m *Map[K, V]) UnmarshalJSON(buf []byte) error {
-	m.lock()
-	defer m.unlock()
+	if m.lock() {
+		defer m.unlock()
+	}
 
 	target := make(map[K]V)
 
