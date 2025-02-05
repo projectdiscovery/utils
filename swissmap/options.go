@@ -7,6 +7,7 @@ type Option[K ComparableOrdered, V any] func(*Map[K, V])
 func WithCapacity[K ComparableOrdered, V any](capacity int) Option[K, V] {
 	return func(m *Map[K, V]) {
 		m.data.Init(capacity)
+		m.keys = make([]K, 0, capacity)
 	}
 }
 
