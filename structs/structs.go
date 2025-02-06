@@ -1,6 +1,9 @@
 package structs
 
-import "reflect"
+import (
+	"errors"
+	"reflect"
+)
 
 // CallbackFunc on the struct field
 // example:
@@ -34,4 +37,66 @@ func Walk(s interface{}, callback CallbackFunc) {
 			callback(field, fieldType)
 		}
 	}
+}
+
+// FilterStruct filters the struct based on include and exclude fields and returns a new struct.
+// - input: the original struct.
+// - includeFields: list of fields to include (if empty, includes all).
+// - excludeFields: list of fields to exclude (processed after include).
+func FilterStruct(input interface{}, includeFields, excludeFields []string) (interface{}, error) {
+	val := reflect.ValueOf(input)
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+
+	if val.Kind() != reflect.Struct {
+		return nil, errors.New("input must be a struct")
+	}
+
+	includeMap := make(map[string]bool)
+	excludeMap := make(map[string]bool)
+
+	for _, field := range includeFields {
+		includeMap[field] = true
+	}
+	for _, field := range excludeFields {
+		excludeMap[field] = true
+	}
+
+	typeOfStruct := val.Type()
+	filteredStruct := reflect.New(typeOfStruct).Elem()
+
+	for i := 0; i < val.NumField(); i++ {
+		field := typeOfStruct.Field(i)
+		fieldName := field.Name
+		fieldValue := val.Field(i)
+
+		if (len(includeMap) == 0 || includeMap[fieldName]) && !excludeMap[fieldName] {
+			filteredStruct.Field(i).Set(fieldValue)
+		}
+	}
+
+	return filteredStruct.Interface(), nil
+}
+
+// GetStructFields returns all the top-level field names from the given struct.
+// - input: the original struct.
+// Returns a slice of field names or an error if the input is not a struct.
+func GetStructFields(input interface{}) ([]string, error) {
+	val := reflect.ValueOf(input)
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+
+	if val.Kind() != reflect.Struct {
+		return nil, errors.New("input must be a struct")
+	}
+
+	fields := make([]string, 0, val.NumField())
+	typeOfStruct := val.Type()
+	for i := 0; i < val.NumField(); i++ {
+		fields = append(fields, typeOfStruct.Field(i).Name)
+	}
+
+	return fields, nil
 }
