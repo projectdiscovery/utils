@@ -22,7 +22,7 @@ type Map[K ComparableOrdered, V any] struct {
 	api        sonic.API
 	data       *swiss.Map[K, V]
 	keys       []K
-	mutex      sync.RWMutex
+	mutex      sync.Mutex
 	concurrent bool
 	sorted     bool
 }
@@ -59,17 +59,15 @@ func (m *Map[K, V]) Clear() bool {
 	m.data.Clear()
 
 	// Reuse existing slice capacity
-	m.keys = m.keys[:0]
+	if m.sorted {
+		m.keys = m.keys[:0]
+	}
 
 	return hadElements
 }
 
 // Clone returns a new Map with a copy of the underlying data
 func (m *Map[K, V]) Clone() *Map[K, V] {
-	if m.rLock() {
-		defer m.rUnlock()
-	}
-
 	clone := New[K, V]()
 	m.data.All(func(key K, value V) bool {
 		clone.data.Put(key, value)
@@ -82,19 +80,11 @@ func (m *Map[K, V]) Clone() *Map[K, V] {
 
 // Get retrieves a value from the map
 func (m *Map[K, V]) Get(key K) (V, bool) {
-	if m.rLock() {
-		defer m.rUnlock()
-	}
-
 	return m.data.Get(key)
 }
 
 // GetKeyWithValue retrieves the first key associated with the given value
 func (m *Map[K, V]) GetKeyWithValue(value V) (K, bool) {
-	if m.rLock() {
-		defer m.rUnlock()
-	}
-
 	var foundKey K
 	var found bool
 
@@ -114,10 +104,6 @@ func (m *Map[K, V]) GetKeyWithValue(value V) (K, bool) {
 
 // GetKeys returns values for the given keys
 func (m *Map[K, V]) GetKeys(keys ...K) []V {
-	if m.rLock() {
-		defer m.rUnlock()
-	}
-
 	result := make([]V, 0, len(keys))
 	for _, key := range keys {
 		if val, ok := m.data.Get(key); ok {
@@ -130,10 +116,6 @@ func (m *Map[K, V]) GetKeys(keys ...K) []V {
 
 // GetOrDefault returns the value for key or defaultValue if key is not found
 func (m *Map[K, V]) GetOrDefault(key K, defaultValue V) V {
-	if m.rLock() {
-		defer m.rUnlock()
-	}
-
 	if val, ok := m.data.Get(key); ok {
 		return val
 	}
@@ -145,26 +127,38 @@ func (m *Map[K, V]) GetOrDefault(key K, defaultValue V) V {
 //
 // The index is 0-based and must be less than the number of elements in the map
 func (m *Map[K, V]) GetByIndex(idx int) (V, bool) {
-	if m.rLock() {
-		defer m.rUnlock()
-	}
-
 	var value V
+	var ok bool = false
 
 	// Return early if index out of range
 	if idx < 0 || idx >= m.data.Len() {
-		return value, false
+		return value, ok
 	}
 
-	return m.data.Get(m.keys[idx])
+	if m.sorted {
+		value, _ = m.data.Get(m.keys[idx])
+		ok = true
+	} else {
+		i := 0
+		m.data.All(func(key K, val V) bool {
+			if i == idx {
+				value = val
+				return false
+			}
+
+			i++
+
+			return true
+		})
+
+		ok = (i == idx)
+	}
+
+	return value, ok
 }
 
 // Has checks if a key exists in the map
 func (m *Map[K, V]) Has(key K) bool {
-	if m.rLock() {
-		defer m.rUnlock()
-	}
-
 	_, ok := m.data.Get(key)
 
 	return ok
@@ -172,10 +166,6 @@ func (m *Map[K, V]) Has(key K) bool {
 
 // IsEmpty returns true if the map contains no elements
 func (m *Map[K, V]) IsEmpty() bool {
-	if m.rLock() {
-		defer m.rUnlock()
-	}
-
 	return m.data.Len() == 0
 }
 
@@ -188,32 +178,42 @@ func (m *Map[K, V]) Merge(n map[K]V) {
 
 // Set inserts or updates a key/value pair
 func (m *Map[K, V]) Set(key K, value V) {
-	exists := m.Has(key)
-
 	if m.lock() {
 		defer m.unlock()
 	}
 
-	if !exists {
-		m.keys = append(m.keys, key)
-		if m.sorted {
+	m.data.Put(key, value)
+
+	if m.sorted {
+		if exists := m.Has(key); !exists {
+			m.keys = append(m.keys, key)
 			// NOTE(dwisiswant0): It may cause a panic if the key is not comparable
 			slices.SortStableFunc(m.keys, func(a, b K) int {
 				return cmp.Compare(a, b)
 			})
 		}
 	}
+}
 
-	m.data.Put(key, value)
+// Iterate iterates over the [Map]
+func (m *Map[K, V]) Iterate(fn func(key K, value V) bool) {
+	if m.sorted {
+		for _, key := range m.keys {
+			value, ok := m.data.Get(key)
+			if ok && !fn(key, value) {
+				break
+			}
+		}
+	} else {
+		m.data.All(func(key K, value V) bool {
+			return fn(key, value)
+		})
+	}
 }
 
 // MarshalJSON marshals the map to JSON
 func (m *Map[K, V]) MarshalJSON() ([]byte, error) {
-	if m.rLock() {
-		defer m.rUnlock()
-	}
-
-	target := make(map[K]V)
+	target := make(map[K]V, m.data.Len())
 
 	m.data.All(func(key K, value V) bool {
 		target[key] = value
