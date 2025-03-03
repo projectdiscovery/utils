@@ -17,6 +17,11 @@ updates:
       include: "scope"
     allow:
       - dependency-name: "github.com/projectdiscovery/*"
+    groups:
+      modules:
+        patterns: ["github.com/projectdiscovery/*"]
+    labels:
+      - "Type: Maintenance"
 
 #  # Maintain dependencies for docker
 #  - package-ecosystem: "docker"
