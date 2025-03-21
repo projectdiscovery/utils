@@ -37,6 +37,22 @@ func Dedupe[T comparable](inputSlice []T) (result []T) {
 	return
 }
 
+// DedupeFunc removes duplicates from a slice of elements using a key function
+// The key function is used to return a key for each element in the slice
+// and then the key is used to check for duplicates
+func DedupeFunc[T any](inputSlice []T, keyFunc func(T) any) (result []T) {
+	seen := make(map[any]struct{})
+	for _, inputValue := range inputSlice {
+		key := keyFunc(inputValue)
+		if _, ok := seen[key]; !ok {
+			seen[key] = struct{}{}
+			result = append(result, inputValue)
+		}
+	}
+
+	return
+}
+
 // PickRandom item from a slice of elements
 func PickRandom[T any](v []T) T {
 	return v[rand.Intn(len(v))]
