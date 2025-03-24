@@ -1,6 +1,7 @@
 package sliceutil
 
 import (
+	"strings"
 	"testing"
 
 	osutils "github.com/projectdiscovery/utils/os"
@@ -307,4 +308,77 @@ func TestVisitRandomZero(t *testing.T) {
 		require.ElementsMatch(t, intSlice, res)
 	}
 	require.True(t, timesDifferent > 0)
+}
+
+func TestDedupeFunc(t *testing.T) {
+	t.Run("basic-string-deduplication", func(t *testing.T) {
+		input := []string{"hello", "HELLO", "world", "WORLD"}
+		result := DedupeFunc(input, func(s string) any { return strings.ToLower(s) })
+		require.Equal(t, []string{"hello", "world"}, result)
+	})
+
+	t.Run("struct-deduplication", func(t *testing.T) {
+		type Person struct {
+			ID   int
+			Name string
+		}
+		input := []Person{
+			{ID: 1, Name: "Alice"},
+			{ID: 2, Name: "Bob"},
+			{ID: 1, Name: "Alice Different"}, // Same ID, different name
+			{ID: 3, Name: "Charlie"},
+		}
+		result := DedupeFunc(input, func(p Person) any {
+			return p.ID
+		})
+		require.Equal(t, []Person{
+			{ID: 1, Name: "Alice"},
+			{ID: 2, Name: "Bob"},
+			{ID: 3, Name: "Charlie"},
+		}, result)
+	})
+
+	t.Run("empty-slice", func(t *testing.T) {
+		var input []int
+		result := DedupeFunc(input, func(i int) any { return i })
+		require.Empty(t, result)
+	})
+
+	t.Run("multiple-field-key", func(t *testing.T) {
+		type Event struct {
+			Date     string
+			Category string
+			Value    int
+		}
+		input := []Event{
+			{"2024-01-01", "A", 1},
+			{"2024-01-01", "A", 2}, // Same date and category
+			{"2024-01-01", "B", 3},
+			{"2024-01-02", "A", 4},
+		}
+		result := DedupeFunc(input, func(e Event) any {
+			return e.Date + "-" + e.Category
+		})
+		require.Equal(t, []Event{
+			{"2024-01-01", "A", 1},
+			{"2024-01-01", "B", 3},
+			{"2024-01-02", "A", 4},
+		}, result)
+	})
+
+	t.Run("nil-key-function", func(t *testing.T) {
+		input := []int{1, 2, 2, 3}
+		result := DedupeFunc(input, func(i int) any {
+			if i == 2 {
+				return nil
+			}
+			return i
+		})
+		require.Equal(t, []int{1, 2, 3}, result)
+	})
+	t.Run("nil-key-func", func(t *testing.T) {
+		input := []string{"a", "b", "c"}
+		res := DedupeFunc(input, nil)
+		require.Equal(t, input, res)
+	})
 }
