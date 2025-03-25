@@ -34,7 +34,7 @@ func TestFilterStruct(t *testing.T) {
 		{
 			name:          "include specific fields",
 			input:         s,
-			includeFields: []string{"Name", "Age"},
+			includeFields: []string{"name", "Age"},
 			excludeFields: []string{},
 			want: TestStruct{
 				Name: "John",
@@ -46,7 +46,7 @@ func TestFilterStruct(t *testing.T) {
 			name:          "exclude specific fields",
 			input:         s,
 			includeFields: []string{},
-			excludeFields: []string{"Address"},
+			excludeFields: []string{"address"},
 			want: TestStruct{
 				Name: "John",
 				Age:  30,
@@ -95,7 +95,7 @@ func TestGetStructFields(t *testing.T) {
 		{
 			name:    "valid struct",
 			input:   s,
-			want:    []string{"Name", "Age", "Address"},
+			want:    []string{"name", "age", "address"},
 			wantErr: false,
 		},
 		{
