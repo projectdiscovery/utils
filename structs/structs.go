@@ -3,6 +3,7 @@ package structs
 import (
 	"errors"
 	"reflect"
+	"strings"
 )
 
 // CallbackFunc on the struct field
@@ -58,10 +59,10 @@ func FilterStruct[T any](input T, includeFields, excludeFields []string) (T, err
 	excludeMap := make(map[string]bool)
 
 	for _, field := range includeFields {
-		includeMap[field] = true
+		includeMap[strings.ToLower(field)] = true
 	}
 	for _, field := range excludeFields {
-		excludeMap[field] = true
+		excludeMap[strings.ToLower(field)] = true
 	}
 
 	typeOfStruct := val.Type()
@@ -69,7 +70,7 @@ func FilterStruct[T any](input T, includeFields, excludeFields []string) (T, err
 
 	for i := 0; i < val.NumField(); i++ {
 		field := typeOfStruct.Field(i)
-		fieldName := field.Name
+		fieldName := strings.ToLower(field.Name)
 		fieldValue := val.Field(i)
 
 		if (len(includeMap) == 0 || includeMap[fieldName]) && !excludeMap[fieldName] {
@@ -96,7 +97,7 @@ func GetStructFields[T any](input T) ([]string, error) {
 	fields := make([]string, 0, val.NumField())
 	typeOfStruct := val.Type()
 	for i := 0; i < val.NumField(); i++ {
-		fields = append(fields, typeOfStruct.Field(i).Name)
+		fields = append(fields, strings.ToLower(typeOfStruct.Field(i).Name))
 	}
 
 	return fields, nil
