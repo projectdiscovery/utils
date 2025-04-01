@@ -313,6 +313,23 @@ func (e *ErrorX) SetAttr(s ...slog.Attr) *ErrorX {
 
 // parseError recursively parses all known types of errors
 func parseError(to *ErrorX, err error) {
+	// guard against panics in external libraries calls
+	defer func() {
+		if r := recover(); r != nil {
+			// Convert panic to error and append it as the last error
+			var panicErr error
+			switch v := r.(type) {
+			case error:
+				panicErr = fmt.Errorf("error while unwrapping: %w", v)
+			case string:
+				panicErr = fmt.Errorf("error while unwrapping: %s", v)
+			default:
+				panicErr = fmt.Errorf("error while unwrapping: panic: %v", r)
+			}
+			to.append(panicErr)
+		}
+	}()
+
 	if err == nil {
 		return
 	}
@@ -393,7 +410,7 @@ func parseError(to *ErrorX, err error) {
 				parseError(to, errors.New(part))
 			}
 		} else {
-			// this cannot be furthur unwrapped
+			// this cannot be further unwrapped
 			to.append(err)
 		}
 	}
