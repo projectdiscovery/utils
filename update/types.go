@@ -82,7 +82,7 @@ func IsOutdated(current, latest string) bool {
 		// fallback to naive comparison
 		return current != latest
 	}
-	return latestVer.GreaterThan(currentVer)
+	return currentVer.LessThan(latestVer)
 }
 
 // IsDevReleaseOutdated returns true if installed tool (dev version) is outdated
