@@ -15,8 +15,10 @@ func main() {
 		Once:    &sync.Once{},
 	}
 
-	stdr.Start()
-	defer stdr.Stop()
+	_ = stdr.Start()
+	defer func() {
+		_ = stdr.Stop()
+	}()
 
 	for {
 		data := make([]byte, stdr.BufferSize)

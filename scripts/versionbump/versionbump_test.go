@@ -114,7 +114,9 @@ func TestBumpVersionCLI(t *testing.T) {
 				t.Fatalf("Cannot create temporary file: %s", err)
 			}
 
-			defer os.Remove(tempFile.Name())
+			defer func() {
+				_ = os.Remove(tempFile.Name())
+			}()
 
 			_, err = tempFile.Write([]byte(tc.fileContent))
 			if err != nil {

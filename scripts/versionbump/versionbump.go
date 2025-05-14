@@ -69,7 +69,9 @@ func bumpVersion(fileName, varName, part string) (string, string, error) {
 	if err != nil {
 		return oldVersion, newVersion, fmt.Errorf("could not open file: %w", err)
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 
 	if err := format.Node(f, fset, node); err != nil {
 		return oldVersion, newVersion, fmt.Errorf("could not write to file: %w", err)

@@ -25,12 +25,14 @@ const (
 
 // FileExtension of this asset format
 func (a AssetFormat) FileExtension() string {
-	if a == Zip {
+	switch a {
+	case Zip:
 		return ".zip"
-	} else if a == Tar {
+	case Tar:
 		return ".tar.gz"
+	default:
+		return ""
 	}
-	return ""
 }
 
 func IdentifyAssetFormat(assetName string) AssetFormat {

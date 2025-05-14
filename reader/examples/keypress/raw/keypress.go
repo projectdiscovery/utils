@@ -16,8 +16,10 @@ func main() {
 		Raw:     true,
 	}
 
-	stdr.Start()
-	defer stdr.Stop()
+	_ = stdr.Start()
+	defer func() {
+		_ = stdr.Stop()
+	}()
 
 	for {
 		data := make([]byte, 1)

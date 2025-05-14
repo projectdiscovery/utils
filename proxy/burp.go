@@ -22,7 +22,9 @@ func IsBurp(proxyURL string) (bool, error) {
 			return false, err
 		}
 
-		defer resp.Body.Close()
+		defer func() {
+			_ = resp.Body.Close()
+		}()
 
 		return bytes.Contains(body, []byte("Burp Suite")), nil
 	})
@@ -40,7 +42,10 @@ func ValidateOne(proxies ...string) (string, error) {
 			if err != nil {
 				return false, err
 			}
-			defer resp.Body.Close()
+
+			defer func() {
+				_ = resp.Body.Close()
+			}()
 
 			return len(body) > 0, nil
 		})

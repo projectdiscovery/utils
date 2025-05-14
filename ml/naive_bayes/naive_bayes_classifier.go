@@ -58,7 +58,9 @@ func NewClassifierFromFile(path string) (*NaiveBayesClassifier, error) {
 	if err != nil {
 		return classifier, err
 	}
-	defer fl.Close()
+	defer func() {
+		_ = fl.Close()
+	}()
 
 	return NewClassifierWithReader(fl)
 }
@@ -85,7 +87,9 @@ func (c *NaiveBayesClassifier) SaveClassifierToFile(path string) error {
 	if err != nil {
 		return err
 	}
-	defer fl.Close()
+	defer func() {
+		_ = fl.Close()
+	}()
 
 	err = gob.NewEncoder(fl).Encode(&c)
 	if err != nil {

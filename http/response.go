@@ -49,7 +49,9 @@ func DumpResponseIntoBuffer(resp *http.Response, body bool, buff *bytes.Buffer) 
 
 // DrainResponseBody drains the response body and closes it.
 func DrainResponseBody(resp *http.Response) {
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	// don't reuse connection and just close if body length is more than 2 * MaxBodyRead
 	// to avoid DOS
 	_, _ = io.CopyN(io.Discard, resp.Body, 2*MaxBodyRead)

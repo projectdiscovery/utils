@@ -120,7 +120,9 @@ func (p *PDCPCredHandler) ValidateAPIKey(key string, host string, toolName strin
 		_ = resp.Body.Close()
 		return nil, fmt.Errorf("invalid status code: %d", resp.StatusCode)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	bin, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err

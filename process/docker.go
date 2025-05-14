@@ -23,7 +23,9 @@ func RunningInContainer() (bool, string) {
 	if err != nil {
 		return false, ""
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 	buff := bufio.NewScanner(f)
 	for buff.Scan() {
 		if strings.Contains(buff.Text(), "/docker") {
@@ -38,7 +40,9 @@ func RunningInContainer() (bool, string) {
 	if err != nil {
 		return false, ""
 	}
-	defer f2.Close()
+	defer func() {
+		_ = f2.Close()
+	}()
 	buff2 := bufio.NewScanner(f2)
 	for buff2.Scan() {
 		if strings.Contains(buff2.Text(), "/docker") {

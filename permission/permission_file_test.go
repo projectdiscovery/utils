@@ -15,8 +15,12 @@ func TestFilePermissions(t *testing.T) {
 		file, err := os.CreateTemp("", "testfile")
 		require.Nil(t, err, "Failed to create test file: %v", err)
 		testFileName := file.Name()
-		defer os.Remove(testFileName)
-		defer file.Close()
+		defer func() {
+			_ = os.Remove(testFileName)
+		}()
+		defer func() {
+			_ = file.Close()
+		}()
 
 		// Set the file permissions
 		err = file.Chmod(os.FileMode(AllReadWriteExecute))
@@ -35,8 +39,12 @@ func TestFilePermissions(t *testing.T) {
 		require.Nil(t, err, "Failed to create test file: %v", err)
 
 		testFileName := file.Name()
-		defer os.Remove(testFileName)
-		defer file.Close()
+		defer func() {
+			_ = os.Remove(testFileName)
+		}()
+		defer func() {
+			_ = file.Close()
+		}()
 
 		// Set the file permissions
 		err = file.Chmod(os.FileMode(UserReadWriteExecute))
@@ -56,8 +64,10 @@ func TestFilePermissions(t *testing.T) {
 		require.Nil(t, err, "Failed to create test file: %v", err)
 
 		testFileName := file.Name()
-		defer os.Remove(testFileName)
-		defer file.Close()
+		defer func() {
+			_ = file.Close()
+			_ = os.Remove(testFileName)
+		}()
 
 		// Set the file permissions
 		err = file.Chmod(os.FileMode(UserReadWriteExecute | GroupReadWriteExecute))
@@ -77,7 +87,9 @@ func TestUpdateFilePerm(t *testing.T) {
 	// Create a temporary file for testing
 	tempFile, err := os.CreateTemp("", "testfile")
 	require.Nil(t, err, "Error creating temp file: %v", err)
-	defer os.Remove(tempFile.Name())
+	defer func() {
+		_ = os.Remove(tempFile.Name())
+	}()
 
 	// Set the desired file permissions
 	expectedPermissions := AllReadWrite
