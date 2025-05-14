@@ -1,6 +1,7 @@
 package regexp
 
 import (
+	"os"
 	"regexp"
 
 	"github.com/dlclark/regexp2"
@@ -85,6 +86,22 @@ func compileWithStandard(pattern string) (*Regexp, error) {
 
 // compileWithRE2 attempts to compile the pattern with the RE2 engine
 func compileWithRE2(pattern string) (*Regexp, error) {
+	originalStderr := os.Stderr
+	devNull, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0666)
+	if err != nil {
+		// If we can't open os.DevNull, we can't suppress stderr.
+		// Proceed without suppression, or return an error.
+		// For now, let's proceed without suppression and let re2.Compile behave as usual.
+		// Alternatively, we could log this issue or return a specific error.
+		// log.Printf("Warning: could not open os.DevNull to suppress stderr: %v", err)
+	} else {
+		os.Stderr = devNull
+		defer func() {
+			os.Stderr = originalStderr
+			devNull.Close()
+		}()
+	}
+
 	re, err := re2.Compile(pattern)
 	if err != nil {
 		return nil, err
