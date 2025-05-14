@@ -234,10 +234,13 @@ func (r *Regexp) FindStringSubmatch(s string) []string {
 		if match == nil {
 			return nil
 		}
-		// Convert regexp2 groups to string slice
-		groups := make([]string, match.GroupCount()+1)
-		for i := 0; i <= match.GroupCount(); i++ {
-			groups[i] = match.GroupByNumber(i).String()
+		matchGroups := match.Groups()
+		if len(matchGroups) == 0 {
+			return nil
+		}
+		groups := make([]string, len(matchGroups))
+		for i, group := range matchGroups {
+			groups[i] = group.String()
 		}
 		return groups
 	case EngineRE2:
