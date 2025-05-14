@@ -157,9 +157,11 @@ func RunSafe(cmd ...string) (string, error) {
 		return "", errkit.WithMessage(err, "failed to create stdout pipe")
 	}
 
-	defer in.Close()
-	defer errorOut.Close()
-	defer out.Close()
+	defer func() {
+		_ = in.Close()
+		_ = errorOut.Close()
+		_ = out.Close()
+	}()
 
 	if err := cmdExec.Start(); err != nil {
 		return "", errkit.Wrap(err, "failed to start command")
@@ -199,9 +201,11 @@ func RunSh(cmd ...string) (string, error) {
 		return "", errkit.WithMessage(err, "failed to create stdout pipe")
 	}
 
-	defer in.Close()
-	defer errorOut.Close()
-	defer out.Close()
+	defer func() {
+		_ = in.Close()
+		_ = errorOut.Close()
+		_ = out.Close()
+	}()
 
 	if err := cmdExec.Start(); err != nil {
 		errorData, _ := io.ReadAll(errorOut)
@@ -257,9 +261,11 @@ func RunPS(cmd string) (string, error) {
 		return "", errkit.WithMessage(err, "failed to create stdout pipe")
 	}
 
-	defer in.Close()
-	defer errorOut.Close()
-	defer out.Close()
+	defer func() {
+		_ = in.Close()
+		_ = errorOut.Close()
+		_ = out.Close()
+	}()
 
 	if err := cmdExec.Start(); err != nil {
 		return "", errkit.WithMessage(err, "start powershell.exe process error")

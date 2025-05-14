@@ -146,7 +146,7 @@ func (u *URL) UpdatePort(newport string) {
 	if newport == "" {
 		return
 	}
-	if u.URL.Port() != "" {
+	if u.Port() != "" {
 		u.Host = strings.Replace(u.Host, u.Port(), newport, 1)
 		return
 	}
@@ -155,7 +155,7 @@ func (u *URL) UpdatePort(newport string) {
 
 // TrimPort if any
 func (u *URL) TrimPort() {
-	u.URL.Host = u.Hostname()
+	u.Host = u.Hostname()
 }
 
 // parseRelativePath parses relative path from Original Path without relying on
@@ -219,7 +219,6 @@ func (u *URL) fetchParams() {
 	}
 	u.Update()
 }
-
 
 // copy parsed data from src to dst this does not include fragment or params
 func copy(dst *url.URL, src *url.URL) {

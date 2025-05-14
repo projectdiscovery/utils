@@ -128,7 +128,9 @@ func GetToolVersionCallback(toolName, version string) func() (string, error) {
 			return "", errorutil.NewWithErr(err).Msgf("http Get %v failed", updateURL).WithTag("updater")
 		}
 		if resp.Body != nil {
-			defer resp.Body.Close()
+			defer func() {
+				_ = resp.Body.Close()
+			}()
 		}
 		if resp.StatusCode != 200 {
 			return "", errorutil.NewWithTag("updater", "version check failed expected status 200 but got %v for GET %v", resp.StatusCode, updateURL)

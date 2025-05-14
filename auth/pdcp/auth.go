@@ -96,6 +96,8 @@ func readPasswordFromUnix() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer tty.Close()
+	defer func() {
+		_ = tty.Close()
+	}()
 	return term.ReadPassword(int(tty.Fd()))
 }

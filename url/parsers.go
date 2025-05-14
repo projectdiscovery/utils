@@ -88,7 +88,7 @@ func ParseAbsoluteURL(inputURL string, unsafe bool) (*URL, error) {
 	if u.IsRelative {
 		return nil, errorutil.NewWithTag("urlutil", "expected absolute url but got relative url input=%v,path=%v", inputURL, u.Path)
 	}
-	if u.URL.Host == "" {
+	if u.Host == "" {
 		return nil, errorutil.NewWithTag("urlutil", "something went wrong got empty host for absolute url=%v", inputURL)
 	}
 	return u, nil

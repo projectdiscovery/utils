@@ -90,7 +90,9 @@ func (d *GHReleaseDownloader) DownloadTool() (*bytes.Buffer, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if !HideProgressBar {
 		bar := pb.New64(resp.ContentLength).SetMaxWidth(100)
@@ -130,7 +132,9 @@ func (d *GHReleaseDownloader) GetReleaseChecksums() (map[string]string, error) {
 	if err != nil {
 		return nil, errorutil.NewWithErr(err).Msgf("failed to download checksum file")
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	bin, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, errorutil.NewWithErr(err).Msgf("failed to read checksum file")
@@ -202,7 +206,9 @@ func (d *GHReleaseDownloader) DownloadAssetWithName(assetname string, showProgre
 	if err != nil {
 		return nil, errorutil.NewWithErr(err).Msgf("failed to download asset %v", assetname)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if showProgressBar {
 		bar := pb.New64(resp.ContentLength).SetMaxWidth(100)
@@ -226,7 +232,9 @@ func (d *GHReleaseDownloader) DownloadSourceWithCallback(showProgressBar bool, c
 	if err != nil {
 		return errorutil.NewWithErr(err).Msgf("failed to source of %v", d.repoName)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	if showProgressBar {
 		bar := pb.New64(resp.ContentLength).SetMaxWidth(100)
 		bar.Start()

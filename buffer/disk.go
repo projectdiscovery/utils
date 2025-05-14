@@ -47,6 +47,6 @@ func (db *DiskBuffer) Reader() (io.ReadSeekCloser, error) {
 
 func (db *DiskBuffer) Close() {
 	name := db.f.Name()
-	db.f.Close()
-	os.RemoveAll(name)
+	_ = db.f.Close()
+	_ = os.RemoveAll(name)
 }

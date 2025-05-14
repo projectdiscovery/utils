@@ -24,7 +24,7 @@ func TestDumpResponseHeadersAndRaw(t *testing.T) {
 	expectedResponseBody := "Hello, client"
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Del("Date")
-		fmt.Fprintln(w, expectedResponseBody)
+		_, _ = fmt.Fprintln(w, expectedResponseBody)
 	}))
 	defer ts.Close()
 

@@ -57,7 +57,9 @@ func TestConnReadN(t *testing.T) {
 		conn, err := tls.Dial("tcp", "projectdiscovery.io:443", &tls.Config{InsecureSkipVerify: true})
 		_ = conn.SetReadDeadline(time.Now().Add(5 * time.Second))
 		require.Nil(t, err, "could not connect to projectdiscovery.io over tls")
-		defer conn.Close()
+		defer func() {
+			_ = conn.Close()
+		}()
 		_, err = conn.Write([]byte("GET / HTTP/1.1\r\nHost: projectdiscovery.io\r\nConnection: close\r\n\r\n"))
 		require.Nil(t, err, "could not write to connection")
 		data, err := ConnReadNWithTimeout(conn, -1, timeout)
@@ -69,7 +71,9 @@ func TestConnReadN(t *testing.T) {
 		conn, err := tls.Dial("tcp", "projectdiscovery.io:443", &tls.Config{InsecureSkipVerify: true})
 		_ = conn.SetReadDeadline(time.Now().Add(5 * time.Second))
 		require.Nil(t, err, "could not connect to projectdiscovery.io over tls")
-		defer conn.Close()
+		defer func() {
+			_ = conn.Close()
+		}()
 		_, err = conn.Write([]byte("GET / HTTP/1.1\r\nHost: projectdiscovery.io\r\n\r\n"))
 		require.Nil(t, err, "could not write to connection")
 		data, err := ConnReadNWithTimeout(conn, -1, timeout)
