@@ -31,6 +31,7 @@ type Regexp struct {
 	regexp2  *regexp2.Regexp
 	re2      *re2.Regexp
 	engine   EngineType
+	pattern  string // Store the original pattern
 }
 
 // WithEngine sets the regexp engine type
@@ -78,6 +79,7 @@ func compileWithStandard(pattern string) (*Regexp, error) {
 	return &Regexp{
 		standard: re,
 		engine:   EngineStandard,
+		pattern:  pattern, // Store the pattern
 	}, nil
 }
 
@@ -88,8 +90,9 @@ func compileWithRE2(pattern string) (*Regexp, error) {
 		return nil, err
 	}
 	return &Regexp{
-		re2:    re,
-		engine: EngineRE2,
+		re2:     re,
+		engine:  EngineRE2,
+		pattern: pattern, // Store the pattern
 	}, nil
 }
 
@@ -102,13 +105,15 @@ func compileWithRegexp2(pattern string) (*Regexp, error) {
 	return &Regexp{
 		regexp2: re,
 		engine:  EngineRegexp2,
+		pattern: pattern, // Store the pattern
 	}, nil
 }
 
 // Compile creates a new Regexp with the given pattern and options
 func Compile(pattern string, opts ...Option) (*Regexp, error) {
 	r := &Regexp{
-		engine: EngineStandard, // default engine
+		engine:  EngineStandard, // default engine
+		pattern: pattern,        // Store the pattern
 	}
 
 	// Apply options
@@ -262,5 +267,19 @@ func (r *Regexp) FindStringSubmatchIndex(s string) []int {
 		return r.re2.FindStringSubmatchIndex(s)
 	default:
 		return r.standard.FindStringSubmatchIndex(s)
+	}
+}
+
+// String returns the original regular expression pattern.
+// For standard and RE2 engines, it calls their String() method.
+// For Regexp2, it returns the stored pattern as Regexp2.String() returns the FSM.
+func (r *Regexp) String() string {
+	switch r.engine {
+	case EngineRegexp2:
+		return r.pattern // Return stored pattern for regexp2
+	case EngineRE2:
+		return r.re2.String()
+	default: // EngineStandard
+		return r.standard.String()
 	}
 }
