@@ -11,7 +11,9 @@ func TestCheckPathPermission(t *testing.T) {
 	t.Run("file with read and write permissions", func(t *testing.T) {
 		filename := "testfile_read_write.txt"
 		_, err := os.Create(filename)
-		defer os.Remove(filename)
+		defer func() {
+			_ = os.Remove(filename)
+		}()
 		assert.NoError(t, err)
 
 		permission := CheckPathPermission(filename)
@@ -34,7 +36,9 @@ func TestCheckPathPermission(t *testing.T) {
 		err = file.Chmod(0444) // read-only permissions
 		assert.NoError(t, err)
 
-		defer os.Remove(filename)
+		defer func() {
+			_ = os.Remove(filename)
+		}()
 		permission := CheckPathPermission(filename)
 
 		assert.NoError(t, permission.Error)

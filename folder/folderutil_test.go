@@ -35,7 +35,9 @@ func TestSyncDirectory(t *testing.T) {
 		// setup
 		// some files in a temp dir
 		sourceDir := t.TempDir()
-		defer os.RemoveAll(sourceDir)
+		defer func() {
+			_ = os.RemoveAll(sourceDir)
+		}()
 		_ = os.WriteFile(filepath.Join(sourceDir, "/file1.txt"), []byte("file1"), os.ModePerm)
 		_ = os.WriteFile(filepath.Join(sourceDir, "/file2.txt"), []byte("file2"), os.ModePerm)
 
@@ -53,7 +55,9 @@ func TestSyncDirectory(t *testing.T) {
 		// setup
 		// some files in a temp dir
 		sourceDir := t.TempDir()
-		defer os.RemoveAll(sourceDir)
+		defer func() {
+			_ = os.RemoveAll(sourceDir)
+		}()
 		_ = os.WriteFile(filepath.Join(sourceDir, "/file1.txt"), []byte("file1"), os.ModePerm)
 		_ = os.WriteFile(filepath.Join(sourceDir, "/file2.txt"), []byte("file2"), os.ModePerm)
 		_ = os.Mkdir(filepath.Join(sourceDir, "/dir1"), os.ModePerm)
@@ -62,7 +66,9 @@ func TestSyncDirectory(t *testing.T) {
 
 		// destination directory
 		destinationDir := t.TempDir()
-		defer os.RemoveAll(destinationDir)
+		defer func() {
+			_ = os.RemoveAll(destinationDir)
+		}()
 
 		// when: try to migrate files
 		err := SyncDirectory(sourceDir, destinationDir)
@@ -84,7 +90,9 @@ func TestSyncDirectory(t *testing.T) {
 		// setup
 		// some files in a temp dir
 		sourceDir := t.TempDir()
-		defer os.RemoveAll(sourceDir)
+		defer func() {
+			_ = os.RemoveAll(sourceDir)
+		}()
 		_ = os.WriteFile(filepath.Join(sourceDir, "/file1.txt"), []byte("file1"), os.ModePerm)
 		_ = os.WriteFile(filepath.Join(sourceDir, "/file2.txt"), []byte("file2"), os.ModePerm)
 		_ = os.Mkdir(filepath.Join(sourceDir, "/dir1"), os.ModePerm)
@@ -93,7 +101,9 @@ func TestSyncDirectory(t *testing.T) {
 
 		// destination directory
 		destinationDir := t.TempDir()
-		defer os.RemoveAll(destinationDir)
+		defer func() {
+			_ = os.RemoveAll(destinationDir)
+		}()
 
 		// when: try to migrate files
 		RemoveSourceDirAfterSync = false
@@ -117,7 +127,9 @@ func TestIsWritable(t *testing.T) {
 	t.Run("Test writable directory", func(t *testing.T) {
 		tempDir, err := os.MkdirTemp("", "test-dir")
 		assert.NoError(t, err)
-		defer os.RemoveAll(tempDir)
+		defer func() {
+			_ = os.RemoveAll(tempDir)
+		}()
 
 		assert.True(t, IsWritable(tempDir), "expected directory to be writable")
 	})
@@ -137,7 +149,9 @@ func TestIsWritable(t *testing.T) {
 		nonWritableDir := "non-writable-dir"
 		err := os.Mkdir(nonWritableDir, 0400)
 		assert.NoError(t, err)
-		defer os.RemoveAll(nonWritableDir)
+		defer func() {
+			_ = os.RemoveAll(nonWritableDir)
+		}()
 
 		// Make the directory non-writable.
 		err = os.Chmod(nonWritableDir, 0400)
@@ -149,7 +163,9 @@ func TestIsWritable(t *testing.T) {
 	t.Run("Test with a file instead of a directory", func(t *testing.T) {
 		tempFile, err := os.CreateTemp("", "test-file")
 		assert.NoError(t, err)
-		defer os.Remove(tempFile.Name())
+		defer func() {
+			_ = os.Remove(tempFile.Name())
+		}()
 
 		assert.False(t, IsWritable(tempFile.Name()), "expected file to not be considered a writable directory")
 	})

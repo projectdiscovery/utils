@@ -375,7 +375,7 @@ func parseError(to *ErrorX, err error) {
 		}
 	case CauseError:
 		to.append(v.Cause())
-		remaining := strings.Replace(err.Error(), v.Cause().Error(), "", -1)
+		remaining := strings.ReplaceAll(err.Error(), v.Cause().Error(), "")
 		parseError(to, errors.New(remaining))
 	default:
 		errString := err.Error()

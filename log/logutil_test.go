@@ -32,7 +32,7 @@ func TestEnableDefaultLogger(t *testing.T) {
 	}()
 	EnableDefaultLogger()
 	log.Print(msg)
-	w.Close()
+	_ = w.Close()
 	<-exit
 	os.Stderr = &stderr
 	require.Contains(t, buf.String(), msg)

@@ -21,7 +21,9 @@ func TestLoadCreds(t *testing.T) {
 	f, err := os.CreateTemp("", "creds-test-*")
 	require.Nil(t, err)
 	_, _ = f.WriteString(strings.TrimSpace(exampleCred))
-	defer os.Remove(f.Name())
+	defer func() {
+		_ = os.Remove(f.Name())
+	}()
 	PDCPCredFile = f.Name()
 	PDCPDir = filepath.Dir(f.Name())
 	h := &PDCPCredHandler{}

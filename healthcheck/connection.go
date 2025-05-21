@@ -18,7 +18,7 @@ func CheckConnection(host string, port int, protocol string, timeout time.Durati
 	address := net.JoinHostPort(host, strconv.Itoa(port))
 	conn, err := net.DialTimeout(protocol, address, timeout)
 	if conn != nil {
-		conn.Close()
+		_ = conn.Close()
 	}
 
 	return ConnectionInfo{

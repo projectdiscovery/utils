@@ -60,7 +60,9 @@ func TestDeleteFilesOlderThan(t *testing.T) {
 	sleepTime := time.Duration(3 * time.Second)
 
 	// defer temporary folder removal
-	defer os.RemoveAll(fo)
+	defer func() {
+		_ = os.RemoveAll(fo)
+	}()
 	checkFolderErr := func(err error) {
 		require.Nil(t, err, "couldn't create folder: %s", err)
 	}
@@ -71,7 +73,7 @@ func TestDeleteFilesOlderThan(t *testing.T) {
 		fi, err := os.CreateTemp(fo, "")
 		require.Nil(t, err, "couldn't create f: %s", err)
 		fName := fi.Name()
-		fi.Close()
+		_ = fi.Close()
 		return fName
 	}
 	t.Run("prefix props test", func(t *testing.T) {
@@ -181,7 +183,7 @@ func TestDownloadFile(t *testing.T) {
 	require.Nil(t, err, "couldn't create folder: %s", err)
 	fname := tmpfile.Name()
 
-	os.Remove(fname)
+	_ = os.Remove(fname)
 
 	err = DownloadFile(fname, "http://ipv4.download.thinkbroadband.com/5MB.zip")
 	require.Nil(t, err, "couldn't download file: %s", err)
@@ -189,7 +191,7 @@ func TestDownloadFile(t *testing.T) {
 	require.True(t, FileExists(fname), "file \"%s\" doesn't exists", fname)
 
 	// remove the downloaded file
-	os.Remove(fname)
+	_ = os.Remove(fname)
 }
 
 func tmpFolderName(s string) string {
@@ -211,7 +213,7 @@ func TestCreateFolders(t *testing.T) {
 
 	// remove folders
 	for _, folder := range tests {
-		os.Remove(folder)
+		_ = os.Remove(folder)
 	}
 }
 
@@ -223,7 +225,7 @@ func TestCreateFolder(t *testing.T) {
 	fexists := FolderExists(tst)
 	require.True(t, fexists, "folder %s doesn't exist", fexists)
 
-	os.Remove(tst)
+	_ = os.Remove(tst)
 }
 
 func TestHasStdin(t *testing.T) {
@@ -238,8 +240,10 @@ func TestReadFile(t *testing.T) {
 	require.Nil(t, err, "couldn't create file: %s", err)
 	fname := f.Name()
 	_, _ = f.Write([]byte(fileContent))
-	f.Close()
-	defer os.Remove(fname)
+	_ = f.Close()
+	defer func() {
+		_ = os.Remove(fname)
+	}()
 
 	fileContentLines := strings.Split(fileContent, "\n")
 	// compare file lines
@@ -260,8 +264,10 @@ func TestReadFileWithBufferSize(t *testing.T) {
 	require.Nil(t, err, "couldn't create file: %s", err)
 	fname := f.Name()
 	_, _ = f.Write([]byte(fileContent))
-	f.Close()
-	defer os.Remove(fname)
+	_ = f.Close()
+	defer func() {
+		_ = os.Remove(fname)
+	}()
 
 	fileContentLines := strings.Split(fileContent, "\n")
 	// compare file lines
@@ -278,8 +284,10 @@ func TestPermissions(t *testing.T) {
 	f, err := os.CreateTemp("", "")
 	require.Nil(t, err, "couldn't create file: %s", err)
 	fname := f.Name()
-	f.Close()
-	defer os.Remove(fname)
+	_ = f.Close()
+	defer func() {
+		_ = os.Remove(fname)
+	}()
 
 	ok, err := IsReadable(fname)
 	require.True(t, ok)
@@ -309,8 +317,10 @@ func TestReadFileWithReader(t *testing.T) {
 	require.Nil(t, err, "couldn't create file: %s", err)
 	fname := f.Name()
 	_, _ = f.Write([]byte(fileContent))
-	f.Close()
-	defer os.Remove(fname)
+	_ = f.Close()
+	defer func() {
+		_ = os.Remove(fname)
+	}()
 	fileContentLines := strings.Split(fileContent, "\n")
 	f, err = os.Open(fname)
 	require.Nil(t, err, "couldn't create file: %s", err)
@@ -321,7 +331,7 @@ func TestReadFileWithReader(t *testing.T) {
 		require.Equal(t, fileContentLines[i], line, "lines don't match")
 		i++
 	}
-	f.Close()
+	_ = f.Close()
 }
 
 func TestReadFileWithReaderAndBufferSize(t *testing.T) {
@@ -332,8 +342,10 @@ func TestReadFileWithReaderAndBufferSize(t *testing.T) {
 	require.Nil(t, err, "couldn't create file: %s", err)
 	fname := f.Name()
 	_, _ = f.Write([]byte(fileContent))
-	f.Close()
-	defer os.Remove(fname)
+	_ = f.Close()
+	defer func() {
+		_ = os.Remove(fname)
+	}()
 	fileContentLines := strings.Split(fileContent, "\n")
 	f, err = os.Open(fname)
 	require.Nil(t, err, "couldn't create file: %s", err)
@@ -344,7 +356,7 @@ func TestReadFileWithReaderAndBufferSize(t *testing.T) {
 		require.Equal(t, fileContentLines[i], line, "lines don't match")
 		i++
 	}
-	f.Close()
+	_ = f.Close()
 }
 
 func TestCopyFile(t *testing.T) {
@@ -355,18 +367,22 @@ func TestCopyFile(t *testing.T) {
 	require.Nil(t, err, "couldn't create file: %s", err)
 	fname := f.Name()
 	_, _ = f.Write([]byte(fileContent))
-	f.Close()
-	defer os.Remove(fname)
+	_ = f.Close()
+	defer func() {
+		_ = os.Remove(fname)
+	}()
 	fnameCopy := fmt.Sprintf("%s-copy", f.Name())
 	err = CopyFile(fname, fnameCopy)
 	require.Nil(t, err, "couldn't copy file: %s", err)
 	require.True(t, FileExists(fnameCopy), "file \"%s\" doesn't exists", fnameCopy)
-	os.Remove(fnameCopy)
+	_ = os.Remove(fnameCopy)
 }
 
 func TestGetTempFileName(t *testing.T) {
 	fname, _ := GetTempFileName()
-	defer os.Remove(fname)
+	defer func() {
+		_ = os.Remove(fname)
+	}()
 	require.NotEmpty(t, fname)
 }
 
@@ -426,7 +442,7 @@ func TestRemoveAll(t *testing.T) {
 	require.Nil(t, err, "couldn't create folder: %s", err)
 	f, err := os.CreateTemp(tmpdir, "")
 	require.Nil(t, err, "couldn't create file: %s", err)
-	f.Close()
+	_ = f.Close()
 	errs := RemoveAll(tmpdir)
 	require.Equal(t, 0, len(errs), "couldn't remove folder: %s", errs)
 }
@@ -494,13 +510,15 @@ func TestSubstituteConfigFromEnvVars(t *testing.T) {
 	require.Nil(t, err, "couldn't create file: %s", err)
 	fname := f.Name()
 	_, _ = f.Write([]byte(configFileContent))
-	f.Close()
-	defer os.Remove(fname)
+	_ = f.Close()
+	defer func() {
+		_ = os.Remove(fname)
+	}()
 
-	os.Setenv("CHANNEL", "test_channel")
-	os.Setenv("USER", "test_user")
-	os.Setenv("WEBHOOK", "test_webhook")
-	os.Setenv("THREADS", "test_threads")
+	_ = os.Setenv("CHANNEL", "test_channel")
+	_ = os.Setenv("USER", "test_user")
+	_ = os.Setenv("WEBHOOK", "test_webhook")
+	_ = os.Setenv("THREADS", "test_threads")
 
 	expectedFileContent := `test:
 	- id: some_id
@@ -548,12 +566,12 @@ func TestOpenOrCreateFile(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create test file: %v", err)
 		}
-		file.Close()
+		_ = file.Close()
 
 		file, err = OpenOrCreateFile(testFileName)
 		require.NoError(t, err)
 		require.True(t, FileExists(testFileName))
-		file.Close()
+		_ = file.Close()
 
 		err = os.RemoveAll(testFileName)
 		if err != nil {
@@ -566,7 +584,7 @@ func TestOpenOrCreateFile(t *testing.T) {
 		file, err := OpenOrCreateFile(testFileName)
 		require.NoError(t, err)
 		require.True(t, FileExists(testFileName))
-		file.Close()
+		_ = file.Close()
 
 		err = os.RemoveAll(testFileName)
 		if err != nil {
@@ -590,7 +608,9 @@ func TestFileExistsIn(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to write to temporary file: %v", err)
 	}
-	defer os.RemoveAll(tempFile)
+	defer func() {
+		_ = os.RemoveAll(tempFile)
+	}()
 
 	tests := []struct {
 		name         string
@@ -650,7 +670,9 @@ func TestIsEmpty(t *testing.T) {
 		emptyFile := filepath.Join(tempDir, "empty.txt")
 		err := os.WriteFile(emptyFile, []byte(""), 0644)
 		require.NoError(t, err, "failed to create empty file")
-		defer os.Remove(emptyFile) // Clean up the created file
+		defer func() {
+			_ = os.Remove(emptyFile)
+		}()
 		isEmpty, err := IsEmpty(emptyFile)
 		require.NoError(t, err, "should not error for an empty file")
 		require.True(t, isEmpty, "empty file should be considered empty")
@@ -661,7 +683,9 @@ func TestIsEmpty(t *testing.T) {
 		spacesFile := filepath.Join(tempDir, "spaces.txt")
 		err := os.WriteFile(spacesFile, []byte("   "), 0644)
 		require.NoError(t, err, "failed to create file with spaces")
-		defer os.Remove(spacesFile) // Clean up the created file
+		defer func() {
+			_ = os.Remove(spacesFile)
+		}()
 		isEmpty, err := IsEmpty(spacesFile)
 		require.NoError(t, err, "should not error for a file with only spaces")
 		require.True(t, isEmpty, "file with only spaces should be considered empty")
