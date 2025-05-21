@@ -276,10 +276,16 @@ func (r *Regexp) FindStringSubmatchIndex(s string) []int {
 		if match == nil {
 			return nil
 		}
-		// Convert regexp2 groups to index pairs
-		indices := make([]int, 0, (match.GroupCount()+1)*2)
-		for i := 0; i <= match.GroupCount(); i++ {
-			group := match.GroupByNumber(i)
+		matchGroups := match.Groups()
+		if len(matchGroups) == 0 {
+			return nil
+		}
+		groups := make([]string, len(matchGroups))
+		for i, group := range matchGroups {
+			groups[i] = group.String()
+		}
+		indices := make([]int, 0, len(matchGroups)*2)
+		for _, group := range matchGroups {
 			indices = append(indices, group.Index, group.Index+group.Length)
 		}
 		return indices
