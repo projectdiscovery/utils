@@ -127,7 +127,7 @@ func Src(tpl, sourcePath string, source []byte, packageName string) ([]byte, err
 			funcDeclaration.Name = nn.Name.Name
 			funcDeclaration.SourcePackage = fileData.SourcePackage
 			var funcSign strings.Builder
-			printer.Fprint(&funcSign, fset, nn.Type)
+			_ = printer.Fprint(&funcSign, fset, nn.Type)
 			funcDeclaration.Signature = strings.Replace(funcSign.String(), "func", "func "+funcDeclaration.Name, 1)
 
 			for _, comment := range nn.Doc.List {

@@ -46,7 +46,9 @@ func ConnReadN(ctx context.Context, reader io.Reader, N int64) ([]byte, error) {
 	// For an example of this scenario, refer to TestConnReadN#6.
 
 	go func() {
-		defer pw.Close()
+		defer func() {
+			_ = pw.Close()
+		}()
 		fn := func() (int64, error) {
 			return io.CopyN(pw, io.LimitReader(reader, N), N)
 		}

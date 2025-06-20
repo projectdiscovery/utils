@@ -51,7 +51,9 @@ func FuzzSafeOpen(f *testing.F) {
 				// Ignore errors
 				return
 			}
-			defer result.Close()
+			defer func() {
+				_ = result.Close()
+			}()
 			bin, _ := io.ReadAll(result)
 			if string(bin) == "pwned!" {
 				t.Fatalf("pwned! cleaned=%s ,input=%s", cleaned, fuzzPath)
