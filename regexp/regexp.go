@@ -98,7 +98,7 @@ func compileWithRE2(pattern string) (*Regexp, error) {
 		os.Stderr = devNull
 		defer func() {
 			os.Stderr = originalStderr
-			devNull.Close()
+			_ = devNull.Close()
 		}()
 	}
 
