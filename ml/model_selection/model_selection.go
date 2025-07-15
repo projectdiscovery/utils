@@ -1,7 +1,7 @@
 package modelselection
 
 import (
-	"math/rand"
+	"math/rand/v2"
 )
 
 func TrainTestSplit(dataset []interface{}, testSize float64) (train, test []interface{}) {
