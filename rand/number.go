@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"math/big"
-	crand "math/rand"
+	crand "math/rand/v2"
 )
 
 // IntN returns a uniform random value in [0, max). It errors if max <= 0.
@@ -14,7 +14,7 @@ func IntN(max int) (int, error) {
 	}
 	nBig, err := rand.Int(rand.Reader, big.NewInt(int64(max)))
 	if err != nil {
-		return crand.Intn(max), nil
+		return crand.IntN(max), nil
 	}
 	return int(nBig.Int64()), nil
 }
