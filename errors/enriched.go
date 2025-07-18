@@ -2,6 +2,7 @@ package errorutil
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"runtime/debug"
 	"strings"
@@ -17,6 +18,7 @@ type ErrCallback func(level ErrorLevel, err string, tags ...string)
 // with tags, stacktrace and other methods
 type enrichedError struct {
 	errString  string
+	wrappedErr error
 	StackTrace string
 	Tags       []string
 	Level      ErrorLevel
@@ -39,6 +41,11 @@ func (e *enrichedError) WithTag(tag ...string) Error {
 func (e *enrichedError) WithLevel(level ErrorLevel) Error {
 	e.Level = level
 	return e
+}
+
+// Unwrap returns the underlying error
+func (e *enrichedError) Unwrap() error {
+	return e.wrappedErr
 }
 
 // returns formated *enrichedError string
@@ -65,13 +72,33 @@ func (e *enrichedError) Wrap(err ...error) Error {
 		if v == nil {
 			continue
 		}
-		if ee, ok := v.(*enrichedError); ok {
-			_ = e.Msgf("%s", ee.errString).WithLevel(ee.Level).WithTag(ee.Tags...)
-			e.StackTrace += ee.StackTrace
+
+		if e.wrappedErr == nil {
+			e.wrappedErr = v
 		} else {
-			_ = e.Msgf("%s", v.Error())
+			// wraps the existing wrapped error (maintains the error chain)
+			e.wrappedErr = &enrichedError{
+				errString:  v.Error(),
+				wrappedErr: e.wrappedErr,
+				Level:      e.Level,
+			}
+		}
+
+		// preserve its props if it's an enriched one
+		if ee, ok := v.(*enrichedError); ok {
+			if len(ee.Tags) > 0 {
+				if e.Tags == nil {
+					e.Tags = make([]string, 0)
+				}
+				e.Tags = append(e.Tags, ee.Tags...)
+			}
+
+			if ee.StackTrace != "" {
+				e.StackTrace += ee.StackTrace
+			}
 		}
 	}
+
 	return e
 }
 
@@ -95,12 +122,18 @@ func (e *enrichedError) Equal(err ...error) bool {
 				return true
 			}
 		} else {
-			// not an enriched error but a simple eror
+			// not an enriched error but a simple error
 			if e.errString == v.Error() {
 				return true
 			}
 		}
+
+		// also check if the err is in the wrapped chain
+		if errors.Is(e, v) {
+			return true
+		}
 	}
+
 	return false
 }
 
@@ -130,11 +163,23 @@ func NewWithErr(err error) Error {
 	if err == nil {
 		return nil
 	}
+
 	if ee, ok := err.(*enrichedError); ok {
-		x := New("%s", ee.errString).WithTag(ee.Tags...).WithLevel(ee.Level)
-		x.(*enrichedError).StackTrace = ee.StackTrace
+		return &enrichedError{
+			errString:  ee.errString,
+			wrappedErr: err,
+			StackTrace: ee.StackTrace,
+			Tags:       append([]string{}, ee.Tags...),
+			Level:      ee.Level,
+			OnError:    ee.OnError,
+		}
 	}
-	return New("%s", err.Error())
+
+	return &enrichedError{
+		errString:  err.Error(),
+		wrappedErr: err,
+		Level:      Runtime,
+	}
 }
 
 // NewWithTag creates an error with tag
