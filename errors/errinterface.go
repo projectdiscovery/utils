@@ -9,6 +9,8 @@ type Error interface {
 	WithLevel(level ErrorLevel) Error
 	// Error is interface method of 'error'
 	Error() string
+	// Unwrap returns the underlying error
+	Unwrap() error
 	// Wraps existing error with errors (skips if passed error is nil)
 	Wrap(err ...error) Error
 	// Msgf wraps error with given message

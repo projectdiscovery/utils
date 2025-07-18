@@ -11,27 +11,33 @@ import (
 
 // IsAny checks if err is not nil and matches any one of errxx errors
 // if match successful returns true else false
-// Note: no unwrapping is done here
 func IsAny(err error, errxx ...error) bool {
 	if err == nil {
 		return false
 	}
-	if enrichedErr, ok := err.(Error); ok {
-		for _, v := range errxx {
+
+	for _, v := range errxx {
+		if v == nil {
+			continue
+		}
+
+		// Use stdlib errors.Is for proper err chain traversal
+		// NOTE(dwisiswant0): Check both directions since either error could
+		// wrap the other
+		if errors.Is(err, v) || errors.Is(v, err) {
+			return true
+		}
+
+		// also check enriched error equality (backward-compatible)
+		if enrichedErr, ok := err.(Error); ok {
 			if enrichedErr.Equal(v) {
 				return true
 			}
 		}
-	} else {
-		for _, v := range errxx {
-			// check if v is an enriched error
-			if ee, ok := v.(Error); ok && ee.Equal(err) {
-				return true
-			}
-			// check standard error equality
-			if strings.EqualFold(err.Error(), fmt.Sprint(v)) {
-				return true
-			}
+
+		// fallback to str cmp for non-enriched errors
+		if strings.EqualFold(err.Error(), fmt.Sprint(v)) {
+			return true
 		}
 	}
 	return false
