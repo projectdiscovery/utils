@@ -16,14 +16,14 @@ func TestOrderedParam(t *testing.T) {
 	p.Add("xssiwthspace", "<svg id=alert(1) onload=eval(id)>")
 	p.Add("jsprotocol", "javascript://alert(1)")
 	// Note keys are sorted
-	expected := "sqli=1+AND+(SELECT+*+FROM+(SELECT(SLEEP(12)))nQIP)&xss=<script>alert('XSS')</script>&xssiwthspace=<svg+id=alert(1)+onload=eval(id)>&jsprotocol=javascript://alert(1)"
+	expected := "sqli=1+AND+(SELECT+*+FROM+(SELECT(SLEEP(12)))nQIP)&xss=<script>alert('XSS')</script>&xssiwthspace=<svg%20id=alert(1)%20onload=eval(id)>&jsprotocol=javascript://alert(1)"
 	require.Equalf(t, expected, p.Encode(), "failed to encode parameters expected %v but got %v", expected, p.Encode())
 }
 
 // TestOrderedParamIntegration preserves order of parameters
 // while sending request to server (ref:https://github.com/projectdiscovery/nuclei/issues/3801)
 func TestOrderedParamIntegration(t *testing.T) {
-	expected := "/?xss=<script>alert('XSS')</script>&sqli=1+AND+(SELECT+*+FROM+(SELECT(SLEEP(12)))nQIP)&jsprotocol=javascript://alert(1)&xssiwthspace=<svg+id=alert(1)+onload=eval(id)>"
+	expected := "/?xss=<script>alert('XSS')</script>&sqli=1+AND+(SELECT+*+FROM+(SELECT(SLEEP(12)))nQIP)&jsprotocol=javascript://alert(1)&xssiwthspace=<svg%20id=alert(1)%20onload=eval(id)>"
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equalf(t, expected, r.RequestURI, "expected %v but got %v", expected, r.RequestURI)
