@@ -70,6 +70,9 @@ func FilterStruct[T any](input T, includeFields, excludeFields []string) (T, err
 
 	for i := 0; i < val.NumField(); i++ {
 		field := typeOfStruct.Field(i)
+		if !field.IsExported() {
+			continue
+		}
 		fieldName := strings.ToLower(field.Name)
 		fieldValue := val.Field(i)
 
