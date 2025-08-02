@@ -18,7 +18,7 @@ import (
 	"github.com/minio/selfupdate"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/machineid"
-	errorutil "github.com/projectdiscovery/utils/errors"
+	"github.com/projectdiscovery/utils/errkit"
 )
 
 const (
@@ -125,7 +125,7 @@ func GetToolVersionCallback(toolName, version string) func() (string, error) {
 		}
 		resp, err := DefaultHttpClient.Get(updateURL)
 		if err != nil {
-			return "", errorutil.NewWithErr(err).Msgf("http Get %v failed", updateURL).WithTag("updater")
+			return "", errkit.Wrapf(err, "http Get %v failed", updateURL)
 		}
 		if resp.Body != nil {
 			defer func() {
@@ -133,19 +133,19 @@ func GetToolVersionCallback(toolName, version string) func() (string, error) {
 			}()
 		}
 		if resp.StatusCode != 200 {
-			return "", errorutil.NewWithTag("updater", "version check failed expected status 200 but got %v for GET %v", resp.StatusCode, updateURL)
+			return "", errkit.Newf("version check failed expected status 200 but got %v for GET %v", resp.StatusCode, updateURL)
 		}
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return "", errorutil.NewWithErr(err).Msgf("failed to get response body of GET %v", updateURL).WithTag("updater")
+			return "", errkit.Wrapf(err, "failed to get response body of GET %v", updateURL)
 		}
 		var toolDetails Tool
 		if err := json.Unmarshal(body, &toolDetails); err != nil {
-			return "", errorutil.NewWithErr(err).Msgf("failed to unmarshal %v", string(body)).WithTag("updater")
+			return "", errkit.Wrapf(err, "failed to unmarshal %v", string(body))
 		}
 		if toolDetails.Version == "" {
 			msg := fmt.Sprintf("something went wrong, expected version string but got empty string for GET `%v` response `%v`", updateURL, string(body))
-			return "", errorutil.New("%s", msg)
+			return "", errkit.Newf("%s", msg)
 		}
 		return toolDetails.Version, nil
 	}

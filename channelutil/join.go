@@ -5,7 +5,7 @@ import (
 	"log"
 	"sync"
 
-	errorutil "github.com/projectdiscovery/utils/errors"
+	"github.com/projectdiscovery/utils/errkit"
 )
 
 // JoinChannels provides method to Join channels
@@ -20,14 +20,14 @@ type JoinChannels[T any] struct {
 // JoinChannels Joins Many Channels to Create One
 func (j *JoinChannels[T]) Join(ctx context.Context, sink chan T, sources ...<-chan T) error {
 	if sink == nil {
-		return errorutil.New("sink cannot be nil").WithTag("join", "channel")
+		return errkit.New("sink cannot be nil")
 	}
 	if len(sources) == 0 {
-		return errorutil.New("sources cannot be zero").WithTag("join", "channel")
+		return errkit.New("sources cannot be zero")
 	}
 	for _, v := range sources {
 		if v == nil {
-			return errorutil.New("given source is nil").WithTag("join", "channel")
+			return errkit.New("given source is nil")
 		}
 	}
 

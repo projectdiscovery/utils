@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	errorutil "github.com/projectdiscovery/utils/errors"
+	"github.com/projectdiscovery/utils/errkit"
 )
 
 var (
@@ -61,7 +61,7 @@ func ResolveNClean(inputPath string, baseDir ...string) (string, error) {
 			return abs, nil
 		}
 	}
-	return "", errorutil.NewWithErr(os.ErrNotExist).Msgf("failed to resolve path: %s", inputPath)
+	return "", errkit.Wrapf(os.ErrNotExist, "failed to resolve path: %s", inputPath)
 }
 
 // ResolveNCleanOrDefault resolves the path and cleans it

@@ -4,11 +4,11 @@ import (
 	"sync"
 	"sync/atomic"
 
-	errorutil "github.com/projectdiscovery/utils/errors"
+	"github.com/projectdiscovery/utils/errkit"
 )
 
 var (
-	ErrReadOnly = errorutil.New("map is currently in read-only mode").WithTag("syncLockMap")
+	ErrReadOnly = errkit.New("map is currently in read-only mode")
 )
 
 // SyncLock adds sync and lock capabilities to generic map

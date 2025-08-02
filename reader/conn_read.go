@@ -9,7 +9,7 @@ import (
 
 	"github.com/docker/go-units"
 	contextutil "github.com/projectdiscovery/utils/context"
-	errorutil "github.com/projectdiscovery/utils/errors"
+	"github.com/projectdiscovery/utils/errkit"
 )
 
 var (
@@ -59,11 +59,11 @@ func ConnReadN(ctx context.Context, reader io.Reader, N int64) ([]byte, error) {
 	// read from pipe and return
 	bin, err2 := io.ReadAll(pr)
 	if err2 != nil {
-		return nil, errorutil.NewWithErr(err2).Msgf("something went wrong while reading from pipe")
+		return nil, errkit.Wrapf(err2, "something went wrong while reading from pipe")
 	}
 
 	if readErr != nil {
-		if errorutil.IsTimeout(readErr) && len(bin) > 0 {
+		if errors.Is(readErr, context.DeadlineExceeded) && len(bin) > 0 {
 			// if error is a timeout error and we have some data already
 			// then return data and ignore error
 			return bin, nil
@@ -72,7 +72,7 @@ func ConnReadN(ctx context.Context, reader io.Reader, N int64) ([]byte, error) {
 			// then return data and ignore error
 			return bin, nil
 		} else {
-			return nil, errorutil.WrapfWithNil(readErr, "reader: error while reading from connection")
+			return nil, errkit.Wrap(readErr, "reader: error while reading from connection")
 		}
 	} else {
 		return bin, nil
