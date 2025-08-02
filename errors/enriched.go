@@ -1,147 +1,173 @@
+// Package errorutil provides error handling utilities.
+//
+// Deprecated: This package is deprecated and will be removed in a future version.
+// Use github.com/projectdiscovery/utils/errkit instead, which provides better
+// error handling with proper Go error chain support and optional stack traces.
 package errorutil
 
 import (
-	"bytes"
 	"errors"
-	"fmt"
-	"strings"
+
+	"github.com/projectdiscovery/utils/errkit"
 )
 
-
 // ErrCallback function to handle given error
+//
+// Deprecated: Use errkit.ErrorX and its structured logging capabilities instead.
 type ErrCallback func(level ErrorLevel, err string, tags ...string)
 
 // enrichedError is enriched version of normal error
 // with tags and other methods
+//
+// Deprecated: Use errkit.ErrorX instead.
 type enrichedError struct {
-	errString  string
-	wrappedErr error
-	Tags       []string
-	Level      ErrorLevel
-
-	//OnError is called when Error() method is triggered
-	OnError ErrCallback
+	errorX      *errkit.ErrorX
+	level       ErrorLevel
+	tags        []string
+	callback    ErrCallback
+	wrappedErrs []error // Keep original errors for compatibility
 }
 
-// withTag assignes tag to Error
+// WithTag assignes tag to Error
+//
+// Deprecated: Use errkit.ErrorX instead.
 func (e *enrichedError) WithTag(tag ...string) Error {
-	if e.Tags == nil {
-		e.Tags = tag
+	if e.tags == nil {
+		e.tags = tag
 	} else {
-		e.Tags = append(e.Tags, tag...)
+		e.tags = append(e.tags, tag...)
 	}
 	return e
 }
 
-// withLevel assinges level to Error
+// WithLevel assinges level to Error
+//
+// Deprecated: Use errkit.ErrorX instead.
 func (e *enrichedError) WithLevel(level ErrorLevel) Error {
-	e.Level = level
+	e.level = level
 	return e
 }
 
 // Unwrap returns the underlying error
+//
+// Deprecated: Use errkit.ErrorX instead.
 func (e *enrichedError) Unwrap() error {
-	return e.wrappedErr
+	if e.errorX != nil {
+		// Return the original error that was used to create this enrichedError
+		return e.errorX.Cause()
+	}
+	return nil
 }
 
-// returns formated *enrichedError string
+// Error returns formatted *enrichedError string
+//
+// Deprecated: Use errkit.ErrorX instead.
 func (e *enrichedError) Error() string {
 	defer func() {
-		if e.OnError != nil {
-			e.OnError(e.Level, e.errString, e.Tags...)
+		if e.callback != nil {
+			errStr := ""
+			if e.errorX != nil {
+				errStr = e.errorX.Error()
+			}
+			e.callback(e.level, errStr, e.tags...)
 		}
 	}()
-	var buff bytes.Buffer
-	label := fmt.Sprintf("[%v:%v]", strings.Join(e.Tags, ","), e.Level.String())
-	buff.WriteString(fmt.Sprintf("%v %v", label, e.errString))
 
-	return buff.String()
+	if e.errorX == nil {
+		return ""
+	}
+
+	return e.errorX.Error()
 }
 
-// wraps given error
+// Wrap wraps given error
+//
+// Deprecated: Use errkit.ErrorX instead.
 func (e *enrichedError) Wrap(err ...error) Error {
 	for _, v := range err {
 		if v == nil {
 			continue
 		}
 
-		if e.wrappedErr == nil {
-			e.wrappedErr = v
+		// Store original error for compatibility
+		e.wrappedErrs = append(e.wrappedErrs, v)
+
+		if e.errorX == nil {
+			// Create a new ErrorX starting with this error
+			e.errorX = errkit.FromError(v)
 		} else {
-			// wraps the existing wrapped error (maintains the error chain)
-			e.wrappedErr = &enrichedError{
-				errString:  v.Error(),
-				wrappedErr: e.wrappedErr,
-				Level:      e.Level,
-			}
-		}
-
-		// preserve its props if it's an enriched one
-		if ee, ok := v.(*enrichedError); ok {
-			if len(ee.Tags) > 0 {
-				if e.Tags == nil {
-					e.Tags = make([]string, 0)
-				}
-				e.Tags = append(e.Tags, ee.Tags...)
-			}
-
+			// Add this error to the existing ErrorX
+			e.errorX.Msgf("%s", v.Error())
 		}
 	}
 
 	return e
 }
 
-// Wrapf wraps given message
+// Msgf wraps given message
+//
+// Deprecated: Use errkit.ErrorX instead.
 func (e *enrichedError) Msgf(format string, args ...any) Error {
-	// wraps with '<-` as delimeter
-	msg := fmt.Sprintf(format, args...)
-	if e.errString == "" {
-		e.errString = msg
-	} else {
-		e.errString = fmt.Sprintf("%v <- %v", msg, e.errString)
+	if e.errorX == nil {
+		e.errorX = errkit.New("error")
 	}
+	// Pass format and args directly to errkit.Msgf
+	e.errorX.Msgf(format, args...)
 	return e
 }
 
 // Equal returns true if error matches anyone of given errors
+//
+// Deprecated: Use errkit.ErrorX instead.
 func (e *enrichedError) Equal(err ...error) bool {
 	for _, v := range err {
-		if ee, ok := v.(*enrichedError); ok {
-			if e.errString == ee.errString {
-				return true
-			}
-		} else {
-			// not an enriched error but a simple error
-			if e.errString == v.Error() {
-				return true
-			}
-		}
-
-		// also check if the err is in the wrapped chain
-		if errors.Is(e, v) {
+		if e.Is(v) {
 			return true
 		}
 	}
+	return false
+}
 
+// Is implements the errors.Is interface for Go's error chain traversal
+func (e *enrichedError) Is(target error) bool {
+	// First check our wrapped errors for exact matches
+	for _, wrappedErr := range e.wrappedErrs {
+		if errors.Is(wrappedErr, target) {
+			return true
+		}
+	}
+	
+	// Then check errkit's Is method
+	if e.errorX != nil {
+		return e.errorX.Is(target)
+	}
+	
 	return false
 }
 
 // WithCallback executes callback when error is triggered
+//
+// Deprecated: Use errkit.ErrorX instead.
 func (e *enrichedError) WithCallback(handle ErrCallback) Error {
-	e.OnError = handle
+	e.callback = handle
 	return e
 }
 
-
-// New
+// New creates a new error
+//
+// Deprecated: Use errkit.New instead.
 func New(format string, args ...any) Error {
+	errorX := errkit.New(format, args...)
 	ee := &enrichedError{
-		errString: fmt.Sprintf(format, args...),
-		Level:     Runtime,
+		errorX: errorX,
+		level:  Runtime,
 	}
 	return ee
 }
 
+// NewWithErr creates a new error with an existing error
+//
+// Deprecated: Use errkit.FromError instead.
 func NewWithErr(err error) Error {
 	if err == nil {
 		return nil
@@ -149,22 +175,25 @@ func NewWithErr(err error) Error {
 
 	if ee, ok := err.(*enrichedError); ok {
 		return &enrichedError{
-			errString:  ee.errString,
-			wrappedErr: err,
-			Tags:       append([]string{}, ee.Tags...),
-			Level:      ee.Level,
-			OnError:    ee.OnError,
+			errorX:      ee.errorX,
+			level:       ee.level,
+			tags:        append([]string{}, ee.tags...),
+			callback:    ee.callback,
+			wrappedErrs: append([]error{}, ee.wrappedErrs...),
 		}
 	}
 
+	errorX := errkit.FromError(err)
 	return &enrichedError{
-		errString:  err.Error(),
-		wrappedErr: err,
-		Level:      Runtime,
+		errorX:      errorX,
+		level:       Runtime,
+		wrappedErrs: []error{err}, // Store the original error
 	}
 }
 
 // NewWithTag creates an error with tag
+//
+// Deprecated: Use errkit.New instead.
 func NewWithTag(tag string, format string, args ...any) Error {
 	ee := New(format, args...)
 	_ = ee.WithTag(tag)

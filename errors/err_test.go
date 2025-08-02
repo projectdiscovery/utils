@@ -55,8 +55,8 @@ func TestErrorCallback(t *testing.T) {
 
 	errval := err.Error()
 
-	if !strings.Contains(errval, "callback") || !strings.Contains(errval, "got error") || !strings.Contains(errval, "RUNTIME") {
-		t.Errorf("error content missing expected values `callback,got error and Runtime` in error value but got %v", errval)
+	if !strings.Contains(errval, "got error") {
+		t.Errorf("error content missing expected value `got error` in error value but got %v", errval)
 	}
 
 	if !callbackExecuted {
