@@ -4,22 +4,18 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"runtime/debug"
 	"strings"
 )
 
-// ShowStackTrace in Error Message
-var ShowStackTrace bool = false
 
 // ErrCallback function to handle given error
 type ErrCallback func(level ErrorLevel, err string, tags ...string)
 
 // enrichedError is enriched version of normal error
-// with tags, stacktrace and other methods
+// with tags and other methods
 type enrichedError struct {
 	errString  string
 	wrappedErr error
-	StackTrace string
 	Tags       []string
 	Level      ErrorLevel
 
@@ -59,10 +55,6 @@ func (e *enrichedError) Error() string {
 	label := fmt.Sprintf("[%v:%v]", strings.Join(e.Tags, ","), e.Level.String())
 	buff.WriteString(fmt.Sprintf("%v %v", label, e.errString))
 
-	if ShowStackTrace {
-		e.captureStack()
-		buff.WriteString(fmt.Sprintf("Stacktrace:\n%v", e.StackTrace))
-	}
 	return buff.String()
 }
 
@@ -93,9 +85,6 @@ func (e *enrichedError) Wrap(err ...error) Error {
 				e.Tags = append(e.Tags, ee.Tags...)
 			}
 
-			if ee.StackTrace != "" {
-				e.StackTrace += ee.StackTrace
-			}
 		}
 	}
 
@@ -143,12 +132,6 @@ func (e *enrichedError) WithCallback(handle ErrCallback) Error {
 	return e
 }
 
-// captureStack
-func (e *enrichedError) captureStack() {
-	// can be furthur improved to format
-	// ref https://github.com/go-errors/errors/blob/33d496f939bc762321a636d4035e15c302eb0b00/stackframe.go
-	e.StackTrace = string(debug.Stack())
-}
 
 // New
 func New(format string, args ...any) Error {
@@ -168,7 +151,6 @@ func NewWithErr(err error) Error {
 		return &enrichedError{
 			errString:  ee.errString,
 			wrappedErr: err,
-			StackTrace: ee.StackTrace,
 			Tags:       append([]string{}, ee.Tags...),
 			Level:      ee.Level,
 			OnError:    ee.OnError,

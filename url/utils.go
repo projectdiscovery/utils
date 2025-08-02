@@ -99,8 +99,3 @@ func shouldEscape(ss string) bool {
 	return false
 }
 
-func init() {
-	if os.Getenv("DEBUG") != "" {
-		errorutil.ShowStackTrace = true
-	}
-}

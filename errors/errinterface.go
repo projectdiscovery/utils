@@ -1,7 +1,7 @@
 package errorutil
 
 // Error is enriched version of normal error
-// with tags, stacktrace and other methods
+// with tags and other methods
 type Error interface {
 	// WithTag assigns tag[s] to Error
 	WithTag(tag ...string) Error

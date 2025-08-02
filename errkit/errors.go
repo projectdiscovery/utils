@@ -41,7 +41,7 @@ var (
 	// EnableTimestamp controls whether error timestamps are included
 	EnableTimestamp = env.GetEnvOrDefault("ENABLE_ERR_TIMESTAMP", false)
 	// EnableTrace controls whether error stack traces are included
-	EnableTrace = env.GetEnvOrDefault("ENABLE_ERR_TRACE", false)
+	EnableTrace = env.GetEnvOrDefault("ERRKIT_ENABLE_TRACE", false)
 )
 
 // ErrorX is a custom error type that can handle all known types of errors

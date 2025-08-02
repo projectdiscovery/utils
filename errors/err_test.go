@@ -39,23 +39,6 @@ func TestWrapWithNil(t *testing.T) {
 	}
 }
 
-func TestStackTrace(t *testing.T) {
-	err := errorutil.New("base error")
-	relay := func(err error) error {
-		return err
-	}
-	errx := relay(err)
-
-	t.Run("teststack", func(t *testing.T) {
-		if strings.Contains(errx.Error(), "captureStack") {
-			t.Errorf("stacktrace should be disabled by default")
-		}
-		errorutil.ShowStackTrace = true
-		if !strings.Contains(errx.Error(), "captureStack") {
-			t.Errorf("missing stacktrace got %v", errx.Error())
-		}
-	})
-}
 
 func TestErrorCallback(t *testing.T) {
 	callbackExecuted := false
