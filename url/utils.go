@@ -1,10 +1,7 @@
 package urlutil
 
 import (
-	"os"
 	"strings"
-
-	errorutil "github.com/projectdiscovery/utils/errors"
 )
 
 const (
