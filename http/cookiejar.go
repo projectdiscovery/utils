@@ -2,6 +2,7 @@ package httputil
 
 import (
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"sync"
 )
@@ -24,7 +25,7 @@ type CookieJar struct {
 
 // New creates a new thread-safe cookie jar with the given options
 // If no jar is provided, creates a simple in-memory cookie jar
-func New(opts ...Option) *CookieJar {
+func NewCookieJar(opts ...Option) (*CookieJar, error) {
 	cj := &CookieJar{}
 
 	// Apply options
@@ -32,14 +33,16 @@ func New(opts ...Option) *CookieJar {
 		opt(cj)
 	}
 
-	// If no jar was provided, create a simple in-memory one
+	// If no jar was provided, create a new one
 	if cj.jar == nil {
-		cj.jar = &memoryCookieJar{
-			cookies: make(map[string][]*http.Cookie),
+		jar, err := cookiejar.New(nil)
+		if err != nil {
+			return nil, err
 		}
+		cj.jar = jar
 	}
 
-	return cj
+	return cj, nil
 }
 
 // SetCookies implements http.CookieJar.SetCookies
