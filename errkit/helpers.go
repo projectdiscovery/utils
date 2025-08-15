@@ -210,6 +210,26 @@ func With(err error, args ...any) error {
 	return x
 }
 
+// WithAttr adds extra attributes to the error using slog.Attr
+//
+//	err = errkit.WithAttr(err, slog.String("resource", domain))
+//	err = errkit.WithAttr(err, slog.Int("port", 80), slog.String("protocol", "tcp"))
+func WithAttr(err error, attrs ...slog.Attr) error {
+	if err == nil {
+		return nil
+	}
+	if len(attrs) == 0 {
+		return err
+	}
+	x := &ErrorX{}
+	x.init()
+	parseError(x, err)
+	for _, attr := range attrs {
+		x.record.Add(attr)
+	}
+	return x
+}
+
 // GetAttr returns all attributes of given error if it has any
 func GetAttr(err error) []slog.Attr {
 	if err == nil {

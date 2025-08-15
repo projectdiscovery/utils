@@ -47,10 +47,10 @@ with attributes support you can do following
 err := errkit.New("i/o timeout")
 
 // xyz.go
-err = errkit.WithAttr(err,slog.Any("resource",domain))
+err = errkit.WithAttr(err, slog.String("resource", domain))
 
 // abc.go
-err = errkit.WithAttr(err,slog.Any("action","download"))
+err = errkit.WithAttr(err, slog.String("action", "download"))
 ```
 
 ## Note

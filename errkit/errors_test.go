@@ -10,6 +10,7 @@ import (
 	"go.uber.org/multierr"
 
 	stderrors "errors"
+	"log/slog"
 )
 
 // what are these tests ?
@@ -125,4 +126,42 @@ func TestErrorString(t *testing.T) {
 		`cause="i/o timeout" ip=10.0.0.1 port=80 chain="tcp dial error; some other error"`,
 		x.Error(),
 	)
+}
+
+func TestWithAttr(t *testing.T) {
+	// Test WithAttr function
+	originalErr := New("connection failed")
+
+	// Add attributes using WithAttr
+	err := WithAttr(originalErr, slog.String("resource", "database"), slog.Int("port", 5432))
+
+	// Verify the error can be unwrapped to ErrorX
+	var errx *ErrorX
+	require.True(t, errors.As(err, &errx), "expected to be able to unwrap to ErrorX")
+
+	// Check that attributes were added
+	attrs := errx.Attrs()
+	require.Len(t, attrs, 2, "expected 2 attributes")
+
+	// Verify specific attributes
+	foundResource := false
+	foundPort := false
+	for _, attr := range attrs {
+		if attr.Key == "resource" && attr.Value.String() == "database" {
+			foundResource = true
+		}
+		if attr.Key == "port" && attr.Value.Int64() == 5432 {
+			foundPort = true
+		}
+	}
+	require.True(t, foundResource, "expected to find resource attribute")
+	require.True(t, foundPort, "expected to find port attribute")
+
+	// Test that WithAttr works with nil error
+	nilErr := WithAttr(nil, slog.String("test", "value"))
+	require.Nil(t, nilErr, "expected nil error to return nil")
+
+	// Test that WithAttr works with empty attrs
+	emptyErr := WithAttr(originalErr)
+	require.Equal(t, originalErr, emptyErr, "expected original error when no attrs provided")
 }

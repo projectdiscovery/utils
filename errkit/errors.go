@@ -293,7 +293,7 @@ func (e *ErrorX) ResetKind() *ErrorX {
 	return e
 }
 
-// Deprecated: use Attrs instead
+// Deprecated: use WithAttr instead
 //
 // SetAttr sets additional attributes to a given error
 // it only adds unique attributes and ignores duplicates
@@ -303,6 +303,9 @@ func (e *ErrorX) ResetKind() *ErrorX {
 //
 //	this is correct (√)
 //	myError.SetAttr(slog.String("address",host))
+//
+//	Recommended replacement:
+//	errkit.WithAttr(myError, slog.String("address", host))
 func (e *ErrorX) SetAttr(s ...slog.Attr) *ErrorX {
 	e.init()
 	for _, attr := range s {
