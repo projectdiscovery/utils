@@ -24,7 +24,7 @@ func TestParamEncoding(t *testing.T) {
 		Expected string
 	}{
 		{"1+AND+(SELECT+*+FROM+(SELECT(SLEEP(12)))nQIP)", "1+AND+(SELECT+*+FROM+(SELECT(SLEEP(12)))nQIP)"},
-		{"1 AND SELECT", "1%20AND%20SELECT"},
+		{"1 AND SELECT", "1+AND+SELECT"},
 	}
 	for _, v := range testcases {
 		val := ParamEncode(v.Payload)
@@ -39,13 +39,13 @@ func TestRawParam(t *testing.T) {
 	p.Add("xssiwthspace", "<svg id=alert(1) onload=eval(id)>")
 	p.Add("jsprotocol", "javascript://alert(1)")
 	// Note keys are sorted
-	expected := "jsprotocol=javascript://alert(1)&sqli=1+AND+(SELECT+*+FROM+(SELECT(SLEEP(12)))nQIP)&xss=<script>alert('XSS')</script>&xssiwthspace=<svg%20id=alert(1)%20onload=eval(id)>"
+	expected := "jsprotocol=javascript://alert(1)&sqli=1+AND+(SELECT+*+FROM+(SELECT(SLEEP(12)))nQIP)&xss=<script>alert('XSS')</script>&xssiwthspace=<svg+id=alert(1)+onload=eval(id)>"
 	require.Equalf(t, p.Encode(), expected, "failed to encode parameters expected %v but got %v", expected, p.Encode())
 }
 
 func TestParamIntegration(t *testing.T) {
 	var routerErr error
-	expected := "/params?jsprotocol=javascript://alert(1)&sqli=1+AND+(SELECT+*+FROM+(SELECT(SLEEP(12)))nQIP)&xss=<script>alert('XSS')</script>&xssiwthspace=<svg%20id=alert(1)%20onload=eval(id)>"
+	expected := "/params?jsprotocol=javascript://alert(1)&sqli=1+AND+(SELECT+*+FROM+(SELECT(SLEEP(12)))nQIP)&xss=<script>alert('XSS')</script>&xssiwthspace=<svg+id=alert(1)+onload=eval(id)>"
 
 	router := httprouter.New()
 	router.GET("/params", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
