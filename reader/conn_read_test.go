@@ -69,15 +69,16 @@ func TestConnReadN(t *testing.T) {
 
 	t.Run("Read From Connection which times out", func(t *testing.T) {
 		conn, err := tls.Dial("tcp", "projectdiscovery.io:443", &tls.Config{InsecureSkipVerify: true})
-		_ = conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+		_ = conn.SetReadDeadline(time.Now().Add(1 * time.Second)) // shorter deadline to force timeout
 		require.Nil(t, err, "could not connect to projectdiscovery.io over tls")
 		defer func() {
 			_ = conn.Close()
 		}()
-		_, err = conn.Write([]byte("GET / HTTP/1.1\r\nHost: projectdiscovery.io\r\n\r\n"))
+		_, err = conn.Write([]byte("GET / HTTP/1.1\r\nHost: projectdiscovery.io\r\nConnection: close\r\n\r\n"))
 		require.Nil(t, err, "could not write to connection")
-		data, err := ConnReadNWithTimeout(conn, -1, timeout)
-		require.Nilf(t, err, "could not read from connection: %s", err)
-		require.NotEmpty(t, data, "could not read from connection")
+		data, err := ConnReadNWithTimeout(conn, -1, 1*time.Second) // shorter timeout
+		// The function should return data and ignore timeout error if data was received
+		require.Nil(t, err, "should ignore timeout error when data is available")
+		require.NotEmpty(t, data, "should have received some data before timeout")
 	})
 }

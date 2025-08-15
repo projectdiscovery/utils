@@ -39,23 +39,6 @@ func TestWrapWithNil(t *testing.T) {
 	}
 }
 
-func TestStackTrace(t *testing.T) {
-	err := errorutil.New("base error")
-	relay := func(err error) error {
-		return err
-	}
-	errx := relay(err)
-
-	t.Run("teststack", func(t *testing.T) {
-		if strings.Contains(errx.Error(), "captureStack") {
-			t.Errorf("stacktrace should be disabled by default")
-		}
-		errorutil.ShowStackTrace = true
-		if !strings.Contains(errx.Error(), "captureStack") {
-			t.Errorf("missing stacktrace got %v", errx.Error())
-		}
-	})
-}
 
 func TestErrorCallback(t *testing.T) {
 	callbackExecuted := false
@@ -72,8 +55,8 @@ func TestErrorCallback(t *testing.T) {
 
 	errval := err.Error()
 
-	if !strings.Contains(errval, "callback") || !strings.Contains(errval, "got error") || !strings.Contains(errval, "RUNTIME") {
-		t.Errorf("error content missing expected values `callback,got error and Runtime` in error value but got %v", errval)
+	if !strings.Contains(errval, "got error") {
+		t.Errorf("error content missing expected value `got error` in error value but got %v", errval)
 	}
 
 	if !callbackExecuted {

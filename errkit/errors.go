@@ -41,7 +41,7 @@ var (
 	// EnableTimestamp controls whether error timestamps are included
 	EnableTimestamp = env.GetEnvOrDefault("ENABLE_ERR_TIMESTAMP", false)
 	// EnableTrace controls whether error stack traces are included
-	EnableTrace = env.GetEnvOrDefault("ENABLE_ERR_TRACE", false)
+	EnableTrace = env.GetEnvOrDefault("ERRKIT_ENABLE_TRACE", false)
 )
 
 // ErrorX is a custom error type that can handle all known types of errors
@@ -220,19 +220,18 @@ func FromError(err error) *ErrorX {
 	return nucleiErr
 }
 
-// New creates a new error with the given message
-// it follows slog pattern of adding and expects in the same way
+// New creates a new error with the given message and slog attributes
 //
 // Example:
 //
 //	this is correct (√)
-//	errkit.New("this is a nuclei error","address",host)
+//	errkit.New("connection failed", "address", host, "port", port)
 //
-//	this is not readable/recommended (x)
-//	errkit.New("this is a nuclei error",slog.String("address",host))
+//	this is also correct (√) 
+//	errkit.New("timeout occurred")
 //
-//	this is wrong (x)
-//	errkit.New("this is a nuclei error %s",host)
+//	this is not recommended (x) - use Newf instead
+//	errkit.New("error on host %s", host)
 func New(msg string, args ...interface{}) *ErrorX {
 	e := &ErrorX{}
 	e.init()
@@ -243,27 +242,46 @@ func New(msg string, args ...interface{}) *ErrorX {
 	return e
 }
 
-// Msgf adds a message to the error
-// it follows slog pattern of adding and expects in the same way
+// Newf creates a new error with a formatted message
+//
+// Example:
+//
+//	errkit.Newf("connection failed on %s:%d", host, port)
+func Newf(format string, args ...interface{}) *ErrorX {
+	e := &ErrorX{}
+	e.init()
+	msg := fmt.Sprintf(format, args...)
+	e.append(errors.New(msg))
+	return e
+}
+
+// Msg adds a plain message to the error
+//
+// Example:
+//
+//	myError.Msg("connection failed")
+func (e *ErrorX) Msg(message string) {
+	if e == nil {
+		return
+	}
+	e.append(errors.New(message))
+}
+
+// Msgf adds a formatted message to the error
 //
 // Example:
 //
 //	this is correct (√)
-//	myError.Msgf("dial error","network","tcp")
+//	myError.Msgf("dial error on %s:%d", host, port)
 //
-//	this is not readable/recommended (x)
-//	myError.Msgf(slog.String("address",host))
-//
-//	this is wrong (x)
-//	myError.Msgf("this is a nuclei error %s",host)
+//	this is also correct (√)
+//	myError.Msgf("connection failed")
 func (e *ErrorX) Msgf(format string, args ...interface{}) {
 	if e == nil {
 		return
 	}
-	if len(args) == 0 {
-		e.append(errors.New(format))
-	}
-	e.append(fmt.Errorf(format, args...))
+	msg := fmt.Sprintf(format, args...)
+	e.append(errors.New(msg))
 }
 
 // SetClass sets the class of the error

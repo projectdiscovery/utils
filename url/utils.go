@@ -1,10 +1,7 @@
 package urlutil
 
 import (
-	"os"
 	"strings"
-
-	errorutil "github.com/projectdiscovery/utils/errors"
 )
 
 const (
@@ -99,8 +96,3 @@ func shouldEscape(ss string) bool {
 	return false
 }
 
-func init() {
-	if os.Getenv("DEBUG") != "" {
-		errorutil.ShowStackTrace = true
-	}
-}

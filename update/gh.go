@@ -18,13 +18,13 @@ import (
 	"github.com/cheggaaa/pb/v3"
 	"github.com/google/go-github/v30/github"
 	"github.com/projectdiscovery/gologger"
-	errorutil "github.com/projectdiscovery/utils/errors"
+	"github.com/projectdiscovery/utils/errkit"
 	"golang.org/x/oauth2"
 )
 
 var (
 	extIfFound             = ".exe"
-	ErrNoAssetFound        = errorutil.NewWithFmt("update: could not find release asset for your platform (%s/%s)")
+	ErrNoAssetFound        = errkit.New("update: could not find release asset for your platform (%s/%s)")
 	SkipCheckSumValidation = false // by default checksum of gh assets is verified with checksums file present in release
 )
 
@@ -51,7 +51,7 @@ func NewghReleaseDownloader(RepoName string) (*GHReleaseDownloader, error) {
 	if strings.Contains(RepoName, "/") {
 		arr := strings.Split(RepoName, "/")
 		if len(arr) != 2 {
-			return nil, errorutil.NewWithTag("update", "invalid repo name %v", RepoName)
+			return nil, errkit.Newf("invalid repo name %v", RepoName)
 		}
 		orgName = arr[0]
 		repoName = arr[1]
@@ -63,7 +63,7 @@ func NewghReleaseDownloader(RepoName string) (*GHReleaseDownloader, error) {
 		Timeout: DownloadUpdateTimeout,
 	}
 	if orgName == "" {
-		return nil, errorutil.NewWithTag("update", "organization name cannot be empty")
+		return nil, errkit.New("organization name cannot be empty")
 	}
 	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
 		httpClient = oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))
@@ -103,7 +103,7 @@ func (d *GHReleaseDownloader) DownloadTool() (*bytes.Buffer, error) {
 
 	bin, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, errorutil.NewWithErr(err).Msgf("failed to read response body")
+		return nil, errkit.Wrapf(err, "failed to read response body")
 	}
 	return bytes.NewBuffer(bin), nil
 }
@@ -125,23 +125,23 @@ func (d *GHReleaseDownloader) GetReleaseChecksums() (map[string]string, error) {
 		}
 	}
 	if checksumFileAssetID == 0 {
-		return nil, errorutil.NewWithTag("update", "checksum file not in release assets")
+		return nil, errkit.New("checksum file not in release assets")
 	}
 
 	resp, err := d.downloadAssetwithID(int64(checksumFileAssetID))
 	if err != nil {
-		return nil, errorutil.NewWithErr(err).Msgf("failed to download checksum file")
+		return nil, errkit.Wrapf(err, "failed to download checksum file")
 	}
 	defer func() {
 		_ = resp.Body.Close()
 	}()
 	bin, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, errorutil.NewWithErr(err).Msgf("failed to read checksum file")
+		return nil, errkit.Wrapf(err, "failed to read checksum file")
 	}
 	data := strings.TrimSpace(string(bin))
 	if data == "" {
-		return nil, errorutil.NewWithTag("checksum", "something went wrong checksum file is emtpy")
+		return nil, errkit.New("something went wrong checksum file is emtpy")
 	}
 	m := map[string]string{}
 	for _, v := range strings.Split(data, "\n") {
@@ -181,14 +181,17 @@ func (d *GHReleaseDownloader) GetExecutableFromAsset() ([]byte, error) {
 		gotChecksumbytes := sha256.Sum256(buff.Bytes())
 		gotchecksum := hex.EncodeToString(gotChecksumbytes[:])
 		if expectedChecksum != gotchecksum {
-			return nil, errorutil.NewWithTag("checksum", "asset file corrupted: checksum mismatch expected %v but got %v", expectedChecksum, gotchecksum)
+			return nil, errkit.Newf("asset file corrupted: checksum mismatch expected %v but got %v", expectedChecksum, gotchecksum)
 		} else {
 			gologger.Info().Msgf("Verified Integrity of %v", d.fullAssetName)
 		}
 	}
 
 	_ = UnpackAssetWithCallback(d.Format, bytes.NewReader(buff.Bytes()), getToolCallback)
-	return bin, errorutil.WrapfWithNil(err, "executable not found in archive") // Note: WrapfWithNil wraps msg if err != nil
+	if err != nil {
+		return bin, errkit.Wrap(err, "executable not found in archive")
+	}
+	return bin, nil
 }
 
 // DownloadAssetWithName downloads asset with given name
@@ -200,11 +203,11 @@ func (d *GHReleaseDownloader) DownloadAssetWithName(assetname string, showProgre
 		}
 	}
 	if assetID == 0 {
-		return nil, errorutil.New("release asset %v not found", assetname)
+		return nil, errkit.Newf("release asset %v not found", assetname)
 	}
 	resp, err := d.downloadAssetwithID(int64(assetID))
 	if err != nil {
-		return nil, errorutil.NewWithErr(err).Msgf("failed to download asset %v", assetname)
+		return nil, errkit.Wrapf(err, "failed to download asset %v", assetname)
 	}
 	defer func() {
 		_ = resp.Body.Close()
@@ -219,7 +222,7 @@ func (d *GHReleaseDownloader) DownloadAssetWithName(assetname string, showProgre
 
 	bin, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, errorutil.NewWithErr(err).Msgf("failed to read resp body")
+		return nil, errkit.Wrapf(err, "failed to read resp body")
 	}
 	return bytes.NewBuffer(bin), nil
 }
@@ -230,7 +233,7 @@ func (d *GHReleaseDownloader) DownloadSourceWithCallback(showProgressBar bool, c
 
 	resp, err := d.httpClient.Get(downloadURL)
 	if err != nil {
-		return errorutil.NewWithErr(err).Msgf("failed to source of %v", d.repoName)
+		return errkit.Wrapf(err, "failed to source of %v", d.repoName)
 	}
 	defer func() {
 		_ = resp.Body.Close()
@@ -244,7 +247,7 @@ func (d *GHReleaseDownloader) DownloadSourceWithCallback(showProgressBar bool, c
 
 	bin, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return errorutil.NewWithErr(err).Msgf("failed to read resp body")
+		return errkit.Wrapf(err, "failed to read resp body")
 	}
 	return UnpackAssetWithCallback(Zip, bytes.NewReader(bin), callback)
 }
@@ -253,15 +256,14 @@ func (d *GHReleaseDownloader) DownloadSourceWithCallback(showProgressBar bool, c
 func (d *GHReleaseDownloader) getLatestRelease() error {
 	release, resp, err := d.client.Repositories.GetLatestRelease(context.Background(), d.organization, d.repoName)
 	if err != nil {
-		errx := errorutil.NewWithErr(err)
 		if resp != nil && resp.StatusCode == http.StatusNotFound {
-			errx = errx.Msgf("repo %v/%v not found got %v", d.organization, d.repoName)
+			return errkit.Wrapf(err, "repo %v/%v not found", d.organization, d.repoName)
 		} else if _, ok := err.(*github.RateLimitError); ok {
-			errx = errx.Msgf("hit github ratelimit while downloading latest release")
+			return errkit.Wrapf(err, "hit github ratelimit while downloading latest release")
 		} else if resp != nil && (resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusUnauthorized) {
-			errx = errx.Msgf("gh auth failed try unsetting GITHUB_TOKEN env variable")
+			return errkit.Wrapf(err, "gh auth failed try unsetting GITHUB_TOKEN env variable")
 		}
-		return errx
+		return err
 	}
 	d.Latest = release
 	return nil
@@ -306,7 +308,7 @@ loop:
 
 	// handle if id is zero (no asset found)
 	if d.AssetID == 0 {
-		return ErrNoAssetFound.Msgf(runtime.GOOS, runtime.GOARCH)
+		return errkit.Newf("update: could not find release asset for your platform (%s/%s)", runtime.GOOS, runtime.GOARCH)
 	}
 	return nil
 }
@@ -319,13 +321,13 @@ func (d *GHReleaseDownloader) downloadAssetwithID(id int64) (*http.Response, err
 	}
 	resp, err := d.httpClient.Get(rdurl)
 	if err != nil {
-		return nil, errorutil.NewWithErr(err).Msgf("failed to download release asset")
+		return nil, errkit.Wrapf(err, "failed to download release asset")
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, errorutil.New("something went wrong got %v while downloading asset, expected status 200", resp.StatusCode)
+		return nil, errkit.Newf("something went wrong got %v while downloading asset, expected status 200", resp.StatusCode)
 	}
 	if resp.Body == nil {
-		return nil, errorutil.New("something went wrong got response without body")
+		return nil, errkit.New("something went wrong got response without body")
 	}
 	return resp, nil
 }
@@ -333,7 +335,7 @@ func (d *GHReleaseDownloader) downloadAssetwithID(id int64) (*http.Response, err
 // UnpackAssetWithCallback unpacks asset and executes callback function on every file in data
 func UnpackAssetWithCallback(format AssetFormat, data *bytes.Reader, callback AssetFileCallback) error {
 	if format != Zip && format != Tar {
-		return errorutil.NewWithTag("unpack", "github asset format not supported. only zip and tar are supported")
+		return errkit.New("github asset format not supported. only zip and tar are supported")
 	}
 	if format == Zip {
 		zipReader, err := zip.NewReader(data, data.Size())

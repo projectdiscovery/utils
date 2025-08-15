@@ -5,7 +5,7 @@ import (
 	"log"
 	"sync"
 
-	errorutil "github.com/projectdiscovery/utils/errors"
+	"github.com/projectdiscovery/utils/errkit"
 )
 
 // CloneOptions provides options for Cloning channels
@@ -43,13 +43,13 @@ func NewCloneChannels[T any](opts *CloneOptions) *CloneChannels[T] {
 // Clone takes data from source channel(src) and sends them to sinks(send only channel) without being totally unfair
 func (s *CloneChannels[T]) Clone(ctx context.Context, src chan T, sinks ...chan<- T) error {
 	if src == nil {
-		return errorutil.New("source channel is nil").WithTag("Clone", "channel")
+		return errkit.New("source channel is nil")
 	}
 
 	// check if all sinks are not nil
 	for _, ch := range sinks {
 		if ch == nil {
-			return errorutil.New("nil sink found").WithTag("Clone", "channel")
+			return errkit.New("nil sink found")
 		}
 	}
 
