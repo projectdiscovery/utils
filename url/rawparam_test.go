@@ -120,3 +120,270 @@ func TestURLDecode(t *testing.T) {
 		require.Equalf(t, v.Expected, parsed.Query().Encode(), "failed to decode params in url %v expected %v got %v", v.url, v.Expected, parsed.Query())
 	}
 }
+
+func TestPathEncode(t *testing.T) {
+	testcases := []struct {
+		Input    string
+		Expected string
+		Desc     string
+	}{
+		// Space encoding - always %20 in paths
+		{"hello world", "hello%20world", "spaces encoded as %20"},
+		{"test+value", "test+value", "+ preserved as literal"},
+		
+		// Special characters that need escaping in paths
+		{"path?query", "path%3Fquery", "? must be escaped in paths"},
+		{"path#fragment", "path%23fragment", "# must be escaped in paths"},
+		{"user@domain", "user%40domain", "@ must be escaped"},
+		
+		// Characters that don't need escaping in paths (unlike query params)
+		{"key=value", "key=value", "= is literal in paths"},
+		{"param&other", "param&other", "& is literal in paths"},
+		
+		// Control characters
+		{"test\nline", "test%0Aline", "newline encoded"},
+		{"test\tline", "test%09line", "tab encoded"},
+		
+		// Non-ASCII characters
+		{"café", "caf%c3%a9", "unicode encoded"},
+		
+		// Edge cases
+		{"", "", "empty string"},
+		{"/", "/", "forward slash preserved"},
+		{"../../../etc/passwd", "../../../etc/passwd", "path traversal sequences preserved"},
+	}
+	
+	for _, v := range testcases {
+		result := PathEncode(v.Input)
+		require.Equalf(t, v.Expected, result, "%s: expected %q but got %q", v.Desc, v.Expected, result)
+	}
+}
+
+func TestPathDecode(t *testing.T) {
+	testcases := []struct {
+		Input    string
+		Expected string
+		Desc     string
+	}{
+		// Space decoding - only %20 becomes space
+		{"hello%20world", "hello world", "%20 decoded to space"},
+		{"test+value", "test+value", "+ preserved as literal (not decoded to space)"},
+		
+		// Hex decoding
+		{"path%3Fquery", "path?query", "? decoded"},
+		{"path%23fragment", "path#fragment", "# decoded"},
+		{"user%40domain", "user@domain", "@ decoded"},
+		
+		// Characters that don't need decoding
+		{"key=value", "key=value", "= preserved"},
+		{"param&other", "param&other", "& preserved"},
+		
+		// Control characters
+		{"test%0Aline", "test\nline", "newline decoded"},
+		{"test%09line", "test\tline", "tab decoded"},
+		
+		// Non-ASCII
+		{"caf%C3%A9", "café", "unicode decoded"},
+		
+		// Invalid sequences should be preserved
+		{"test%GG", "test%GG", "invalid hex preserved"},
+		{"test%2", "test%2", "incomplete hex preserved"},
+		
+		// Edge cases
+		{"", "", "empty string"},
+		{"/", "/", "forward slash preserved"},
+		{"../../../etc/passwd", "../../../etc/passwd", "path traversal preserved"},
+	}
+	
+	for _, v := range testcases {
+		result, err := PathDecode(v.Input)
+		require.Nilf(t, err, "%s: unexpected error: %v", v.Desc, err)
+		require.Equalf(t, v.Expected, result, "%s: expected %q but got %q", v.Desc, v.Expected, result)
+	}
+}
+
+func TestPathEncodeDecodeRoundtrip(t *testing.T) {
+	testcases := []string{
+		"hello world",
+		"path?query#fragment",
+		"user@domain.com",
+		"key=value&param=other",
+		"test\nwith\tcontrol\rchars",
+		"café with unicode",
+		"../../../etc/passwd",
+		"test+literal+plus",
+	}
+	
+	for _, input := range testcases {
+		encoded := PathEncode(input)
+		decoded, err := PathDecode(encoded)
+		require.Nilf(t, err, "decode error for input %q", input)
+		require.Equalf(t, input, decoded, "roundtrip failed for %q: encoded=%q decoded=%q", input, encoded, decoded)
+	}
+}
+
+func TestPathVsParamEncodingDifferences(t *testing.T) {
+	testcases := []struct {
+		Input            string
+		ExpectedPath     string
+		ExpectedParam    string
+		Desc             string
+	}{
+		// Key difference: space encoding
+		{"hello world", "hello%20world", "hello+world", "space encoding difference"},
+		
+		// + character handling
+		{"test+plus", "test+plus", "test+plus", "+ preserved in both"},
+		
+		// & and = handling
+		{"key=val&other=test", "key=val&other=test", "key=val&other=test", "& and = preserved in both by default"},
+		
+		// ? and # handling  
+		{"query?test#frag", "query%3Ftest%23frag", "query?test#frag", "? and # encoded only in paths"},
+	}
+	
+	for _, v := range testcases {
+		pathResult := PathEncode(v.Input)
+		paramResult := ParamEncode(v.Input)
+		
+		require.Equalf(t, v.ExpectedPath, pathResult, "%s: path encoding mismatch", v.Desc)
+		require.Equalf(t, v.ExpectedParam, paramResult, "%s: param encoding mismatch", v.Desc)
+	}
+}
+
+func TestSQLInjectionPathEncoding(t *testing.T) {
+	testcases := []struct {
+		Name             string
+		Input            string
+		ExpectedEncoded  string
+		ExpectedDecoded  string
+		Description      string
+	}{
+		{
+			Name:            "SQL injection in path with mixed encoding",
+			Input:           "/admin/1' OR 1=1 ?key=y'+1=1&key2=value2",
+			ExpectedEncoded: "/admin/1'%20OR%201=1%20%3Fkey=y'+1=1&key2=value2",
+			ExpectedDecoded: "/admin/1' OR 1=1 ?key=y'+1=1&key2=value2",
+			Description:     "SQL injection path with spaces, quotes, and query-like syntax",
+		},
+		{
+			Name:            "Path with SQL payload and question mark",
+			Input:           "/user/1' OR 1=1?admin=true",
+			ExpectedEncoded: "/user/1'%20OR%201=1%3Fadmin=true",
+			ExpectedDecoded: "/user/1' OR 1=1?admin=true",
+			Description:     "SQL injection with question mark that needs encoding in paths",
+		},
+		{
+			Name:            "Complex SQL injection with multiple special chars",
+			Input:           "/api/user/1' UNION SELECT * FROM users WHERE admin=1#comment",
+			ExpectedEncoded: "/api/user/1'%20UNION%20SELECT%20*%20FROM%20users%20WHERE%20admin=1%23comment",
+			ExpectedDecoded: "/api/user/1' UNION SELECT * FROM users WHERE admin=1#comment",
+			Description:     "Complex SQL injection with spaces and hash that need encoding",
+		},
+		{
+			Name:            "Path traversal with SQL injection",
+			Input:           "/../../../etc/passwd' OR '1'='1",
+			ExpectedEncoded: "/../../../etc/passwd'%20OR%20'1'='1",
+			ExpectedDecoded: "/../../../etc/passwd' OR '1'='1",
+			Description:     "Path traversal combined with SQL injection",
+		},
+		{
+			Name:            "Already encoded SQL injection",
+			Input:           "/admin/1' OR 1=1 --",
+			ExpectedEncoded: "/admin/1'%20OR%201=1%20--",
+			ExpectedDecoded: "/admin/1' OR 1=1 --",
+			Description:     "SQL injection should be properly encoded",
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.Name, func(t *testing.T) {
+			// Test encoding
+			encoded := PathEncode(tc.Input)
+			require.Equalf(t, tc.ExpectedEncoded, encoded, 
+				"%s - Encoding mismatch:\nInput: %q\nExpected: %q\nGot: %q", 
+				tc.Description, tc.Input, tc.ExpectedEncoded, encoded)
+
+			// Test decoding
+			decoded, err := PathDecode(tc.Input)
+			require.Nilf(t, err, "%s - Decode error: %v", tc.Description, err)
+			require.Equalf(t, tc.ExpectedDecoded, decoded,
+				"%s - Decoding mismatch:\nInput: %q\nExpected: %q\nGot: %q", 
+				tc.Description, tc.Input, tc.ExpectedDecoded, decoded)
+
+			// Test roundtrip: encode then decode
+			roundtrip, err := PathDecode(encoded)
+			require.Nilf(t, err, "%s - Roundtrip decode error: %v", tc.Description, err)
+			require.Equalf(t, tc.Input, roundtrip,
+				"%s - Roundtrip failed:\nOriginal: %q\nEncoded: %q\nDecoded: %q", 
+				tc.Description, tc.Input, encoded, roundtrip)
+		})
+	}
+}
+
+func TestPathEncodingSecurityImplications(t *testing.T) {
+	// Test the key security difference: + vs %20 in SQL injection contexts
+	sqlPayload := "1 OR 1=1"
+	
+	// Path encoding (always %20)
+	pathEncoded := PathEncode(sqlPayload)
+	require.Equal(t, "1%20OR%201=1", pathEncoded, "Path should encode spaces as %20")
+	
+	// Param encoding (always +)
+	paramEncoded := ParamEncode(sqlPayload)
+	require.Equal(t, "1+OR+1=1", paramEncoded, "Params should encode spaces as +")
+	
+	// Decoding behavior difference
+	pathDecoded, err := PathDecode("test+plus")
+	require.Nil(t, err)
+	require.Equal(t, "test+plus", pathDecoded, "Path decode should preserve + as literal")
+	
+	pathDecodedSpace, err := PathDecode("test%20space")
+	require.Nil(t, err)
+	require.Equal(t, "test space", pathDecodedSpace, "Path decode should convert %20 to space")
+
+	t.Log("✓ Path encoding uses %20 for spaces (correct for path context)")
+	t.Log("✓ Param encoding uses + for spaces (correct for query context)")
+	t.Log("✓ Path decode treats + as literal (preventing confusion)")
+	t.Log("✓ Path decode converts %20 to space (standard percent decoding)")
+}
+
+func TestSpecificSQLInjectionPath(t *testing.T) {
+	// Test the specific path you mentioned
+	originalPath := "/admin/1'%20OR%201=1%20?key=y'+1=1&key2=value2"
+	
+	// Test decoding - this should convert %20 to spaces
+	decoded, err := PathDecode(originalPath)
+	require.Nil(t, err, "Failed to decode path")
+	expectedDecoded := "/admin/1' OR 1=1 ?key=y'+1=1&key2=value2"
+	require.Equal(t, expectedDecoded, decoded, 
+		"Decoded path mismatch:\nInput:    %q\nExpected: %q\nGot:      %q", 
+		originalPath, expectedDecoded, decoded)
+	
+	// Test encoding the decoded version - should re-encode spaces and ?
+	encoded := PathEncode(decoded)
+	expectedEncoded := "/admin/1'%20OR%201=1%20%3Fkey=y'+1=1&key2=value2"
+	require.Equal(t, expectedEncoded, encoded,
+		"Encoded path mismatch:\nInput:    %q\nExpected: %q\nGot:      %q", 
+		decoded, expectedEncoded, encoded)
+	
+	// Verify that the + signs are preserved as literals in both operations
+	require.Contains(t, decoded, "+1=1", "Plus signs should be preserved as literals during decode")
+	require.Contains(t, encoded, "+1=1", "Plus signs should be preserved as literals during encode")
+	
+	// Verify that spaces are properly encoded as %20 (not +)
+	require.Contains(t, encoded, "%20OR%20", "Spaces should be encoded as %20 in paths")
+	require.NotContains(t, encoded, "+OR+", "Spaces should NOT be encoded as + in paths")
+	
+	// Verify that ? is encoded in paths (it has special meaning)
+	require.Contains(t, encoded, "%3F", "Question mark should be encoded in paths")
+	
+	// Log the transformation for clarity
+	t.Logf("Original (mixed encoding): %s", originalPath)
+	t.Logf("Decoded (human readable):  %s", decoded)  
+	t.Logf("Re-encoded (consistent):   %s", encoded)
+	t.Log("✓ Percent-20 properly decoded to spaces")
+	t.Log("✓ + preserved as literal characters") 
+	t.Log("✓ Spaces re-encoded as percent-20 (not +)")
+	t.Log("✓ ? encoded as percent-3F (has special meaning in paths)")
+}
