@@ -40,19 +40,13 @@ func Walk(s interface{}, callback CallbackFunc) {
 	}
 }
 
-// FilterStruct filters the struct based on include and exclude fields and returns a new struct.
-// - input: the original struct.
-// - includeFields: list of fields to include (if empty, includes all).
-// - excludeFields: list of fields to exclude (processed after include).
-func FilterStruct[T any](input T, includeFields, excludeFields []string) (T, error) {
-	var zeroValue T
+func walkFilteredFields[T any](input T, includeFields, excludeFields []string, walker func(field reflect.StructField, value reflect.Value)) error {
 	val := reflect.ValueOf(input)
 	if val.Kind() == reflect.Ptr {
 		val = val.Elem()
 	}
-
 	if val.Kind() != reflect.Struct {
-		return zeroValue, errors.New("input must be a struct")
+		return errors.New("input must be a struct")
 	}
 
 	includeMap := make(map[string]bool)
@@ -66,7 +60,6 @@ func FilterStruct[T any](input T, includeFields, excludeFields []string) (T, err
 	}
 
 	typeOfStruct := val.Type()
-	filteredStruct := reflect.New(typeOfStruct).Elem()
 
 	for i := 0; i < val.NumField(); i++ {
 		field := typeOfStruct.Field(i)
@@ -77,11 +70,60 @@ func FilterStruct[T any](input T, includeFields, excludeFields []string) (T, err
 		fieldValue := val.Field(i)
 
 		if (len(includeMap) == 0 || includeMap[fieldName]) && !excludeMap[fieldName] {
-			filteredStruct.Field(i).Set(fieldValue)
+			walker(field, fieldValue)
 		}
+	}
+	return nil
+}
+
+// FilterStruct filters the struct based on include and exclude fields and returns a new struct.
+// - input: the original struct.
+// - includeFields: list of fields to include (if empty, includes all).
+// - excludeFields: list of fields to exclude (processed after include).
+func FilterStruct[T any](input T, includeFields, excludeFields []string) (T, error) {
+	var zeroValue T
+	val := reflect.ValueOf(input)
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+
+	filteredStruct := reflect.New(val.Type()).Elem()
+
+	walker := func(field reflect.StructField, value reflect.Value) {
+		filteredStruct.FieldByName(field.Name).Set(value)
+	}
+
+	if err := walkFilteredFields(input, includeFields, excludeFields, walker); err != nil {
+		return zeroValue, err
 	}
 
 	return filteredStruct.Interface().(T), nil
+}
+
+func FilterStructToMap[T any](input T, includeFields, excludeFields []string) (map[string]any, error) {
+	resultMap := make(map[string]any)
+
+	walker := func(field reflect.StructField, value reflect.Value) {
+		jsonTag := field.Tag.Get("json")
+		jsonKey := strings.Split(jsonTag, ",")[0]
+
+		if jsonKey == "" || jsonKey == "-" {
+			return
+		}
+
+		fieldValue := value.Interface()
+		if strings.Contains(jsonTag, "omitempty") && value.IsZero() {
+			return
+		}
+
+		resultMap[jsonKey] = fieldValue
+	}
+
+	if err := walkFilteredFields(input, includeFields, excludeFields, walker); err != nil {
+		return nil, err
+	}
+
+	return resultMap, nil
 }
 
 // GetStructFields returns all the top-level field names from the given struct.
