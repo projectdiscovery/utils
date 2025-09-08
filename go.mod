@@ -32,7 +32,7 @@ require (
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/shirou/gopsutil/v3 v3.23.7
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	github.com/tidwall/gjson v1.18.0
 	github.com/wasilibs/go-re2 v1.10.0
 	github.com/zmap/zcrypto v0.0.0-20230422215203-9a665e1e9968
@@ -83,9 +83,9 @@ require (
 	github.com/nxadm/tail v1.4.11 // indirect
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
-	github.com/projectdiscovery/fastdialer v0.4.8 // indirect
-	github.com/projectdiscovery/networkpolicy v0.1.22 // indirect
-	github.com/projectdiscovery/retryabledns v1.0.106 // indirect
+	github.com/projectdiscovery/fastdialer v0.4.9 // indirect
+	github.com/projectdiscovery/networkpolicy v0.1.23 // indirect
+	github.com/projectdiscovery/retryabledns v1.0.107 // indirect
 	github.com/refraction-networking/utls v1.7.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
@@ -123,7 +123,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/projectdiscovery/gologger v1.1.54
 	github.com/projectdiscovery/hmap v0.0.93
-	github.com/projectdiscovery/retryablehttp-go v1.0.122
+	github.com/projectdiscovery/retryablehttp-go v1.0.123
 	github.com/weppos/publicsuffix-go v0.40.3-0.20250408071509-6074bbe7fd39
 	github.com/zcalusic/sysinfo v1.0.2
 	github.com/zmap/rc2 v0.0.0-20190804163417-abaa70531248 // indirect
