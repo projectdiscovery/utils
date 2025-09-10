@@ -3,6 +3,8 @@ package structs
 import (
 	"reflect"
 	"testing"
+
+	mapsutil "github.com/projectdiscovery/utils/maps"
 )
 
 type TestStruct struct {
@@ -103,7 +105,7 @@ func TestFilterStructToMap(t *testing.T) {
 		input         any
 		includeFields []string
 		excludeFields []string
-		want          map[string]any
+		want          *mapsutil.OrderedMap[string, any]
 		wantErr       bool
 	}{
 		{
@@ -111,12 +113,14 @@ func TestFilterStructToMap(t *testing.T) {
 			input:         s,
 			includeFields: nil,
 			excludeFields: nil,
-			want: map[string]any{
-				"name":      "John",
-				"age":       30,
-				"is_active": true,
-				"address":   "New York",
-			},
+			want: func() *mapsutil.OrderedMap[string, any] {
+				om := mapsutil.NewOrderedMap[string, any]()
+				om.Set("name", "John")
+				om.Set("age", 30)
+				om.Set("is_active", true)
+				om.Set("address", "New York")
+				return &om
+			}(),
 			wantErr: false,
 		},
 		{
@@ -124,10 +128,12 @@ func TestFilterStructToMap(t *testing.T) {
 			input:         s,
 			includeFields: []string{"Name", "Address"},
 			excludeFields: []string{},
-			want: map[string]any{
-				"name":    "John",
-				"address": "New York",
-			},
+			want: func() *mapsutil.OrderedMap[string, any] {
+				om := mapsutil.NewOrderedMap[string, any]()
+				om.Set("name", "John")
+				om.Set("address", "New York")
+				return &om
+			}(),
 			wantErr: false,
 		},
 		{
@@ -135,10 +141,12 @@ func TestFilterStructToMap(t *testing.T) {
 			input:         s,
 			includeFields: []string{},
 			excludeFields: []string{"Address", "IsActive"},
-			want: map[string]any{
-				"name": "John",
-				"age":  30,
-			},
+			want: func() *mapsutil.OrderedMap[string, any] {
+				om := mapsutil.NewOrderedMap[string, any]()
+				om.Set("name", "John")
+				om.Set("age", 30)
+				return &om
+			}(),
 			wantErr: false,
 		},
 		{
@@ -146,10 +154,12 @@ func TestFilterStructToMap(t *testing.T) {
 			input:         s,
 			includeFields: []string{"Name", "Age", "Address"},
 			excludeFields: []string{"Age"},
-			want: map[string]any{
-				"name":    "John",
-				"address": "New York",
-			},
+			want: func() *mapsutil.OrderedMap[string, any] {
+				om := mapsutil.NewOrderedMap[string, any]()
+				om.Set("name", "John")
+				om.Set("address", "New York")
+				return &om
+			}(),
 			wantErr: false,
 		},
 		{
