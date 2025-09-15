@@ -186,6 +186,94 @@ func TestFilterStructToMap(t *testing.T) {
 	}
 }
 
+func TestFilterStructToMapOrder(t *testing.T) {
+	type OrderTestStruct struct {
+		FirstField  string `json:"first_field"`
+		SecondField int    `json:"second_field"`
+		ThirdField  bool   `json:"third_field"`
+		FourthField string `json:"fourth_field"`
+	}
+
+	s := OrderTestStruct{
+		FirstField:  "first",
+		SecondField: 42,
+		ThirdField:  true,
+		FourthField: "fourth",
+	}
+
+	t.Run("field order follows struct definition", func(t *testing.T) {
+		result, err := FilterStructToMap(s, nil, nil)
+		if err != nil {
+			t.Fatalf("FilterStructToMap() error = %v", err)
+		}
+
+		keys := result.GetKeys()
+		expectedOrder := []string{"first_field", "second_field", "third_field", "fourth_field"}
+
+		if len(keys) != len(expectedOrder) {
+			t.Errorf("Expected %d keys, got %d", len(expectedOrder), len(keys))
+		}
+
+		for i, expectedKey := range expectedOrder {
+			if i >= len(keys) {
+				t.Errorf("Missing key at index %d: expected %s", i, expectedKey)
+				continue
+			}
+			if keys[i] != expectedKey {
+				t.Errorf("Key at index %d: expected %s, got %s", i, expectedKey, keys[i])
+			}
+		}
+	})
+
+	t.Run("field order preserved with include filter", func(t *testing.T) {
+		result, err := FilterStructToMap(s, []string{"ThirdField", "FirstField"}, nil)
+		if err != nil {
+			t.Fatalf("FilterStructToMap() error = %v", err)
+		}
+
+		keys := result.GetKeys()
+		expectedOrder := []string{"first_field", "third_field"} // Struct order, not include order
+
+		if len(keys) != len(expectedOrder) {
+			t.Errorf("Expected %d keys, got %d", len(expectedOrder), len(keys))
+		}
+
+		for i, expectedKey := range expectedOrder {
+			if i >= len(keys) {
+				t.Errorf("Missing key at index %d: expected %s", i, expectedKey)
+				continue
+			}
+			if keys[i] != expectedKey {
+				t.Errorf("Key at index %d: expected %s, got %s", i, expectedKey, keys[i])
+			}
+		}
+	})
+
+	t.Run("field order preserved with exclude filter", func(t *testing.T) {
+		result, err := FilterStructToMap(s, nil, []string{"SecondField"})
+		if err != nil {
+			t.Fatalf("FilterStructToMap() error = %v", err)
+		}
+
+		keys := result.GetKeys()
+		expectedOrder := []string{"first_field", "third_field", "fourth_field"}
+
+		if len(keys) != len(expectedOrder) {
+			t.Errorf("Expected %d keys, got %d", len(expectedOrder), len(keys))
+		}
+
+		for i, expectedKey := range expectedOrder {
+			if i >= len(keys) {
+				t.Errorf("Missing key at index %d: expected %s", i, expectedKey)
+				continue
+			}
+			if keys[i] != expectedKey {
+				t.Errorf("Key at index %d: expected %s, got %s", i, expectedKey, keys[i])
+			}
+		}
+	})
+}
+
 func TestGetStructFields(t *testing.T) {
 	s := TestStruct{
 		Name:    "John",
