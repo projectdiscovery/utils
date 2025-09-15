@@ -4,6 +4,8 @@ import (
 	"errors"
 	"reflect"
 	"strings"
+
+	mapsutil "github.com/projectdiscovery/utils/maps"
 )
 
 // CallbackFunc on the struct field
@@ -100,8 +102,8 @@ func FilterStruct[T any](input T, includeFields, excludeFields []string) (T, err
 	return filteredStruct.Interface().(T), nil
 }
 
-func FilterStructToMap[T any](input T, includeFields, excludeFields []string) (map[string]any, error) {
-	resultMap := make(map[string]any)
+func FilterStructToMap[T any](input T, includeFields, excludeFields []string) (*mapsutil.OrderedMap[string, any], error) {
+	resultMap := mapsutil.NewOrderedMap[string, any]()
 
 	walker := func(field reflect.StructField, value reflect.Value) {
 		jsonTag := field.Tag.Get("json")
@@ -116,14 +118,14 @@ func FilterStructToMap[T any](input T, includeFields, excludeFields []string) (m
 			return
 		}
 
-		resultMap[jsonKey] = fieldValue
+		resultMap.Set(jsonKey, fieldValue)
 	}
 
 	if err := walkFilteredFields(input, includeFields, excludeFields, walker); err != nil {
 		return nil, err
 	}
 
-	return resultMap, nil
+	return &resultMap, nil
 }
 
 // GetStructFields returns all the top-level field names from the given struct.
