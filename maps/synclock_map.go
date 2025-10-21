@@ -3,6 +3,7 @@ package mapsutil
 import (
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/projectdiscovery/utils/errkit"
 )
@@ -11,11 +12,24 @@ var (
 	ErrReadOnly = errkit.New("map is currently in read-only mode")
 )
 
+// EvictionEntry represents an entry with last access time
+type EvictionEntry[K, V comparable] struct {
+	Key        K
+	Value      V
+	LastAccess time.Time
+}
+
 // SyncLock adds sync and lock capabilities to generic map
 type SyncLockMap[K, V comparable] struct {
 	ReadOnly atomic.Bool
 	mu       sync.RWMutex
 	Map      Map[K, V]
+
+	// Eviction-related fields
+	inactivityDuration time.Duration
+	evictionMap        map[K]*EvictionEntry[K, V]
+	evictionTicker     *time.Ticker
+	stopEviction       chan struct{}
 }
 
 type SyncLockMapOption[K, V comparable] func(slm *SyncLockMap[K, V])
@@ -23,6 +37,18 @@ type SyncLockMapOption[K, V comparable] func(slm *SyncLockMap[K, V])
 func WithMap[K, V comparable](m Map[K, V]) SyncLockMapOption[K, V] {
 	return func(slm *SyncLockMap[K, V]) {
 		slm.Map = m
+	}
+}
+
+// WithEviction enables inactivity-based eviction policy with the specified duration
+func WithEviction[K, V comparable](inactivityDuration time.Duration) SyncLockMapOption[K, V] {
+	return func(slm *SyncLockMap[K, V]) {
+		slm.inactivityDuration = inactivityDuration
+		slm.evictionMap = make(map[K]*EvictionEntry[K, V])
+		slm.stopEviction = make(chan struct{})
+
+		// Start eviction goroutine
+		slm.startEvictionRoutine()
 	}
 }
 
@@ -40,6 +66,52 @@ func NewSyncLockMap[K, V comparable](options ...SyncLockMapOption[K, V]) *SyncLo
 	}
 
 	return slm
+}
+
+// startEvictionRoutine starts the background eviction routine
+func (s *SyncLockMap[K, V]) startEvictionRoutine() {
+	if s.inactivityDuration <= 0 {
+		return
+	}
+
+	// Check every 1/4 of the inactivity duration, but at least every 10ms
+	tickerInterval := s.inactivityDuration / 4
+	if tickerInterval < 10*time.Millisecond {
+		tickerInterval = 10 * time.Millisecond
+	}
+
+	s.evictionTicker = time.NewTicker(tickerInterval)
+
+	go func() {
+		for {
+			select {
+			case <-s.evictionTicker.C:
+				s.evictInactiveEntries()
+			case <-s.stopEviction:
+				return
+			}
+		}
+	}()
+}
+
+// evictInactiveEntries removes entries that have been inactive for too long
+func (s *SyncLockMap[K, V]) evictInactiveEntries() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	now := time.Now()
+	var keysToDelete []K
+
+	for k, entry := range s.evictionMap {
+		if now.Sub(entry.LastAccess) >= s.inactivityDuration {
+			keysToDelete = append(keysToDelete, k)
+		}
+	}
+
+	for _, k := range keysToDelete {
+		delete(s.Map, k)
+		delete(s.evictionMap, k)
+	}
 }
 
 // Lock the current map to read-only mode
@@ -61,25 +133,56 @@ func (s *SyncLockMap[K, V]) Set(k K, v V) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.Map[k] = v
+	now := time.Now()
 
+	// If eviction is enabled, handle eviction logic
+	if s.inactivityDuration > 0 {
+		// Update or create eviction entry
+		if entry, exists := s.evictionMap[k]; exists {
+			// Update existing entry
+			entry.Value = v
+			entry.LastAccess = now
+		} else {
+			// Create new entry
+			s.evictionMap[k] = &EvictionEntry[K, V]{
+				Key:        k,
+				Value:      v,
+				LastAccess: now,
+			}
+		}
+	}
+
+	s.Map[k] = v
 	return nil
 }
 
 // Get an item with syncronous access
 func (s *SyncLockMap[K, V]) Get(k K) (V, bool) {
 	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	v, ok := s.Map[k]
+	s.mu.RUnlock()
+
+	// If eviction is enabled and key exists, update last access time
+	if s.inactivityDuration > 0 && ok {
+		s.mu.Lock()
+		if entry, exists := s.evictionMap[k]; exists {
+			entry.LastAccess = time.Now()
+		}
+		s.mu.Unlock()
+	}
 
 	return v, ok
 }
 
-// Get an item with syncronous access
+// Delete an item with syncronous access
 func (s *SyncLockMap[K, V]) Delete(k K) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	// If eviction is enabled, clean up eviction tracking
+	if s.inactivityDuration > 0 {
+		delete(s.evictionMap, k)
+	}
 
 	delete(s.Map, k)
 }
@@ -103,12 +206,43 @@ func (s *SyncLockMap[K, V]) Clone() *SyncLockMap[K, V] {
 	defer s.mu.Unlock()
 
 	smap := &SyncLockMap[K, V]{
-		ReadOnly: atomic.Bool{},
-		mu:       sync.RWMutex{},
-		Map:      s.Map.Clone(),
+		ReadOnly:           atomic.Bool{},
+		mu:                 sync.RWMutex{},
+		Map:                s.Map.Clone(),
+		inactivityDuration: s.inactivityDuration,
 	}
 	smap.ReadOnly.Store(s.ReadOnly.Load())
+
+	// If eviction is enabled, reinitialize eviction structures
+	if s.inactivityDuration > 0 {
+		smap.evictionMap = make(map[K]*EvictionEntry[K, V])
+		smap.stopEviction = make(chan struct{})
+
+		// Copy eviction entries with current time
+		now := time.Now()
+		for k, entry := range s.evictionMap {
+			smap.evictionMap[k] = &EvictionEntry[K, V]{
+				Key:        k,
+				Value:      entry.Value,
+				LastAccess: now,
+			}
+		}
+
+		// Start eviction routine for the cloned map
+		smap.startEvictionRoutine()
+	}
+
 	return smap
+}
+
+// StopEviction stops the background eviction routine
+func (s *SyncLockMap[K, V]) StopEviction() {
+	if s.evictionTicker != nil {
+		s.evictionTicker.Stop()
+	}
+	if s.stopEviction != nil {
+		close(s.stopEviction)
+	}
 }
 
 // Has checks if the current map has the provided key
