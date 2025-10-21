@@ -28,8 +28,9 @@ type SyncLockMap[K, V comparable] struct {
 	// Eviction-related fields
 	inactivityDuration time.Duration
 	evictionMap        map[K]*EvictionEntry[K, V]
-	evictionTicker     *time.Ticker
-	stopEviction       chan struct{}
+	lastCleanup        time.Time
+	cleanupMutex       sync.Mutex
+	cleanupInterval    time.Duration
 }
 
 type SyncLockMapOption[K, V comparable] func(slm *SyncLockMap[K, V])
@@ -45,10 +46,8 @@ func WithEviction[K, V comparable](inactivityDuration time.Duration) SyncLockMap
 	return func(slm *SyncLockMap[K, V]) {
 		slm.inactivityDuration = inactivityDuration
 		slm.evictionMap = make(map[K]*EvictionEntry[K, V])
-		slm.stopEviction = make(chan struct{})
-
-		// Start eviction goroutine
-		slm.startEvictionRoutine()
+		// Set cleanup interval to 30 minutes by default
+		slm.cleanupInterval = 30 * time.Minute
 	}
 }
 
@@ -68,30 +67,41 @@ func NewSyncLockMap[K, V comparable](options ...SyncLockMapOption[K, V]) *SyncLo
 	return slm
 }
 
-// startEvictionRoutine starts the background eviction routine
-func (s *SyncLockMap[K, V]) startEvictionRoutine() {
+// triggerCleanupIfNeeded triggers a one-shot cleanup if it hasn't run in the last 30 minutes
+func (s *SyncLockMap[K, V]) triggerCleanupIfNeeded() {
 	if s.inactivityDuration <= 0 {
 		return
 	}
 
-	// Check every 1/4 of the inactivity duration, but at least every 10ms
-	tickerInterval := s.inactivityDuration / 4
-	if tickerInterval < 10*time.Millisecond {
-		tickerInterval = 10 * time.Millisecond
+	s.cleanupMutex.Lock()
+	defer s.cleanupMutex.Unlock()
+
+	// Check if cleanup is needed using instance-specific interval
+	now := time.Now()
+	if now.Sub(s.lastCleanup) < s.cleanupInterval {
+		return
 	}
 
-	s.evictionTicker = time.NewTicker(tickerInterval)
+	// Update last cleanup time and trigger async cleanup
+	s.lastCleanup = now
+	go s.evictInactiveEntries()
+}
 
-	go func() {
-		for {
-			select {
-			case <-s.evictionTicker.C:
-				s.evictInactiveEntries()
-			case <-s.stopEviction:
-				return
-			}
-		}
-	}()
+// ForceCleanup forces an immediate cleanup (useful for testing)
+func (s *SyncLockMap[K, V]) ForceCleanup() {
+	if s.inactivityDuration <= 0 {
+		return
+	}
+	s.evictInactiveEntries()
+}
+
+// CleanupInactiveItems manually triggers cleanup of inactive items
+// This is a public helper function that can be called externally
+func (s *SyncLockMap[K, V]) CleanupInactiveItems() {
+	if s.inactivityDuration <= 0 {
+		return
+	}
+	s.evictInactiveEntries()
 }
 
 // evictInactiveEntries removes entries that have been inactive for too long
@@ -153,6 +163,10 @@ func (s *SyncLockMap[K, V]) Set(k K, v V) error {
 	}
 
 	s.Map[k] = v
+
+	// Trigger cleanup if needed
+	s.triggerCleanupIfNeeded()
+
 	return nil
 }
 
@@ -170,6 +184,9 @@ func (s *SyncLockMap[K, V]) Get(k K) (V, bool) {
 		}
 		s.mu.Unlock()
 	}
+
+	// Trigger cleanup if needed
+	s.triggerCleanupIfNeeded()
 
 	return v, ok
 }
@@ -210,13 +227,13 @@ func (s *SyncLockMap[K, V]) Clone() *SyncLockMap[K, V] {
 		mu:                 sync.RWMutex{},
 		Map:                s.Map.Clone(),
 		inactivityDuration: s.inactivityDuration,
+		cleanupInterval:    s.cleanupInterval,
 	}
 	smap.ReadOnly.Store(s.ReadOnly.Load())
 
 	// If eviction is enabled, reinitialize eviction structures
 	if s.inactivityDuration > 0 {
 		smap.evictionMap = make(map[K]*EvictionEntry[K, V])
-		smap.stopEviction = make(chan struct{})
 
 		// Copy eviction entries with current time
 		now := time.Now()
@@ -227,22 +244,9 @@ func (s *SyncLockMap[K, V]) Clone() *SyncLockMap[K, V] {
 				LastAccess: now,
 			}
 		}
-
-		// Start eviction routine for the cloned map
-		smap.startEvictionRoutine()
 	}
 
 	return smap
-}
-
-// StopEviction stops the background eviction routine
-func (s *SyncLockMap[K, V]) StopEviction() {
-	if s.evictionTicker != nil {
-		s.evictionTicker.Stop()
-	}
-	if s.stopEviction != nil {
-		close(s.stopEviction)
-	}
 }
 
 // Has checks if the current map has the provided key
