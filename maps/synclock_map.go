@@ -29,7 +29,6 @@ type SyncLockMap[K, V comparable] struct {
 	inactivityDuration time.Duration
 	evictionMap        map[K]*EvictionEntry[K, V]
 	lastCleanup        time.Time
-	cleanupMutex       sync.Mutex
 	cleanupInterval    time.Duration
 }
 
@@ -42,12 +41,11 @@ func WithMap[K, V comparable](m Map[K, V]) SyncLockMapOption[K, V] {
 }
 
 // WithEviction enables inactivity-based eviction policy with the specified duration
-func WithEviction[K, V comparable](inactivityDuration time.Duration) SyncLockMapOption[K, V] {
+func WithEviction[K, V comparable](inactivityDuration time.Duration, cleanupInterval time.Duration) SyncLockMapOption[K, V] {
 	return func(slm *SyncLockMap[K, V]) {
 		slm.inactivityDuration = inactivityDuration
 		slm.evictionMap = make(map[K]*EvictionEntry[K, V])
-		// Set cleanup interval to 30 minutes by default
-		slm.cleanupInterval = 30 * time.Minute
+		slm.cleanupInterval = cleanupInterval
 	}
 }
 
@@ -67,14 +65,11 @@ func NewSyncLockMap[K, V comparable](options ...SyncLockMapOption[K, V]) *SyncLo
 	return slm
 }
 
-// triggerCleanupIfNeeded triggers a one-shot cleanup if it hasn't run in the last 30 minutes
+// triggerCleanupIfNeeded triggers a one-shot cleanup if it hasn't run in the cleanup interval
 func (s *SyncLockMap[K, V]) triggerCleanupIfNeeded() {
 	if s.inactivityDuration <= 0 {
 		return
 	}
-
-	s.cleanupMutex.Lock()
-	defer s.cleanupMutex.Unlock()
 
 	// Check if cleanup is needed using instance-specific interval
 	now := time.Now()

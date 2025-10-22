@@ -177,15 +177,15 @@ func TestSyncLockMapWithConcurrency(t *testing.T) {
 
 func TestSyncLockMapWithEviction(t *testing.T) {
 	t.Run("Test WithEviction option", func(t *testing.T) {
-		m := NewSyncLockMap(WithEviction[string, string](100 * time.Millisecond))
+		m := NewSyncLockMap(WithEviction[string, string](100*time.Millisecond, 5*time.Minute))
 
 		require.NotNil(t, m.evictionMap, "eviction map should be initialized")
 		require.Equal(t, 100*time.Millisecond, m.inactivityDuration, "inactivity duration should be set")
-		require.Equal(t, 30*time.Minute, m.cleanupInterval, "cleanup interval should be set to default 30 minutes")
+		require.Equal(t, 5*time.Minute, m.cleanupInterval, "cleanup interval should be set to specified value")
 	})
 
 	t.Run("Test eviction after inactivity", func(t *testing.T) {
-		m := NewSyncLockMap(WithEviction[string, string](50 * time.Millisecond))
+		m := NewSyncLockMap(WithEviction[string, string](50*time.Millisecond, 30*time.Minute))
 
 		// Add some items
 		err := m.Set("key1", "value1")
@@ -200,11 +200,8 @@ func TestSyncLockMapWithEviction(t *testing.T) {
 		// Wait for items to become inactive (longer than inactivity duration)
 		time.Sleep(100 * time.Millisecond)
 
-		// Trigger cleanup by accessing the map (this will start cleanup if needed)
-		m.Get("key1") // This will trigger cleanup check
-
-		// Wait for cleanup interval to trigger eviction
-		time.Sleep(150 * time.Millisecond)
+		// Use external cleanup function for immediate cleanup
+		m.CleanupInactiveItems()
 
 		// Items should be evicted
 		require.False(t, m.Has("key1"))
@@ -212,7 +209,7 @@ func TestSyncLockMapWithEviction(t *testing.T) {
 	})
 
 	t.Run("Test access resets eviction timer", func(t *testing.T) {
-		m := NewSyncLockMap(WithEviction[string, string](100 * time.Millisecond))
+		m := NewSyncLockMap(WithEviction[string, string](100*time.Millisecond, 30*time.Minute))
 
 		// Add an item
 		err := m.Set("key1", "value1")
@@ -230,14 +227,13 @@ func TestSyncLockMapWithEviction(t *testing.T) {
 
 		// Wait for item to become inactive, then trigger cleanup
 		time.Sleep(150 * time.Millisecond)
-		m.Get("key1") // This will trigger cleanup check
-		time.Sleep(150 * time.Millisecond)
+		m.CleanupInactiveItems() // Use external cleanup function
 		_, ok = m.Get("key1")
 		require.False(t, ok, "item should be evicted after inactivity")
 	})
 
 	t.Run("Test Set updates access time", func(t *testing.T) {
-		m := NewSyncLockMap(WithEviction[string, string](100 * time.Millisecond))
+		m := NewSyncLockMap(WithEviction[string, string](100*time.Millisecond, 30*time.Minute))
 
 		// Add an item
 		err := m.Set("key1", "value1")
@@ -256,14 +252,13 @@ func TestSyncLockMapWithEviction(t *testing.T) {
 
 		// Wait for item to become inactive, then trigger cleanup
 		time.Sleep(150 * time.Millisecond)
-		m.Get("key1") // This will trigger cleanup check
-		time.Sleep(150 * time.Millisecond)
+		m.CleanupInactiveItems() // Use external cleanup function
 		_, ok = m.Get("key1")
 		require.False(t, ok, "item should be evicted after inactivity")
 	})
 
 	t.Run("Test Delete removes from eviction tracking", func(t *testing.T) {
-		m := NewSyncLockMap(WithEviction[string, string](50 * time.Millisecond))
+		m := NewSyncLockMap(WithEviction[string, string](50*time.Millisecond, 30*time.Minute))
 
 		// Add an item
 		err := m.Set("key1", "value1")
@@ -279,7 +274,7 @@ func TestSyncLockMapWithEviction(t *testing.T) {
 	})
 
 	t.Run("Test Clone with eviction", func(t *testing.T) {
-		m := NewSyncLockMap(WithEviction[string, string](100 * time.Millisecond))
+		m := NewSyncLockMap(WithEviction[string, string](100*time.Millisecond, 30*time.Minute))
 
 		// Add some items
 		err := m.Set("key1", "value1")
@@ -300,7 +295,7 @@ func TestSyncLockMapWithEviction(t *testing.T) {
 	})
 
 	t.Run("Test external cleanup function", func(t *testing.T) {
-		m := NewSyncLockMap(WithEviction[string, string](50 * time.Millisecond))
+		m := NewSyncLockMap(WithEviction[string, string](50*time.Millisecond, 30*time.Minute))
 
 		// Add some items
 		err := m.Set("key1", "value1")
@@ -321,6 +316,20 @@ func TestSyncLockMapWithEviction(t *testing.T) {
 		// Items should be evicted
 		require.False(t, m.Has("key1"))
 		require.False(t, m.Has("key2"))
+	})
+
+	t.Run("Test different cleanup intervals", func(t *testing.T) {
+		// Map with 1-minute cleanup interval
+		m1 := NewSyncLockMap(WithEviction[string, string](50*time.Millisecond, 1*time.Minute))
+		require.Equal(t, 1*time.Minute, m1.cleanupInterval, "cleanup interval should be 1 minute")
+
+		// Map with 5-minute cleanup interval
+		m2 := NewSyncLockMap(WithEviction[string, string](50*time.Millisecond, 5*time.Minute))
+		require.Equal(t, 5*time.Minute, m2.cleanupInterval, "cleanup interval should be 5 minutes")
+
+		// Map with 1-hour cleanup interval
+		m3 := NewSyncLockMap(WithEviction[string, string](50*time.Millisecond, 1*time.Hour))
+		require.Equal(t, 1*time.Hour, m3.cleanupInterval, "cleanup interval should be 1 hour")
 	})
 
 }
