@@ -21,7 +21,7 @@ type OneTimePool struct {
 	mx              sync.RWMutex
 }
 
-func NewOneTimePool(ctx context.Context, address string, poolSize int) (*OneTimePool, error) {
+func NewOneTimePool(ctx context.Context, address string, poolSize int, opts ...Option) (*OneTimePool, error) {
 	idleConnections := make(chan net.Conn, poolSize)
 	inFlightConns, err := NewInFlightConns()
 	if err != nil {
@@ -36,6 +36,15 @@ func NewOneTimePool(ctx context.Context, address string, poolSize int) (*OneTime
 		ctx = context.Background()
 	}
 	pool.ctx, pool.cancel = context.WithCancel(ctx)
+	// apply options
+	for _, opt := range opts {
+		if opt == nil {
+			continue
+		}
+		if err := opt(pool); err != nil {
+			return nil, err
+		}
+	}
 	return pool, nil
 }
 
