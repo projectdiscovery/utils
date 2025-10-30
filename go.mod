@@ -129,7 +129,7 @@ require (
 	github.com/zmap/rc2 v0.0.0-20190804163417-abaa70531248 // indirect
 	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/mod v0.22.0 // indirect
-	golang.org/x/net v0.39.0 // indirect
+	golang.org/x/net v0.39.0
 	golang.org/x/term v0.31.0
 	golang.org/x/tools v0.29.0
 )
