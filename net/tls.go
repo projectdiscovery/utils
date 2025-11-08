@@ -1,6 +1,7 @@
 package net
 
 import (
+	"crypto/rand"
 	"net"
 	"os"
 	"time"
@@ -77,6 +78,10 @@ func DetectTLS(conn net.Conn, host string, timeout time.Duration) bool {
 	clientHello[offset] = 0x03   // version: TLS 1.2 (major)
 	clientHello[offset+1] = 0x03 // version: TLS 1.2 (minor)
 	offset += 2
+	random := make([]byte, 32)
+	if _, err := rand.Read(random); err != nil {
+		return false
+	}
 	copy(clientHello[offset:], random) // random (32 bytes)
 	offset += 32
 	clientHello[offset] = 0x00 // session_id length
