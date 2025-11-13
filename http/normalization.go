@@ -18,6 +18,43 @@ import (
 	stringsutil "github.com/projectdiscovery/utils/strings"
 )
 
+// limitedBuffer wraps [bytes.Buffer] to prevent capacity growth beyond maxCap.
+// This prevents bytes.Buffer.ReadFrom() from over-allocating when it doesn't
+// know the final size.
+type limitedBuffer struct {
+	buf    *bytes.Buffer
+	maxCap int
+}
+
+func (lb *limitedBuffer) ReadFrom(r io.Reader) (n int64, err error) {
+	const chunkSize = 32 * 1024 // 32KB chunks
+	chunk := make([]byte, chunkSize)
+
+	for {
+		available := lb.buf.Cap() - lb.buf.Len()
+		if available < chunkSize && lb.buf.Cap() < lb.maxCap {
+			needed := min(lb.buf.Len()+chunkSize, lb.maxCap)
+			lb.buf.Grow(needed - lb.buf.Len())
+		}
+
+		nr, readErr := r.Read(chunk)
+		if nr > 0 {
+			nw, writeErr := lb.buf.Write(chunk[:nr])
+			n += int64(nw)
+			if writeErr != nil {
+				return n, writeErr
+			}
+		}
+
+		if readErr != nil {
+			if readErr == io.EOF {
+				return n, nil
+			}
+			return n, readErr
+		}
+	}
+}
+
 // readNNormalizeRespBody performs normalization on the http response object.
 // and fills body buffer with actual response body.
 func readNNormalizeRespBody(rc *ResponseChain, body *bytes.Buffer) (err error) {
@@ -39,10 +76,13 @@ func readNNormalizeRespBody(rc *ResponseChain, body *bytes.Buffer) (err error) {
 	if err != nil {
 		wrapped = origBody
 	}
-	limitReader := io.LimitReader(wrapped, 2*MaxBodyRead)
+	limitReader := io.LimitReader(wrapped, int64(maxBodyRead))
 
-	// read response body to buffer
-	_, err = body.ReadFrom(limitReader)
+	// Read body using ReadFrom for efficiency, but cap growth at maxBodyRead.
+	// We use a custom limitedBuffer wrapper to prevent bytes.Buffer from
+	// over-allocating (it normally grows to 2x when size is unknown).
+	limitedBuf := &limitedBuffer{buf: body, maxCap: maxBodyRead}
+	_, err = limitedBuf.ReadFrom(limitReader)
 	if err != nil {
 		if strings.Contains(err.Error(), "gzip: invalid header") {
 			// its invalid gzip but we will still use it from original body

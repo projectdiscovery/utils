@@ -7,13 +7,116 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/projectdiscovery/utils/conversion"
 	"github.com/projectdiscovery/utils/sync/sizedpool"
 )
 
 var (
-	// reasonably high default allowed allocs
+	// DefaultBytesBufferAlloc is the default size of bytes buffer used for
+	// response body storage.
+	//
+	// Deprecated: Use [DefaultBufferSize] instead.
 	DefaultBytesBufferAlloc = int64(10000)
 )
+
+const (
+	// DefaultBufferSize is the default size of bytes buffer used for response
+	// body storage.
+	//
+	// Use [SetBufferSize] to adjust the size.
+	DefaultBufferSize = int64(10000)
+
+	// DefaultMaxBodySize is the default maximum size of HTTP response body to
+	// read.
+	//
+	// Responses larger than this will be truncated.
+	//
+	// Use [SetMaxBodySize] to adjust the size.
+	DefaultMaxBodySize = 8 * 1024 * 1024 // 8 MB
+
+	// DefaultMaxLargeBuffers is the maximum number of buffers at [maxBodyRead]
+	// size that will be kept in the pool.
+	//
+	// This prevents pool pollution from accumulating many large buffers while
+	// still allowing buffer reuse during burst workloads (e.g., nuclei scans
+	// with compression bombs). Excess large buffers are discarded and handled
+	// by GC.
+	//
+	// Default of 20 balances memory usage (~160MB max for large buffers) with
+	// performance for typical concurrent workloads.
+	//
+	// Tuning:
+	// - Increase for higher concurrency workloads (e.g., 50+ concurrent reqs)
+	// - Decrease for memory-constrained environments (min. 10 recommended)
+	//
+	// Use [SetMaxLargeBuffers] to adjust the size.
+	DefaultMaxLargeBuffers = 20
+
+	// largeBufferThreshold defines when a buffer is considered "large"
+	// Buffers >= this size are subject to maxLargeBuffers limiting.
+	//
+	// Set to 512KB to balance between:
+	// - Allowing small-medium responses (< 512KB) to be freely pooled
+	// - Limiting accumulation of larger buffers (>= 512KB)
+	//
+	// This threshold works well for web scanning where:
+	// - Most HTML pages are < 200KB (freely pooled)
+	// - Medium responses 200-500KB (freely pooled)
+	// - Large responses/APIs >= 512KB (limited pooling)
+	largeBufferThreshold = 512 * 1024 // 512 KB
+)
+
+var (
+	bufferSize      = DefaultBufferSize
+	maxBodyRead     = DefaultMaxBodySize
+	maxLargeBuffers = DefaultMaxLargeBuffers
+)
+
+// SetMaxBodySize sets the maximum size of HTTP response body to read.
+//
+// Responses larger than this will be truncated.
+//
+// If size is less than [DefaultMaxBodySize], it will be set to [DefaultMaxBodySize].
+func SetMaxBodySize(size int) {
+	if size < DefaultMaxBodySize {
+		size = DefaultMaxBodySize
+	}
+	maxBodyRead = size
+}
+
+// SetBufferSize sets the size of bytes buffer used for response body storage.
+//
+// Changing the size will reset the buffer pool.
+//
+// If size is less than 1000, it will be set to 1000.
+func SetBufferSize(size int64) {
+	if size < 1000 {
+		size = 1000
+	}
+	bufferSize = size
+
+	resetBuffer()
+}
+
+// SetMaxLargeBuffers adjusts the maximum number of large buffers that can be
+// pooled.
+//
+// This should be called before making HTTP requests. Changing the limit will
+// drain existing pooled buffers to ensure clean state.
+//
+// If max is less than [DefaultMaxLargeBuffers], it will be set to
+// [DefaultMaxLargeBuffers].
+func SetMaxLargeBuffers(max int) {
+	if maxLargeBuffers < DefaultMaxLargeBuffers {
+		maxLargeBuffers = DefaultMaxLargeBuffers
+	}
+
+	resetBuffer()
+}
+
+// use buffer pool for storing response body
+// and reuse it for each request
+var bufPool *sizedpool.SizedPool[*bytes.Buffer]
 
 func ChangePoolSize(x int64) error {
 	return bufPool.Vary(context.Background(), x)
@@ -23,9 +126,12 @@ func GetPoolSize() int64 {
 	return bufPool.Size()
 }
 
-// use buffer pool for storing response body
-// and reuse it for each request
-var bufPool *sizedpool.SizedPool[*bytes.Buffer]
+// largeBufferSem limits the number of large buffers in the pool
+var largeBufferSem chan struct{}
+
+func setLargeBufferSemSize(size int) {
+	largeBufferSem = make(chan struct{}, size)
+}
 
 func init() {
 	var p = &sync.Pool{
@@ -37,25 +143,67 @@ func init() {
 		},
 	}
 	var err error
-	bufPool, err = sizedpool.New[*bytes.Buffer](
+	bufPool, err = sizedpool.New(
 		sizedpool.WithPool[*bytes.Buffer](p),
-		sizedpool.WithSize[*bytes.Buffer](int64(DefaultBytesBufferAlloc)),
+		sizedpool.WithSize[*bytes.Buffer](bufferSize),
 	)
 	if err != nil {
 		panic(err)
 	}
+
+	setLargeBufferSemSize(maxLargeBuffers)
 }
 
 // getBuffer returns a buffer from the pool
 func getBuffer() *bytes.Buffer {
 	buff, _ := bufPool.Get(context.Background())
+
+	if buff.Cap() >= largeBufferThreshold {
+		select {
+		case <-largeBufferSem:
+		default:
+			// Semaphore wasn't held (shouldn't happen, but handle gracefully)
+		}
+	}
+
 	return buff
 }
 
 // putBuffer returns a buffer to the pool
 func putBuffer(buf *bytes.Buffer) {
+	cap := buf.Cap()
+	if cap > maxBodyRead {
+		return
+	}
+
 	buf.Reset()
+
+	if cap >= largeBufferThreshold {
+		select {
+		case largeBufferSem <- struct{}{}:
+			bufPool.Put(buf)
+		default:
+			// NOTE(dwisiswant0): Pool is full of large buffers, discard this
+			// one. It will be GC'ed, preventing memory accumulation.
+		}
+		return
+	}
+
+	// Small buffers are always pooled
 	bufPool.Put(buf)
+}
+
+// resetBuffer drains all buffers from the pool.
+// This ensures clean state when pool configuration changes.
+func resetBuffer() {
+	for range maxLargeBuffers {
+		buf, err := bufPool.Get(context.Background())
+		if err != nil || buf == nil {
+			break
+		}
+	}
+
+	setLargeBufferSemSize(maxLargeBuffers)
 }
 
 // Performance Notes:
@@ -72,40 +220,103 @@ func putBuffer(buf *bytes.Buffer) {
 // on every call to previous it returns the previous response
 // if it was redirected.
 type ResponseChain struct {
-	headers      *bytes.Buffer
-	body         *bytes.Buffer
-	fullResponse *bytes.Buffer
-	resp         *http.Response
-	reloaded     bool // if response was reloaded to its previous redirect
+	headers  *bytes.Buffer
+	body     *bytes.Buffer
+	resp     *http.Response
+	reloaded bool // if response was reloaded to its previous redirect
 }
 
 // NewResponseChain creates a new response chain for a http request
-// with a maximum body size. (if -1 stick to default 4MB)
+// with a maximum body size. (if -1 stick to default 8MB)
 func NewResponseChain(resp *http.Response, maxBody int64) *ResponseChain {
 	if maxBody > 0 && resp.Body != nil {
 		resp.Body = http.MaxBytesReader(nil, resp.Body, maxBody)
 	}
 	return &ResponseChain{
-		headers:      getBuffer(),
-		body:         getBuffer(),
-		fullResponse: getBuffer(),
-		resp:         resp,
+		headers: getBuffer(),
+		body:    getBuffer(),
+		resp:    resp,
 	}
 }
 
-// Response returns the current response in the chain
+// Headers returns the current response headers buffer in the chain.
+//
+// Warning: The returned buffer is pooled and must not be modified or retained.
+// Prefer HeadersBytes() or HeadersString() for safe read-only access.
 func (r *ResponseChain) Headers() *bytes.Buffer {
 	return r.headers
 }
 
-// Body returns the current response body in the chain
+// HeadersBytes returns the current response headers as byte slice in the chain.
+//
+// The returned slice is valid only until Close() is called.
+func (r *ResponseChain) HeadersBytes() []byte {
+	return r.headers.Bytes()
+}
+
+// HeadersString returns the current response headers as string in the chain.
+//
+// The returned string is valid only until Close() is called.
+// This is a zero-copy operation for performance.
+func (r *ResponseChain) HeadersString() string {
+	return conversion.String(r.headers.Bytes())
+}
+
+// Body returns the current response body buffer in the chain.
+//
+// Warning: The returned buffer is pooled and must not be modified or retained.
+// Prefer BodyBytes() or BodyString() for safe read-only access.
 func (r *ResponseChain) Body() *bytes.Buffer {
 	return r.body
 }
 
-// FullResponse returns the current response in the chain
+// BodyBytes returns the current response body as byte slice in the chain.
+//
+// The returned slice is valid only until Close() is called.
+func (r *ResponseChain) BodyBytes() []byte {
+	return r.body.Bytes()
+}
+
+// BodyString returns the current response body as string in the chain.
+//
+// The returned string is valid only until Close() is called.
+// This is a zero-copy operation for performance.
+func (r *ResponseChain) BodyString() string {
+	return conversion.String(r.body.Bytes())
+}
+
+// FullResponse returns a new buffer containing headers+body.
+//
+// Warning: The caller is responsible for managing the returned buffer's
+// lifecycle.
+// The buffer should be returned to the pool using putBuffer() or allowed to be
+// garbage collected. Prefer FullResponseBytes() or FullResponseString() for
+// safe read-only access.
 func (r *ResponseChain) FullResponse() *bytes.Buffer {
-	return r.fullResponse
+	buf := getBuffer()
+	buf.Write(r.headers.Bytes())
+	buf.Write(r.body.Bytes())
+
+	return buf
+}
+
+// FullResponseBytes returns the current response (headers+body) as byte slice.
+//
+// The returned slice is valid only until Close() is called.
+// Note: This creates a new buffer internally which is returned to the pool.
+func (r *ResponseChain) FullResponseBytes() []byte {
+	buf := r.FullResponse()
+	defer putBuffer(buf)
+
+	return buf.Bytes()
+}
+
+// FullResponseString returns the current response as string in the chain.
+//
+// The returned string is valid only until Close() is called.
+// This is a zero-copy operation for performance.
+func (r *ResponseChain) FullResponseString() string {
+	return conversion.String(r.FullResponse().Bytes())
 }
 
 // previous updates response pointer to previous response
@@ -153,9 +364,6 @@ func (r *ResponseChain) Fill() error {
 		DrainResponseBody(r.resp)
 	}
 
-	// join headers and body
-	r.fullResponse.Write(r.headers.Bytes())
-	r.fullResponse.Write(r.body.Bytes())
 	return nil
 }
 
@@ -163,10 +371,8 @@ func (r *ResponseChain) Fill() error {
 func (r *ResponseChain) Close() {
 	putBuffer(r.headers)
 	putBuffer(r.body)
-	putBuffer(r.fullResponse)
 	r.headers = nil
 	r.body = nil
-	r.fullResponse = nil
 }
 
 // Has returns true if the response chain has a response
@@ -192,5 +398,4 @@ func (r *ResponseChain) Response() *http.Response {
 func (r *ResponseChain) reset() {
 	r.headers.Reset()
 	r.body.Reset()
-	r.fullResponse.Reset()
 }
