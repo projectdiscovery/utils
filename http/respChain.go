@@ -30,8 +30,6 @@ const (
 	// read.
 	//
 	// Responses larger than this will be truncated.
-	//
-	// Use [SetMaxBodySize] to adjust the size.
 	DefaultMaxBodySize = 8 * 1024 * 1024 // 8 MB
 
 	// DefaultMaxLargeBuffers is the maximum number of buffers at [maxBodyRead]
@@ -68,21 +66,8 @@ const (
 
 var (
 	bufferSize      = DefaultBufferSize
-	maxBodyRead     = DefaultMaxBodySize
 	maxLargeBuffers = DefaultMaxLargeBuffers
 )
-
-// SetMaxBodySize sets the maximum size of HTTP response body to read.
-//
-// Responses larger than this will be truncated.
-//
-// If size is less than [DefaultMaxBodySize], it will be set to [DefaultMaxBodySize].
-func SetMaxBodySize(size int) {
-	if size < DefaultMaxBodySize {
-		size = DefaultMaxBodySize
-	}
-	maxBodyRead = size
-}
 
 // SetBufferSize sets the size of bytes buffer used for response body storage.
 //
@@ -172,7 +157,7 @@ func getBuffer() *bytes.Buffer {
 // putBuffer returns a buffer to the pool
 func putBuffer(buf *bytes.Buffer) {
 	cap := buf.Cap()
-	if cap > maxBodyRead {
+	if cap > DefaultMaxBodySize {
 		return
 	}
 
@@ -227,11 +212,18 @@ type ResponseChain struct {
 }
 
 // NewResponseChain creates a new response chain for a http request
-// with a maximum body size. (if -1 stick to default 8MB)
+// with a maximum body size.
+//
+// If maxBody is less than or equal to zero, it defaults to [DefaultMaxBodySize].
 func NewResponseChain(resp *http.Response, maxBody int64) *ResponseChain {
-	if maxBody > 0 && resp.Body != nil {
+	if maxBody <= 0 {
+		maxBody = int64(DefaultMaxBodySize)
+	}
+
+	if resp.Body != nil {
 		resp.Body = http.MaxBytesReader(nil, resp.Body, maxBody)
 	}
+
 	return &ResponseChain{
 		headers: getBuffer(),
 		body:    getBuffer(),

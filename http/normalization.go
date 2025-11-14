@@ -76,12 +76,12 @@ func readNNormalizeRespBody(rc *ResponseChain, body *bytes.Buffer) (err error) {
 	if err != nil {
 		wrapped = origBody
 	}
-	limitReader := io.LimitReader(wrapped, int64(maxBodyRead))
+	limitReader := io.LimitReader(wrapped, int64(DefaultMaxBodySize))
 
-	// Read body using ReadFrom for efficiency, but cap growth at maxBodyRead.
+	// Read body using ReadFrom for efficiency, but cap growth at DefaultMaxBodySize.
 	// We use a custom limitedBuffer wrapper to prevent bytes.Buffer from
 	// over-allocating (it normally grows to 2x when size is unknown).
-	limitedBuf := &limitedBuffer{buf: body, maxCap: maxBodyRead}
+	limitedBuf := &limitedBuffer{buf: body, maxCap: DefaultMaxBodySize}
 	_, err = limitedBuf.ReadFrom(limitReader)
 	if err != nil {
 		if strings.Contains(err.Error(), "gzip: invalid header") {

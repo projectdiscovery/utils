@@ -252,7 +252,7 @@ func TestBufferPool_LargeBufferLimiting(t *testing.T) {
 	SetMaxLargeBuffers(5)
 
 	// Create responses that will use large buffers
-	largeBody := bytes.Repeat([]byte("X"), maxBodyRead)
+	largeBody := bytes.Repeat([]byte("X"), DefaultMaxBodySize)
 
 	var chains []*ResponseChain
 	for i := 0; i < 10; i++ {
@@ -281,19 +281,19 @@ func TestBufferPool_LargeBufferLimiting(t *testing.T) {
 
 // TestBufferPool_OversizedBufferDiscarded tests that oversized buffers are not pooled
 func TestBufferPool_OversizedBufferDiscarded(t *testing.T) {
-	// Create a buffer larger than maxBodyRead
+	// Create a buffer larger than DefaultMaxBodySize
 	buf := getBuffer()
-	buf.Grow(maxBodyRead + 1024)
+	buf.Grow(DefaultMaxBodySize + 1024)
 
 	initialCap := buf.Cap()
-	assert.Greater(t, initialCap, maxBodyRead)
+	assert.Greater(t, initialCap, DefaultMaxBodySize)
 
 	// Put it back - should be discarded
 	putBuffer(buf)
 
 	// Get a new buffer - should be normal size, not the oversized one
 	buf2 := getBuffer()
-	assert.LessOrEqual(t, buf2.Cap(), maxBodyRead)
+	assert.LessOrEqual(t, buf2.Cap(), DefaultMaxBodySize)
 
 	putBuffer(buf2)
 }
@@ -342,23 +342,6 @@ func TestSetBufferSize(t *testing.T) {
 	// Test minimum size enforcement
 	SetBufferSize(100)
 	assert.Equal(t, int64(1000), bufferSize)
-}
-
-// TestSetMaxBodySize tests max body read configuration
-func TestSetMaxBodySize(t *testing.T) {
-	originalMax := maxBodyRead
-	defer func() {
-		maxBodyRead = originalMax
-	}()
-
-	// Test setting valid size
-	newMax := 16 * 1024 * 1024
-	SetMaxBodySize(newMax)
-	assert.Equal(t, newMax, maxBodyRead)
-
-	// Test minimum size enforcement
-	SetMaxBodySize(1024)
-	assert.Equal(t, DefaultMaxBodySize, maxBodyRead)
 }
 
 // TestSetMaxLargeBuffers tests large buffer limit configuration
@@ -582,7 +565,7 @@ func TestResponseChain_InvalidGzip(t *testing.T) {
 func TestResponseChain_BurstWorkload(t *testing.T) {
 	// Simulate a burst of requests (e.g., nuclei scan starting)
 	burstSize := 500
-	largeBody := bytes.Repeat([]byte("B"), maxBodyRead) // Max size body
+	largeBody := bytes.Repeat([]byte("B"), DefaultMaxBodySize) // Max size body
 
 	var wg sync.WaitGroup
 	errChan := make(chan error, burstSize)
@@ -663,11 +646,11 @@ func TestResponseChain_SustainedConcurrency(t *testing.T) {
 
 	// Mix of different body sizes
 	bodySizes := []int{
-		1024,            // 1KB
-		100 * 1024,      // 100KB
-		1024 * 1024,     // 1MB
-		maxBodyRead / 2, // Half max
-		maxBodyRead,     // Max size
+		1024,                   // 1KB
+		100 * 1024,             // 100KB
+		1024 * 1024,            // 1MB
+		DefaultMaxBodySize / 2, // Half max
+		DefaultMaxBodySize,     // Max size
 	}
 
 	var wg sync.WaitGroup
@@ -803,7 +786,7 @@ func TestResponseChain_MemoryPressure(t *testing.T) {
 
 	// Create more large buffer requests than the limit allows
 	numRequests := testMaxLarge * 3
-	largeBody := bytes.Repeat([]byte("M"), maxBodyRead)
+	largeBody := bytes.Repeat([]byte("M"), DefaultMaxBodySize)
 
 	var m1, m2 runtime.MemStats
 	runtime.GC()
