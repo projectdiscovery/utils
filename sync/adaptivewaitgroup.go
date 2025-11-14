@@ -67,22 +67,23 @@ func (s *AdaptiveWaitGroup) AddWithContext(ctx context.Context) error {
 	case <-ctx.Done():
 		return ctx.Err()
 	default:
+		s.current.Add(1)
+
 		// Attempt to acquire a semaphore slot, handle error if acquisition fails
 		if err := s.sem.Acquire(ctx, 1); err != nil {
+			s.current.Add(-1)
 			return err
 		}
 	}
 
-	// Safely add to the waitgroup only after acquiring the semaphore
 	s.wg.Add(1)
-	s.current.Add(1)
 	return nil
 }
 
 func (s *AdaptiveWaitGroup) Done() {
+	s.current.Add(-1)
 	s.sem.Release(1)
 	s.wg.Done()
-	s.current.Add(-1)
 }
 
 func (s *AdaptiveWaitGroup) Wait() {
