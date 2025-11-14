@@ -154,7 +154,16 @@ func getBuffer() *bytes.Buffer {
 	return buff
 }
 
-// putBuffer returns a buffer to the pool
+// putBuffer returns a buffer to the pool for reuse.
+//
+// Buffers larger than [DefaultMaxBodySize] are discarded.
+// Buffers larger than or equal to largeBufferThreshold are subject to
+// maxLargeBuffers limiting.
+//
+// TODO(dwisiswant0): Current threshold is global. Consider making it
+// configurable per instance (via [ResponseChain.maxBodySize]) if needed.
+// The current implementation is to prevents memory bloat in typical use-cases.
+// And the pool is shared, so per-instance thresholds might cause confusion.
 func putBuffer(buf *bytes.Buffer) {
 	cap := buf.Cap()
 	if cap > DefaultMaxBodySize {
@@ -205,10 +214,11 @@ func resetBuffer() {
 // on every call to previous it returns the previous response
 // if it was redirected.
 type ResponseChain struct {
-	headers  *bytes.Buffer
-	body     *bytes.Buffer
-	resp     *http.Response
-	reloaded bool // if response was reloaded to its previous redirect
+	headers     *bytes.Buffer
+	body        *bytes.Buffer
+	resp        *http.Response
+	reloaded    bool // if response was reloaded to its previous redirect
+	maxBodySize int64
 }
 
 // NewResponseChain creates a new response chain for a http request
@@ -225,9 +235,10 @@ func NewResponseChain(resp *http.Response, maxBody int64) *ResponseChain {
 	}
 
 	return &ResponseChain{
-		headers: getBuffer(),
-		body:    getBuffer(),
-		resp:    resp,
+		headers:     getBuffer(),
+		body:        getBuffer(),
+		resp:        resp,
+		maxBodySize: maxBody,
 	}
 }
 
