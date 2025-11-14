@@ -910,7 +910,7 @@ func TestResponseChain_MixedWorkload(t *testing.T) {
 						errChan <- err
 						return
 					}
-					gzWriter.Close()
+					_ = gzWriter.Close()
 					bodyReader = &buf
 					headers = http.Header{"Content-Encoding": []string{"gzip"}}
 				} else {
@@ -1067,12 +1067,12 @@ func TestResponseChain_BurstWithPoolExhaustion(t *testing.T) {
 	originalSize := GetPoolSize()
 	defer func() {
 		// Restore by adjusting
-		ChangePoolSize(originalSize - GetPoolSize())
+		_ = ChangePoolSize(originalSize - GetPoolSize())
 	}()
 
 	// Reduce pool size to force exhaustion
 	smallPoolSize := int64(10)
-	ChangePoolSize(smallPoolSize - GetPoolSize())
+	_ = ChangePoolSize(smallPoolSize - GetPoolSize())
 
 	var m1, m2 runtime.MemStats
 	runtime.GC()

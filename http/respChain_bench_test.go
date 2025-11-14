@@ -20,7 +20,7 @@ func BenchmarkResponseChain_LargeBody(b *testing.B) {
 			}
 
 			rc := NewResponseChain(resp, -1)
-			rc.Fill()
+			_ = rc.Fill()
 			_ = rc.Body().Bytes()
 			rc.Close()
 		}
@@ -36,7 +36,7 @@ func BenchmarkResponseChain_StringConversion(b *testing.B) {
 	}
 
 	rc := NewResponseChain(resp, -1)
-	rc.Fill()
+	_ = rc.Fill()
 	defer rc.Close()
 
 	b.Run("Body().String()", func(b *testing.B) {
