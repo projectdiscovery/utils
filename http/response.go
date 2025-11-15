@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-
-	"github.com/docker/go-units"
 )
 
 var (
-	MaxBodyRead, _ = units.FromHumanSize("4mb")
+	// MaxBodyRead is the maximum size of HTTP response body to read.
+	//
+	// Responses larger than this will be truncated.
+	//
+	// Deprecated: Use [DefaultMaxBodySize] instead.
+	MaxBodyRead = 4 * 1024 * 1024 // 4 MB
 )
 
 // DumpResponseIntoBuffer dumps a http response without allocating a new buffer
@@ -48,11 +51,14 @@ func DumpResponseIntoBuffer(resp *http.Response, body bool, buff *bytes.Buffer) 
 }
 
 // DrainResponseBody drains the response body and closes it.
+//
+// This reads and discards up to MaxBodyRead bytes to check for any remaining
+// data, then closes the connection. This prevents connection reuse for responses
+// that exceed the expected size (potential DoS).
 func DrainResponseBody(resp *http.Response) {
 	defer func() {
 		_ = resp.Body.Close()
 	}()
-	// don't reuse connection and just close if body length is more than 2 * MaxBodyRead
-	// to avoid DOS
-	_, _ = io.CopyN(io.Discard, resp.Body, 2*MaxBodyRead)
+	// Drain up to MaxBodyRead to check for oversized responses
+	_, _ = io.CopyN(io.Discard, resp.Body, int64(MaxBodyRead))
 }
