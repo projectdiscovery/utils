@@ -71,15 +71,18 @@ func (s *SyncLockMap[K, V]) triggerCleanupIfNeeded() {
 		return
 	}
 
-	// Check if cleanup is needed using instance-specific interval
 	now := time.Now()
-	if now.Sub(s.lastCleanup) < s.cleanupInterval {
-		return
-	}
 
-	// Update last cleanup time and trigger async cleanup
-	s.lastCleanup = now
-	go s.evictInactiveEntries()
+	s.mu.Lock()
+	shouldCleanup := now.Sub(s.lastCleanup) >= s.cleanupInterval
+	if shouldCleanup {
+		s.lastCleanup = now
+	}
+	s.mu.Unlock()
+
+	if shouldCleanup {
+		go s.evictInactiveEntries()
+	}
 }
 
 // ForceCleanup forces an immediate cleanup (useful for testing)
@@ -136,8 +139,6 @@ func (s *SyncLockMap[K, V]) Set(k K, v V) error {
 	}
 
 	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	now := time.Now()
 
 	// If eviction is enabled, handle eviction logic
@@ -158,6 +159,7 @@ func (s *SyncLockMap[K, V]) Set(k K, v V) error {
 	}
 
 	s.Map[k] = v
+	s.mu.Unlock()
 
 	// Trigger cleanup if needed
 	s.triggerCleanupIfNeeded()
