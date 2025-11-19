@@ -2,6 +2,7 @@ package mapsutil
 
 import (
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -332,4 +333,318 @@ func TestSyncLockMapWithEviction(t *testing.T) {
 		require.Equal(t, 1*time.Hour, m3.cleanupInterval, "cleanup interval should be 1 hour")
 	})
 
+}
+
+func TestSyncLockMapConcurrent(t *testing.T) {
+	const numGoroutines = 100
+	const numIterations = 100
+
+	t.Run("Get", func(t *testing.T) {
+		m := NewSyncLockMap(WithEviction[string, string](1*time.Second, 1*time.Nanosecond))
+
+		err := m.Set("key1", "value1")
+		require.NoError(t, err)
+
+		var wg sync.WaitGroup
+		for range numGoroutines {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for range numIterations {
+					v, ok := m.Get("key1")
+					require.True(t, ok)
+					require.Equal(t, "value1", v)
+				}
+			}()
+		}
+		wg.Wait()
+	})
+
+	t.Run("Set", func(t *testing.T) {
+		m := NewSyncLockMap[string, string]()
+
+		var wg sync.WaitGroup
+		for i := range numGoroutines {
+			wg.Add(1)
+			go func(i int) {
+				defer wg.Done()
+				for j := range numIterations {
+					key := string(rune('a' + (i+j)%26))
+					err := m.Set(key, "value")
+					require.NoError(t, err)
+				}
+			}(i)
+		}
+		wg.Wait()
+	})
+
+	t.Run("Delete", func(t *testing.T) {
+		m := NewSyncLockMap[string, string]()
+
+		// Populate map
+		for i := range numGoroutines {
+			key := string(rune('a' + i%26))
+			_ = m.Set(key, "value")
+		}
+
+		var wg sync.WaitGroup
+		for i := range numGoroutines {
+			wg.Add(1)
+			go func(i int) {
+				defer wg.Done()
+				for j := range numIterations {
+					key := string(rune('a' + (i+j)%26))
+					m.Delete(key)
+				}
+			}(i)
+		}
+		wg.Wait()
+	})
+
+	t.Run("Has", func(t *testing.T) {
+		m := NewSyncLockMap[string, string]()
+		_ = m.Set("key1", "value1")
+
+		var wg sync.WaitGroup
+		for range numGoroutines {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for range numIterations {
+					_ = m.Has("key1")
+				}
+			}()
+		}
+		wg.Wait()
+	})
+
+	t.Run("IsEmpty", func(t *testing.T) {
+		m := NewSyncLockMap[string, string]()
+		_ = m.Set("key1", "value1")
+
+		var wg sync.WaitGroup
+		for range numGoroutines {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for range numIterations {
+					_ = m.IsEmpty()
+				}
+			}()
+		}
+		wg.Wait()
+	})
+
+	t.Run("GetAll", func(t *testing.T) {
+		m := NewSyncLockMap[string, string]()
+		_ = m.Set("key1", "value1")
+		_ = m.Set("key2", "value2")
+
+		var wg sync.WaitGroup
+		for range numGoroutines {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for range numIterations {
+					all := m.GetAll()
+					require.NotNil(t, all)
+				}
+			}()
+		}
+		wg.Wait()
+	})
+
+	t.Run("GetKeyWithValue", func(t *testing.T) {
+		m := NewSyncLockMap[string, string]()
+		_ = m.Set("key1", "value1")
+
+		var wg sync.WaitGroup
+		for range numGoroutines {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for range numIterations {
+					key, ok := m.GetKeyWithValue("value1")
+					if ok {
+						require.Equal(t, "key1", key)
+					}
+				}
+			}()
+		}
+		wg.Wait()
+	})
+
+	t.Run("Clone", func(t *testing.T) {
+		m := NewSyncLockMap[string, string]()
+		_ = m.Set("key1", "value1")
+		_ = m.Set("key2", "value2")
+
+		var wg sync.WaitGroup
+		for range numGoroutines {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for range numIterations {
+					cloned := m.Clone()
+					require.NotNil(t, cloned)
+					require.True(t, cloned.Has("key1"))
+				}
+			}()
+		}
+		wg.Wait()
+	})
+
+	t.Run("Iterate", func(t *testing.T) {
+		m := NewSyncLockMap[string, string]()
+		_ = m.Set("key1", "value1")
+		_ = m.Set("key2", "value2")
+
+		var wg sync.WaitGroup
+		for range numGoroutines {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for range numIterations {
+					count := 0
+					err := m.Iterate(func(k string, v string) error {
+						count++
+						return nil
+					})
+					require.NoError(t, err)
+				}
+			}()
+		}
+		wg.Wait()
+	})
+
+	t.Run("Lock", func(t *testing.T) {
+		var wg sync.WaitGroup
+		for range numGoroutines {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				// Each goroutine gets its own map to avoid interference
+				m := NewSyncLockMap[string, string]()
+				_ = m.Set("key1", "value1")
+
+				for range numIterations {
+					m.Lock()
+					// When locked, Set should fail
+					err := m.Set("test", "test")
+					require.Error(t, err)
+					require.Equal(t, ErrReadOnly, err)
+					m.Unlock()
+				}
+			}()
+		}
+		wg.Wait()
+	})
+
+	t.Run("Unlock", func(t *testing.T) {
+		var wg sync.WaitGroup
+		for range numGoroutines {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				// Each goroutine gets its own map to avoid interference
+				m := NewSyncLockMap[string, string]()
+				_ = m.Set("key1", "value1")
+
+				for range numIterations {
+					m.Lock()
+					wasReadOnly := m.ReadOnly.Load()
+					m.Unlock()
+					require.True(t, wasReadOnly)
+					// When unlocked, Set should succeed
+					err := m.Set("test", "test")
+					require.NoError(t, err)
+				}
+			}()
+		}
+		wg.Wait()
+	})
+
+	t.Run("Merge", func(t *testing.T) {
+		m := NewSyncLockMap[string, string]()
+
+		var wg sync.WaitGroup
+		for i := range numGoroutines {
+			wg.Add(1)
+			go func(i int) {
+				defer wg.Done()
+				for j := range numIterations {
+					key := string(rune('a' + (i+j)%26))
+					err := m.Merge(map[string]string{key: "value"})
+					require.NoError(t, err)
+				}
+			}(i)
+		}
+		wg.Wait()
+	})
+
+	t.Run("Clear", func(t *testing.T) {
+		m := NewSyncLockMap[string, string]()
+
+		var wg sync.WaitGroup
+		for i := range numGoroutines {
+			wg.Add(1)
+			go func(i int) {
+				defer wg.Done()
+				for j := range numIterations {
+					// Add some items
+					key := string(rune('a' + (i+j)%26))
+					_ = m.Set(key, "value")
+					// Clear occasionally
+					if j%10 == 0 {
+						_ = m.Clear()
+					}
+				}
+			}(i)
+		}
+		wg.Wait()
+	})
+
+	t.Run("CleanupInactiveItems", func(t *testing.T) {
+		m := NewSyncLockMap(WithEviction[string, string](50*time.Millisecond, 1*time.Hour))
+
+		// Populate map
+		for i := range 10 {
+			key := string(rune('a' + i))
+			_ = m.Set(key, "value")
+		}
+
+		var wg sync.WaitGroup
+		for range numGoroutines {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for range numIterations {
+					m.CleanupInactiveItems()
+				}
+			}()
+		}
+		wg.Wait()
+	})
+
+	t.Run("ForceCleanup", func(t *testing.T) {
+		m := NewSyncLockMap(WithEviction[string, string](50*time.Millisecond, 1*time.Hour))
+
+		// Populate map
+		for i := range 10 {
+			key := string(rune('a' + i))
+			_ = m.Set(key, "value")
+		}
+
+		var wg sync.WaitGroup
+		for range numGoroutines {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for range numIterations {
+					m.ForceCleanup()
+				}
+			}()
+		}
+		wg.Wait()
+	})
 }
