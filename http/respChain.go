@@ -305,7 +305,7 @@ func (r *ResponseChain) FullResponse() *bytes.Buffer {
 
 // FullResponseBytes returns the current response (headers+body) as byte slice.
 //
-// The returned slice is valid only until Close() is called.
+// The returned slice is a copy and remains valid even after Close() is called.
 func (r *ResponseChain) FullResponseBytes() []byte {
 	size := r.headers.Len() + r.body.Len()
 	buf := make([]byte, size)
@@ -318,8 +318,8 @@ func (r *ResponseChain) FullResponseBytes() []byte {
 
 // FullResponseString returns the current response as string in the chain.
 //
-// The returned string is valid only until Close() is called.
-// This is a zero-copy operation for performance.
+// The returned string is a copy and remains valid even after Close() is called.
+// This is a zero-copy operation from the byte slice.
 func (r *ResponseChain) FullResponseString() string {
 	return conversion.String(r.FullResponseBytes())
 }
