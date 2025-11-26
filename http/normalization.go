@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/dsnet/compress/brotli"
 	"github.com/klauspost/compress/gzip"
@@ -18,6 +19,41 @@ import (
 	stringsutil "github.com/projectdiscovery/utils/strings"
 )
 
+const (
+	// DefaultChunkSize defines the default chunk size for reading response
+	// bodies.
+	//
+	// Use [SetChunkSize] to adjust the size.
+	DefaultChunkSize = 32 * 1024 // 32KB
+)
+
+var (
+	chunkSize = DefaultChunkSize
+	chunkPool = sync.Pool{
+		New: func() any {
+			b := make([]byte, chunkSize)
+			return &b
+		},
+	}
+)
+
+// SetChunkSize sets the chunk size for reading response bodies.
+//
+// If size is less than or equal to zero, it resets to the default chunk size.
+func SetChunkSize(size int) {
+	if size <= 0 {
+		size = DefaultChunkSize
+	}
+
+	chunkSize = size
+	chunkPool = sync.Pool{
+		New: func() any {
+			b := make([]byte, chunkSize)
+			return &b
+		},
+	}
+}
+
 // limitedBuffer wraps [bytes.Buffer] to prevent capacity growth beyond maxCap.
 // This prevents bytes.Buffer.ReadFrom() from over-allocating when it doesn't
 // know the final size.
@@ -27,8 +63,9 @@ type limitedBuffer struct {
 }
 
 func (lb *limitedBuffer) ReadFrom(r io.Reader) (n int64, err error) {
-	const chunkSize = 32 * 1024 // 32KB chunks
-	chunk := make([]byte, chunkSize)
+	chunkPtr := chunkPool.Get().(*[]byte)
+	defer chunkPool.Put(chunkPtr)
+	chunk := *chunkPtr
 
 	for {
 		available := lb.buf.Cap() - lb.buf.Len()

@@ -1115,3 +1115,70 @@ func TestResponseChain_BurstWithPoolExhaustion(t *testing.T) {
 		require.NoError(t, err)
 	}
 }
+
+func TestResponseChain_FullResponseBytes_Race(t *testing.T) {
+	resp := &http.Response{
+		StatusCode: 200,
+		Status:     "200 OK",
+	}
+	chain := NewResponseChain(resp, 1024)
+	chain.headers.WriteString("Header: Value\r\n")
+	chain.body.WriteString("Body Content")
+
+	data := chain.FullResponseBytes()
+	initialContent := string(data)
+
+	// Trigger buffer reuse
+	// We need to get a buffer from the pool.
+
+	found := false
+	for i := 0; i < 100; i++ {
+		b := getBuffer()
+		b.WriteString("OVERWRITTEN_DATA_XXXXXXXXXXXXXXXX")
+
+		if string(data) != initialContent {
+			found = true
+			t.Logf("Iteration %d: Content changed to %q", i, string(data))
+
+			break
+		}
+
+		putBuffer(b)
+	}
+
+	if found {
+		t.Fatalf("Race detected! Content changed from %q", initialContent)
+	}
+}
+
+func TestResponseChain_Close_Idempotency(t *testing.T) {
+	resp := &http.Response{
+		StatusCode: 200,
+	}
+	rc := NewResponseChain(resp, 1024)
+
+	rc.Close()
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("Close() panicked on second call: %v", r)
+		}
+	}()
+
+	rc.Close()
+}
+
+func TestLimitedBuffer_Pool(t *testing.T) {
+	buf := getBuffer()
+	defer putBuffer(buf)
+
+	lb := &limitedBuffer{buf: buf, maxCap: 1024 * 1024}
+	data := bytes.Repeat([]byte("A"), 100*1024) // 100KB
+	r := bytes.NewReader(data)
+
+	n, err := lb.ReadFrom(r)
+	require.NoError(t, err)
+	require.Equal(t, int64(len(data)), n)
+	require.Equal(t, len(data), buf.Len())
+	require.Equal(t, data, buf.Bytes())
+}
