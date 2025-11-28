@@ -305,21 +305,23 @@ func (r *ResponseChain) FullResponse() *bytes.Buffer {
 
 // FullResponseBytes returns the current response (headers+body) as byte slice.
 //
-// The returned slice is valid only until Close() is called.
-// Note: This creates a new buffer internally which is returned to the pool.
+// The returned slice is a copy and remains valid even after Close() is called.
 func (r *ResponseChain) FullResponseBytes() []byte {
-	buf := r.FullResponse()
-	defer putBuffer(buf)
+	size := r.headers.Len() + r.body.Len()
+	buf := make([]byte, size)
 
-	return buf.Bytes()
+	copy(buf, r.headers.Bytes())
+	copy(buf[r.headers.Len():], r.body.Bytes())
+
+	return buf
 }
 
 // FullResponseString returns the current response as string in the chain.
 //
-// The returned string is valid only until Close() is called.
-// This is a zero-copy operation for performance.
+// The returned string is a copy and remains valid even after Close() is called.
+// This is a zero-copy operation from the byte slice.
 func (r *ResponseChain) FullResponseString() string {
-	return conversion.String(r.FullResponse().Bytes())
+	return conversion.String(r.FullResponseBytes())
 }
 
 // previous updates response pointer to previous response
@@ -372,10 +374,15 @@ func (r *ResponseChain) Fill() error {
 
 // Close the response chain and releases the buffers.
 func (r *ResponseChain) Close() {
-	putBuffer(r.headers)
-	putBuffer(r.body)
-	r.headers = nil
-	r.body = nil
+	if r.headers != nil {
+		putBuffer(r.headers)
+		r.headers = nil
+	}
+
+	if r.body != nil {
+		putBuffer(r.body)
+		r.body = nil
+	}
 }
 
 // Has returns true if the response chain has a response
