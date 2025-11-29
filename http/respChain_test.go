@@ -1182,3 +1182,48 @@ func TestLimitedBuffer_Pool(t *testing.T) {
 	require.Equal(t, len(data), buf.Len())
 	require.Equal(t, data, buf.Bytes())
 }
+
+func TestResponseChain_StringSafety(t *testing.T) {
+	bodyContent := "Original Body Content That Should Be Preserved Yeah Okay LOL"
+	headerKey := "X-Safety-Test"
+	headerValue := "Original Header Value"
+
+	resp := &http.Response{
+		StatusCode: 200,
+		Body:       io.NopCloser(strings.NewReader(bodyContent)),
+		Header:     http.Header{headerKey: []string{headerValue}},
+		Proto:      "HTTP/1.1",
+		ProtoMajor: 1,
+		ProtoMinor: 1,
+	}
+
+	rc := NewResponseChain(resp, -1)
+	err := rc.Fill()
+	require.NoError(t, err)
+
+	bodyStr := rc.BodyString()
+	headersStr := rc.HeadersString()
+
+	assert.Equal(t, bodyContent, bodyStr)
+	assert.Contains(t, headersStr, headerValue)
+
+	rc.Close()
+
+	// Now attempt to pollute the pool and overwrite the memory.
+	// We get a bunch of buffers and write garbage to them.
+	var buffers []*bytes.Buffer
+	for i := 0; i < 100; i++ {
+		buf := getBuffer()
+		buffers = append(buffers, buf)
+
+		buf.Reset()
+		buf.WriteString("ALERTA_GARBAGE_DATA_OVERWRITING_MEMORY_ALERTA_GARBAGE_DATA_OVERWRITING_MEMORY")
+	}
+
+	for _, buf := range buffers {
+		putBuffer(buf)
+	}
+
+	assert.Equal(t, bodyContent, bodyStr, "BodyString() content changed after buffer reuse - unsafe memory sharing detected")
+	assert.Contains(t, headersStr, headerValue, "HeadersString() content changed after buffer reuse - unsafe memory sharing detected")
+}
