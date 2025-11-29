@@ -259,10 +259,9 @@ func (r *ResponseChain) HeadersBytes() []byte {
 
 // HeadersString returns the current response headers as string in the chain.
 //
-// The returned string is valid only until Close() is called.
-// This is a zero-copy operation for performance.
+// The returned string is a copy and remains valid even after Close() is called.
 func (r *ResponseChain) HeadersString() string {
-	return conversion.String(r.headers.Bytes())
+	return r.headers.String()
 }
 
 // Body returns the current response body buffer in the chain.
@@ -282,10 +281,9 @@ func (r *ResponseChain) BodyBytes() []byte {
 
 // BodyString returns the current response body as string in the chain.
 //
-// The returned string is valid only until Close() is called.
-// This is a zero-copy operation for performance.
+// The returned string is a copy and remains valid even after Close() is called.
 func (r *ResponseChain) BodyString() string {
-	return conversion.String(r.body.Bytes())
+	return r.body.String()
 }
 
 // FullResponse returns a new buffer containing headers+body.
@@ -319,7 +317,6 @@ func (r *ResponseChain) FullResponseBytes() []byte {
 // FullResponseString returns the current response as string in the chain.
 //
 // The returned string is a copy and remains valid even after Close() is called.
-// This is a zero-copy operation from the byte slice.
 func (r *ResponseChain) FullResponseString() string {
 	return conversion.String(r.FullResponseBytes())
 }
