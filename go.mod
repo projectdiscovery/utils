@@ -83,9 +83,9 @@ require (
 	github.com/nxadm/tail v1.4.11 // indirect
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
-	github.com/projectdiscovery/fastdialer v0.4.17 // indirect
-	github.com/projectdiscovery/networkpolicy v0.1.29 // indirect
-	github.com/projectdiscovery/retryabledns v1.0.109 // indirect
+	github.com/projectdiscovery/fastdialer v0.4.20 // indirect
+	github.com/projectdiscovery/networkpolicy v0.1.31 // indirect
+	github.com/projectdiscovery/retryabledns v1.0.111 // indirect
 	github.com/refraction-networking/utls v1.7.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
@@ -121,9 +121,9 @@ require (
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/projectdiscovery/gologger v1.1.61
-	github.com/projectdiscovery/hmap v0.0.96
-	github.com/projectdiscovery/retryablehttp-go v1.0.132
+	github.com/projectdiscovery/gologger v1.1.64
+	github.com/projectdiscovery/hmap v0.0.98
+	github.com/projectdiscovery/retryablehttp-go v1.1.1
 	github.com/weppos/publicsuffix-go v0.40.3-0.20250408071509-6074bbe7fd39
 	github.com/zcalusic/sysinfo v1.0.2
 	github.com/zmap/rc2 v0.0.0-20190804163417-abaa70531248 // indirect
