@@ -27,7 +27,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/blackrock v0.0.1
 	github.com/projectdiscovery/fdmax v0.0.4
-	github.com/projectdiscovery/machineid v0.0.0-20240226150047-2e2c51e35983
+	github.com/projectdiscovery/machineid v0.0.0-20250715113114-c77eb3567582
 	github.com/remeh/sizedwaitgroup v1.0.0
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d
 	github.com/shirou/gopsutil v3.21.11+incompatible
