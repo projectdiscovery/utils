@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/projectdiscovery/utils/sync/sizedpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -1226,4 +1227,71 @@ func TestResponseChain_StringSafety(t *testing.T) {
 
 	assert.Equal(t, bodyContent, bodyStr, "BodyString() content changed after buffer reuse - unsafe memory sharing detected")
 	assert.Contains(t, headersStr, headerValue, "HeadersString() content changed after buffer reuse - unsafe memory sharing detected")
+}
+
+// TestSemaphoreLeakDeadlock reproduces the semaphore leak deadlock.
+//
+// Source: https://github.com/projectdiscovery/utils/issues/714#issue-3747413857
+// by @Ezzer17. Polished some.
+func TestSemaphoreLeakDeadlock(t *testing.T) {
+	// Save original state
+	origBufPool := bufPool
+	origSem := largeBufferSem
+
+	var p = &sync.Pool{
+		New: func() any {
+			return new(bytes.Buffer)
+		},
+	}
+	var err error
+
+	bufPool, err = sizedpool.New(
+		sizedpool.WithPool[*bytes.Buffer](p),
+		sizedpool.WithSize[*bytes.Buffer](20),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	setLargeBufferSemSize(1)
+
+	numResponses := 2
+	maxIterations := 100
+
+	for iteration := 1; iteration <= maxIterations; iteration++ {
+		done := make(chan bool, 1)
+		currentIteration := iteration
+
+		go func() {
+			responses := make([]*ResponseChain, numResponses)
+			for i := range responses {
+				t.Logf("iteration %d, response %d", currentIteration, i)
+				largeBody := strings.Repeat("X", largeBufferThreshold+1)
+				resp := &http.Response{
+					StatusCode: 200,
+					Body:       io.NopCloser(strings.NewReader(largeBody)),
+					Header:     http.Header{},
+				}
+
+				rc := NewResponseChain(resp, -1)
+				_ = rc.Fill()
+				responses[i] = rc
+			}
+
+			for _, rc := range responses {
+				rc.Close()
+			}
+
+			done <- true
+		}()
+
+		select {
+		case <-done:
+			// Iteration completed successfully, continue to next
+		case <-time.After(time.Second):
+			t.Fatalf("Deadlock detected at iteration %d", currentIteration)
+		}
+	}
+
+	bufPool = origBufPool
+	largeBufferSem = origSem
 }
