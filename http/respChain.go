@@ -167,6 +167,7 @@ func getBuffer() *bytes.Buffer {
 func putBuffer(buf *bytes.Buffer) {
 	cap := buf.Cap()
 	if cap > DefaultMaxBodySize {
+		bufPool.Discard()
 		return
 	}
 
@@ -179,6 +180,8 @@ func putBuffer(buf *bytes.Buffer) {
 		default:
 			// NOTE(dwisiswant0): Pool is full of large buffers, discard this
 			// one. It will be GC'ed, preventing memory accumulation.
+			// Release the semaphore slot to prevent deadlock.
+			bufPool.Discard()
 		}
 		return
 	}
