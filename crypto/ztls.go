@@ -23,7 +23,7 @@ type ZTLSData struct {
 	FingerprintSHA256OpenSSL string   `json:"fingerprint_sha256_openssl,omitempty"`
 	ClientHello              []byte   `json:"client_hello,omitempty"`
 	HandshakeLog             []byte   `json:"handshake_log,omitempty"`
-	HeartBleedLog            []byte   `json:"heartbleed_log,omitempty"`
+	// HeartBleedLog            []byte   `json:"heartbleed_log,omitempty"`
 }
 
 // ZTLSGrab fills the ZTLSData
@@ -50,15 +50,15 @@ func ZTLSGrab(conn *ztls.Conn) *ZTLSData {
 			ztlsdata.FingerprintSHA256 = asHex(fingerprintSHA256)
 			ztlsdata.FingerprintSHA256OpenSSL = asOpenSSL(fingerprintSHA256)
 		}
-		if clienthello, err := json.Marshal(conn.ClientHelloRaw()); err == nil {
+		if clienthello, err := json.Marshal(conn.GetHandshakeLog().ClientHello); err == nil {
 			ztlsdata.ClientHello = clienthello
 		}
 		if handshakeLog, err := json.Marshal(conn.GetHandshakeLog()); err == nil {
 			ztlsdata.HandshakeLog = handshakeLog
 		}
-		if heartBleedLog, err := json.Marshal(conn.GetHeartbleedLog()); err == nil {
-			ztlsdata.HeartBleedLog = heartBleedLog
-		}
+		//if heartBleedLog, err := json.Marshal(conn.; err == nil {
+		//	ztlsdata.HeartBleedLog = heartBleedLog
+		//}
 		return &ztlsdata
 	}
 	return nil

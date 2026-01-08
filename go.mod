@@ -35,13 +35,13 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/tidwall/gjson v1.18.0
 	github.com/wasilibs/go-re2 v1.10.0
-	github.com/zmap/zcrypto v0.0.0-20230422215203-9a665e1e9968
+	github.com/zmap/zcrypto v0.0.0-20260107002751-aab071ef832a
 	go.uber.org/multierr v1.11.0
 	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8
 	golang.org/x/oauth2 v0.27.0
-	golang.org/x/sync v0.18.0
-	golang.org/x/sys v0.38.0
-	golang.org/x/text v0.31.0
+	golang.org/x/sync v0.19.0
+	golang.org/x/sys v0.39.0
+	golang.org/x/text v0.32.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -124,12 +124,11 @@ require (
 	github.com/projectdiscovery/gologger v1.1.64
 	github.com/projectdiscovery/hmap v0.0.98
 	github.com/projectdiscovery/retryablehttp-go v1.1.1
-	github.com/weppos/publicsuffix-go v0.40.3-0.20250408071509-6074bbe7fd39
+	github.com/weppos/publicsuffix-go v0.50.3-0.20260104170930-90713dec78f2
 	github.com/zcalusic/sysinfo v1.0.2
-	github.com/zmap/rc2 v0.0.0-20190804163417-abaa70531248 // indirect
-	golang.org/x/crypto v0.45.0 // indirect
-	golang.org/x/mod v0.29.0 // indirect
-	golang.org/x/net v0.47.0
-	golang.org/x/term v0.37.0
-	golang.org/x/tools v0.38.0
+	golang.org/x/crypto v0.46.0 // indirect
+	golang.org/x/mod v0.30.0 // indirect
+	golang.org/x/net v0.48.0
+	golang.org/x/term v0.38.0
+	golang.org/x/tools v0.39.0
 )
