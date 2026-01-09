@@ -35,7 +35,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/tidwall/gjson v1.18.0
 	github.com/wasilibs/go-re2 v1.10.0
-	github.com/zmap/zcrypto v0.0.0-20260107002751-aab071ef832a
+	github.com/zmap/zcrypto v0.0.0-20240803002437-3a861682ac77
 	go.uber.org/multierr v1.11.0
 	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8
 	golang.org/x/oauth2 v0.27.0
@@ -107,6 +107,7 @@ require (
 	github.com/yuin/goldmark v1.7.4 // indirect
 	github.com/yuin/goldmark-emoji v1.0.3 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
+	github.com/zmap/rc2 v0.0.0-20190804163417-abaa70531248 // indirect
 	go.etcd.io/bbolt v1.3.7 // indirect
 	go4.org v0.0.0-20230225012048-214862532bf5 // indirect
 	gopkg.in/djherbis/times.v1 v1.3.0 // indirect
