@@ -1,4 +1,4 @@
-package burp
+package burpxml
 
 import (
 	"bytes"
@@ -266,4 +266,79 @@ func TestResponseContent(t *testing.T) {
 		r := &Response{Raw: "raw"}
 		require.Equal(t, "raw", r.content())
 	})
+}
+
+func TestItemString(t *testing.T) {
+	item := Item{URL: "https://example.com", Host: Host{Name: "example.com"}, Status: "200"}
+	s := item.String()
+	require.Contains(t, s, "https://example.com")
+	require.Contains(t, s, "example.com")
+	require.Contains(t, s, "200")
+	require.Contains(t, s, "Item{")
+}
+
+func TestRequestString(t *testing.T) {
+	t.Run("shows body when decoded", func(t *testing.T) {
+		r := Request{Raw: "raw", Body: "decoded body"}
+		s := r.String()
+		require.Contains(t, s, "Request{")
+		require.Contains(t, s, "Body = decoded body")
+	})
+
+	t.Run("shows base64 and raw when not decoded", func(t *testing.T) {
+		r := Request{Base64Encoded: "true", Raw: "raw content"}
+		s := r.String()
+		require.Contains(t, s, "Request{")
+		require.Contains(t, s, "Base64")
+		require.Contains(t, s, "raw content")
+	})
+}
+
+func TestResponseString(t *testing.T) {
+	t.Run("shows body when decoded", func(t *testing.T) {
+		r := Response{Raw: "raw", Body: "decoded body"}
+		s := r.String()
+		require.Contains(t, s, "Response{")
+		require.Contains(t, s, "Body = decoded body")
+	})
+
+	t.Run("shows base64 and raw when not decoded", func(t *testing.T) {
+		r := Response{Base64Encoded: "false", Raw: "raw content"}
+		s := r.String()
+		require.Contains(t, s, "Response{")
+		require.Contains(t, s, "Base64")
+		require.Contains(t, s, "raw content")
+	})
+}
+
+func TestItemToStrings(t *testing.T) {
+	item := Item{
+		Time:           "time",
+		URL:            "url",
+		Host:           Host{Name: "host", IP: "ip"},
+		Port:           "port",
+		Protocol:       "proto",
+		Path:           "path",
+		Extension:      "ext",
+		Request:        Request{Body: "req"},
+		Status:         "200",
+		ResponseLength: "100",
+		MimeType:       "text",
+		Response:       Response{Body: "resp"},
+		Comment:        "comment",
+	}
+
+	strs := item.ToStrings(false, false)
+	require.Contains(t, strs, "time")
+	require.Contains(t, strs, "url")
+	require.Contains(t, strs, "host")
+	require.Contains(t, strs, "req")
+	require.Contains(t, strs, "resp")
+}
+
+func TestItemFlatString(t *testing.T) {
+	item := Item{URL: "https://example.com", Status: "200"}
+	s := item.FlatString()
+	require.Contains(t, s, "https://example.com")
+	require.Contains(t, s, "200")
 }
