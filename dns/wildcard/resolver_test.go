@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	sliceutil "github.com/projectdiscovery/utils/slice"
@@ -65,10 +66,10 @@ func TestResolverLookupHostReturnsObservedWildcardIPsForNonMatch(t *testing.T) {
 }
 
 func TestResolverLookupHostReprobesCachedWildcard(t *testing.T) {
-	count := 0
+	var count atomic.Int32
 	resolver := NewResolver([]string{"example.com"}, func(host string) ([]string, error) {
-		count++
-		if count == 1 {
+		c := count.Add(1)
+		if c == 1 {
 			return []string{"1.1.1.1"}, nil
 		}
 		return []string{"1.1.1.1", "2.2.2.2"}, nil
@@ -112,15 +113,15 @@ func TestResolverLookupHostIgnoresProbeErrors(t *testing.T) {
 }
 
 func TestResolverLookupHostDoesNotCacheProbeErrorsAsNormal(t *testing.T) {
-	probeCalls := 0
+	var probeCalls atomic.Int32
 	resolver := NewResolver([]string{"example.com"}, func(host string) ([]string, error) {
 		switch host {
 		case "target.example.com", "api.example.com":
 			return []string{"1.1.1.1"}, nil
 		default:
 			if strings.HasSuffix(host, ".example.com") {
-				probeCalls++
-				if probeCalls == 1 {
+				c := probeCalls.Add(1)
+				if c == 1 {
 					return nil, errors.New("temporary failure")
 				}
 				return []string{"1.1.1.1"}, nil
