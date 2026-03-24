@@ -139,7 +139,7 @@ func Src(tpl, sourcePath string, source []byte, packageName string) ([]byte, err
 							for _, name := range param.Names {
 								funcParam.Name = name.String()
 							}
-							funcParam.Type = fmt.Sprint(param.Type)
+							funcParam.Type = types.ExprString(param.Type)
 							funcDeclaration.Params = append(funcDeclaration.Params, funcParam)
 						}
 					}
