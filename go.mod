@@ -19,7 +19,7 @@ require (
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/klauspost/compress v1.18.2
 	github.com/kljensen/snowball v0.8.0
-	github.com/logrusorgru/aurora v2.0.3+incompatible
+	github.com/logrusorgru/aurora/v4 v4.0.0
 	github.com/mattn/go-isatty v0.0.20
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/miekg/dns v1.1.62
@@ -69,7 +69,6 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/pgzip v1.2.6 // indirect
-	github.com/logrusorgru/aurora/v4 v4.0.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
