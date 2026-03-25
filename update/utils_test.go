@@ -3,11 +3,11 @@ package updateutils
 import (
 	"testing"
 
-	"github.com/logrusorgru/aurora"
+	"github.com/logrusorgru/aurora/v4"
 )
 
 func TestGetVersionDescription(t *testing.T) {
-	Aurora = aurora.NewAurora(false)
+	Aurora = aurora.New(aurora.WithColors(false))
 	tests := []struct {
 		current string
 		latest  string
