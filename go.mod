@@ -29,6 +29,7 @@ require (
 	github.com/projectdiscovery/fdmax v0.0.4
 	github.com/projectdiscovery/machineid v0.0.0-20250715113114-c77eb3567582
 	github.com/remeh/sizedwaitgroup v1.0.0
+	github.com/rs/xid v1.5.0
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/shirou/gopsutil/v3 v3.23.7
@@ -61,7 +62,7 @@ require (
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/djherbis/times v1.6.0 // indirect
 	github.com/fatih/color v1.15.0 // indirect
-	github.com/gaissmai/bart v0.26.0 // indirect
+	github.com/gaissmai/bart v0.26.1 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/pprof v0.0.0-20240227163752-401108e1b7e7 // indirect
@@ -84,12 +85,11 @@ require (
 	github.com/nxadm/tail v1.4.11 // indirect
 	github.com/pierrec/lz4/v4 v4.1.23 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
-	github.com/projectdiscovery/fastdialer v0.5.4 // indirect
-	github.com/projectdiscovery/networkpolicy v0.1.34 // indirect
-	github.com/projectdiscovery/retryabledns v1.0.113 // indirect
+	github.com/projectdiscovery/fastdialer v0.5.6 // indirect
+	github.com/projectdiscovery/networkpolicy v0.1.36 // indirect
+	github.com/projectdiscovery/retryabledns v1.0.114 // indirect
 	github.com/refraction-networking/utls v1.8.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
-	github.com/rs/xid v1.5.0 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/sorairolake/lzip-go v0.3.8 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
@@ -125,7 +125,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/projectdiscovery/gologger v1.1.68
 	github.com/projectdiscovery/hmap v0.0.100
-	github.com/projectdiscovery/retryablehttp-go v1.3.6
+	github.com/projectdiscovery/retryablehttp-go v1.3.7
 	github.com/weppos/publicsuffix-go v0.50.3-0.20260104170930-90713dec78f2
 	github.com/zcalusic/sysinfo v1.0.2
 	golang.org/x/crypto v0.46.0 // indirect
