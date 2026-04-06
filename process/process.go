@@ -2,7 +2,7 @@ package process
 
 import (
 	stringsutil "github.com/projectdiscovery/utils/strings"
-	ps "github.com/shirou/gopsutil/v3/process"
+	ps "github.com/shirou/gopsutil/v4/process"
 )
 
 // CloseProcesses part
