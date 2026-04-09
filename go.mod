@@ -29,9 +29,10 @@ require (
 	github.com/projectdiscovery/fdmax v0.0.4
 	github.com/projectdiscovery/machineid v0.0.0-20250715113114-c77eb3567582
 	github.com/remeh/sizedwaitgroup v1.0.0
+	github.com/rs/xid v1.5.0
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d
 	github.com/shirou/gopsutil v3.21.11+incompatible
-	github.com/shirou/gopsutil/v3 v3.23.7
+	github.com/shirou/gopsutil/v4 v4.26.3
 	github.com/stretchr/testify v1.11.1
 	github.com/tidwall/gjson v1.18.0
 	github.com/wasilibs/go-re2 v1.10.0
@@ -40,7 +41,7 @@ require (
 	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8
 	golang.org/x/oauth2 v0.27.0
 	golang.org/x/sync v0.19.0
-	golang.org/x/sys v0.39.0
+	golang.org/x/sys v0.41.0
 	golang.org/x/text v0.32.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -83,14 +84,12 @@ require (
 	github.com/nwaples/rardecode/v2 v2.2.2 // indirect
 	github.com/nxadm/tail v1.4.11 // indirect
 	github.com/pierrec/lz4/v4 v4.1.23 // indirect
-	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
+	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/projectdiscovery/fastdialer v0.5.4 // indirect
 	github.com/projectdiscovery/networkpolicy v0.1.34 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.113 // indirect
 	github.com/refraction-networking/utls v1.8.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
-	github.com/rs/xid v1.5.0 // indirect
-	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/sorairolake/lzip-go v0.3.8 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
@@ -102,8 +101,8 @@ require (
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/rtred v0.1.2 // indirect
 	github.com/tidwall/tinyqueue v0.1.1 // indirect
-	github.com/tklauser/go-sysconf v0.3.12 // indirect
-	github.com/tklauser/numcpus v0.6.1 // indirect
+	github.com/tklauser/go-sysconf v0.3.16 // indirect
+	github.com/tklauser/numcpus v0.11.0 // indirect
 	github.com/ulikunitz/xz v0.5.15 // indirect
 	github.com/wasilibs/wazero-helpers v0.0.0-20240620070341-3dff1577cd52 // indirect
 	github.com/yuin/goldmark v1.7.4 // indirect
@@ -119,7 +118,7 @@ require (
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/cheggaaa/pb/v3 v3.1.4
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/ebitengine/purego v0.4.0
+	github.com/ebitengine/purego v0.10.0
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
