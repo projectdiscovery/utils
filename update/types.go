@@ -8,7 +8,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/uuid"
-	"github.com/logrusorgru/aurora"
+	"github.com/logrusorgru/aurora/v4"
 
 	fileutil "github.com/projectdiscovery/utils/file"
 	folderutil "github.com/projectdiscovery/utils/folder"
@@ -55,7 +55,7 @@ type Tool struct {
 }
 
 // Aurora instance
-var Aurora aurora.Aurora = aurora.NewAurora(true)
+var Aurora = aurora.New(aurora.WithColors(true))
 
 // GetVersionDescription returns tags like (latest) or (outdated) or (dev)
 func GetVersionDescription(current string, latest string) string {
