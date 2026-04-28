@@ -85,7 +85,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.23 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/projectdiscovery/fastdialer v0.5.6 // indirect
-	github.com/projectdiscovery/networkpolicy v0.1.36 // indirect
+	github.com/projectdiscovery/networkpolicy v0.1.37 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.114 // indirect
 	github.com/refraction-networking/utls v1.8.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
@@ -123,7 +123,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/projectdiscovery/gologger v1.1.68
 	github.com/projectdiscovery/hmap v0.0.100
-	github.com/projectdiscovery/retryablehttp-go v1.3.8
+	github.com/projectdiscovery/retryablehttp-go v1.3.9
 	github.com/weppos/publicsuffix-go v0.50.3-0.20260104170930-90713dec78f2
 	github.com/zcalusic/sysinfo v1.0.2
 	golang.org/x/crypto v0.46.0 // indirect
