@@ -280,6 +280,86 @@ func ReadFileWithBufferSize(filename string, maxCapacity int) (chan string, erro
 	return out, nil
 }
 
+// splitLineByRunes splits a single scanned line on every rune in `seps`, trims
+// whitespace from each piece, drops empty pieces, and returns the result.
+// When `seps` is empty the line is returned unchanged (after trimming) — the
+// behaviour matches a plain bufio.Scanner with TrimSpace applied.
+func splitLineByRunes(line string, seps []rune) []string {
+	trimmed := strings.TrimSpace(line)
+	if len(seps) == 0 {
+		if trimmed == "" {
+			return nil
+		}
+		return []string{trimmed}
+	}
+	pieces := strings.FieldsFunc(line, func(r rune) bool {
+		for _, s := range seps {
+			if r == s {
+				return true
+			}
+		}
+		return false
+	})
+	out := pieces[:0]
+	for _, p := range pieces {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		out = append(out, p)
+	}
+	return out
+}
+
+// ReadFileWithReaderSplit reads `r` line by line and yields each non-empty
+// value, where each scanned line is additionally split on every rune in
+// `separators` (whitespace is trimmed, empty values are dropped). When no
+// separators are supplied the behaviour is equivalent to ReadFileWithReader
+// with TrimSpace applied, so callers can safely pass a single helper down to
+// tools regardless of whether they want comma-separated input.
+//
+// Typical use: parse a resolver/wordlist file where each line may contain
+// either one entry or multiple comma-separated entries.
+func ReadFileWithReaderSplit(r io.Reader, separators ...rune) (chan string, error) {
+	out := make(chan string)
+	go func() {
+		defer close(out)
+		scanner := bufio.NewScanner(r)
+		for scanner.Scan() {
+			for _, value := range splitLineByRunes(scanner.Text(), separators) {
+				out <- value
+			}
+		}
+	}()
+	return out, nil
+}
+
+// ReadFileSplit is the filename variant of ReadFileWithReaderSplit. See
+// ReadFileWithReaderSplit for the splitting semantics.
+func ReadFileSplit(filename string, separators ...rune) (chan string, error) {
+	if !FileExists(filename) {
+		return nil, errors.New("file doesn't exist")
+	}
+	out := make(chan string)
+	go func() {
+		defer close(out)
+		f, err := os.Open(filename)
+		if err != nil {
+			return
+		}
+		defer func() {
+			_ = f.Close()
+		}()
+		scanner := bufio.NewScanner(f)
+		for scanner.Scan() {
+			for _, value := range splitLineByRunes(scanner.Text(), separators) {
+				out <- value
+			}
+		}
+	}()
+	return out, nil
+}
+
 // GetTempFileName generate a temporary file name
 func GetTempFileName() (string, error) {
 	tmpfile, err := os.CreateTemp("", "")
