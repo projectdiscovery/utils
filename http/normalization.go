@@ -13,6 +13,7 @@ import (
 	"github.com/klauspost/compress/zlib"
 	"github.com/klauspost/compress/zstd"
 	"github.com/pkg/errors"
+	"golang.org/x/text/encoding/charmap"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
 
@@ -168,6 +169,10 @@ func wrapDecodeReader(resp *http.Response) (rc io.ReadCloser, err error) {
 	if isContentTypeGbk(resp.Header.Get("Content-Type")) {
 		rc = io.NopCloser(transform.NewReader(rc, simplifiedchinese.GBK.NewDecoder()))
 	}
+	// handle Windows-1251 encoding
+	if isContentTypeWindows1251(resp.Header.Get("Content-Type")) {
+		rc = io.NopCloser(transform.NewReader(rc, charmap.Windows1251.NewDecoder()))
+	}
 	return rc, nil
 }
 
@@ -175,4 +180,10 @@ func wrapDecodeReader(resp *http.Response) (rc io.ReadCloser, err error) {
 func isContentTypeGbk(contentType string) bool {
 	contentType = strings.ToLower(contentType)
 	return stringsutil.ContainsAny(contentType, "gbk", "gb2312", "gb18030")
+}
+
+// isContentTypeWindows1251 checks if the content-type header is Windows-1251.
+func isContentTypeWindows1251(contentType string) bool {
+	contentType = strings.ToLower(contentType)
+	return stringsutil.ContainsAny(contentType, "windows-1251", "cp1251", "cp-1251")
 }
