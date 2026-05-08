@@ -200,37 +200,52 @@ func HasStdin() bool {
 	return isPipedFromChrDev || isPipedFromFIFO
 }
 
-// ReadFileWithReader and stream on a channel
+// ReadFileWithReader streams r line by line on a channel.
+//
+// Deprecated: use LinesReader, which returns an iter.Seq2[string, error] and
+// surfaces scanner errors. Equivalent invocation:
+//
+//	for line, err := range fileutil.LinesReader(r) { ... }
 func ReadFileWithReader(r io.Reader) (chan string, error) {
 	out := make(chan string)
 	go func() {
 		defer close(out)
-		scanner := bufio.NewScanner(r)
-		for scanner.Scan() {
-			out <- scanner.Text()
+		for line, err := range LinesReader(r) {
+			if err != nil {
+				return
+			}
+			out <- line
 		}
 	}()
-
 	return out, nil
 }
 
-// ReadFileWithReader with specific buffer size and stream on a channel
+// ReadFileWithReaderAndBufferSize streams r line by line on a channel using
+// the given scanner buffer size.
+//
+// Deprecated: use LinesReader with WithBufferSize. Equivalent invocation:
+//
+//	for line, err := range fileutil.LinesReader(r, fileutil.WithBufferSize(n)) { ... }
 func ReadFileWithReaderAndBufferSize(r io.Reader, maxCapacity int) (chan string, error) {
 	out := make(chan string)
 	go func() {
 		defer close(out)
-		scanner := bufio.NewScanner(r)
-		buf := make([]byte, maxCapacity)
-		scanner.Buffer(buf, maxCapacity)
-		for scanner.Scan() {
-			out <- scanner.Text()
+		for line, err := range LinesReader(r, WithBufferSize(maxCapacity)) {
+			if err != nil {
+				return
+			}
+			out <- line
 		}
 	}()
-
 	return out, nil
 }
 
-// ReadFile with filename
+// ReadFile streams the file at filename line by line on a channel.
+//
+// Deprecated: use Lines, which returns an iter.Seq2[string, error] and
+// surfaces open / scanner errors. Equivalent invocation:
+//
+//	for line, err := range fileutil.Lines(filename) { ... }
 func ReadFile(filename string) (chan string, error) {
 	if !FileExists(filename) {
 		return nil, errors.New("file doesn't exist")
@@ -238,23 +253,22 @@ func ReadFile(filename string) (chan string, error) {
 	out := make(chan string)
 	go func() {
 		defer close(out)
-		f, err := os.Open(filename)
-		if err != nil {
-			return
-		}
-		defer func() {
-			_ = f.Close()
-		}()
-		scanner := bufio.NewScanner(f)
-		for scanner.Scan() {
-			out <- scanner.Text()
+		for line, err := range Lines(filename) {
+			if err != nil {
+				return
+			}
+			out <- line
 		}
 	}()
-
 	return out, nil
 }
 
-// ReadFile with filename and specific buffer size
+// ReadFileWithBufferSize streams the file at filename line by line on a
+// channel using the given scanner buffer size.
+//
+// Deprecated: use Lines with WithBufferSize. Equivalent invocation:
+//
+//	for line, err := range fileutil.Lines(filename, fileutil.WithBufferSize(n)) { ... }
 func ReadFileWithBufferSize(filename string, maxCapacity int) (chan string, error) {
 	if !FileExists(filename) {
 		return nil, errors.New("file doesn't exist")
@@ -262,21 +276,13 @@ func ReadFileWithBufferSize(filename string, maxCapacity int) (chan string, erro
 	out := make(chan string)
 	go func() {
 		defer close(out)
-		f, err := os.Open(filename)
-		if err != nil {
-			return
-		}
-		defer func() {
-			_ = f.Close()
-		}()
-		scanner := bufio.NewScanner(f)
-		buf := make([]byte, maxCapacity)
-		scanner.Buffer(buf, maxCapacity)
-		for scanner.Scan() {
-			out <- scanner.Text()
+		for line, err := range Lines(filename, WithBufferSize(maxCapacity)) {
+			if err != nil {
+				return
+			}
+			out <- line
 		}
 	}()
-
 	return out, nil
 }
 
