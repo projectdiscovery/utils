@@ -25,9 +25,9 @@ const (
 )
 
 func init() {
-	DefaultInterval = env.GetEnvOrDefault(MemGuardianMaxUsedRamRatioENV, time.Duration(time.Second*30))
+	DefaultInterval = env.GetEnvOrDefault(MemGuardianIntervalENV, time.Duration(time.Second*30))
 	DefaultMaxUsedRamRatio = env.GetEnvOrDefault(MemGuardianMaxUsedRamRatioENV, float64(75))
-	maxRam := env.GetEnvOrDefault(MemGuardianMaxUsedRamRatioENV, "")
+	maxRam := env.GetEnvOrDefault(MemGuardianMaxUsedMemoryENV, "")
 
 	options := []MemGuardianOption{
 		WitInterval(DefaultInterval),
