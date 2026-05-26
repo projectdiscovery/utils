@@ -62,7 +62,7 @@ require (
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/djherbis/times v1.6.0 // indirect
 	github.com/fatih/color v1.15.0 // indirect
-	github.com/gaissmai/bart v0.26.1 // indirect
+	github.com/gaissmai/bart v0.27.1 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/pprof v0.0.0-20240227163752-401108e1b7e7 // indirect
@@ -84,9 +84,9 @@ require (
 	github.com/nxadm/tail v1.4.11 // indirect
 	github.com/pierrec/lz4/v4 v4.1.23 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
-	github.com/projectdiscovery/fastdialer v0.5.7 // indirect
-	github.com/projectdiscovery/networkpolicy v0.1.38 // indirect
-	github.com/projectdiscovery/retryabledns v1.0.114 // indirect
+	github.com/projectdiscovery/fastdialer v0.5.8 // indirect
+	github.com/projectdiscovery/networkpolicy v0.1.39 // indirect
+	github.com/projectdiscovery/retryabledns v1.0.115 // indirect
 	github.com/refraction-networking/utls v1.8.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sorairolake/lzip-go v0.3.8 // indirect
@@ -121,9 +121,9 @@ require (
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/projectdiscovery/gologger v1.1.68
-	github.com/projectdiscovery/hmap v0.0.100
-	github.com/projectdiscovery/retryablehttp-go v1.3.11
+	github.com/projectdiscovery/gologger v1.1.69
+	github.com/projectdiscovery/hmap v0.0.101
+	github.com/projectdiscovery/retryablehttp-go v1.3.12
 	github.com/weppos/publicsuffix-go v0.50.3-0.20260104170930-90713dec78f2
 	github.com/zcalusic/sysinfo v1.0.2
 	golang.org/x/crypto v0.46.0 // indirect
