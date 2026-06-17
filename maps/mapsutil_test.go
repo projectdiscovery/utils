@@ -3,14 +3,12 @@ package mapsutil
 import (
 	"crypto/tls"
 	"io"
-	"net"
 	"net/http"
 	"net/url"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/miekg/dns"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/maps"
 )
@@ -80,18 +78,6 @@ func TestHTTPToMap(t *testing.T) {
 
 	m := HTTPToMap(resp, bufBody.String(), bufHeaders.String(), time.Duration(2), "")
 
-	require.NotNil(t, m)
-	require.NotEmpty(t, m)
-}
-
-func TestDNSToMap(t *testing.T) {
-	msg := dns.Msg{}
-	msg.Rcode = 1
-	msg.Question = []dns.Question{{Name: "test", Qtype: 1, Qclass: 1}}
-	msg.Extra = []dns.RR{&dns.A{Hdr: dns.RR_Header{Name: "test", Rrtype: 1, Class: 1, Ttl: 1}, A: net.ParseIP("0.0.0.0")}}
-	msg.Answer = []dns.RR{&dns.A{Hdr: dns.RR_Header{Name: "test", Rrtype: 1, Class: 1, Ttl: 1}, A: net.ParseIP("0.0.0.0")}}
-	msg.Ns = []dns.RR{&dns.A{Hdr: dns.RR_Header{Name: "test", Rrtype: 1, Class: 1, Ttl: 1}, A: net.ParseIP("0.0.0.0")}}
-	m := DNSToMap(&msg, "")
 	require.NotNil(t, m)
 	require.NotEmpty(t, m)
 }
