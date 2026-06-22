@@ -2,6 +2,7 @@ package urlutil
 
 import (
 	"bytes"
+	"net"
 	"net/url"
 	"strings"
 
@@ -146,11 +147,7 @@ func (u *URL) UpdatePort(newport string) {
 	if newport == "" {
 		return
 	}
-	if u.Port() != "" {
-		u.Host = strings.Replace(u.Host, u.Port(), newport, 1)
-		return
-	}
-	u.Host += ":" + newport
+	u.Host = net.JoinHostPort(u.Hostname(), newport)
 }
 
 // TrimPort if any
