@@ -131,7 +131,7 @@ func (u *URL) GetRelativePath() string {
 		}
 		buff.WriteString(u.Path)
 	}
-	if u.Params.om.Len() > 0 {
+	if !u.Params.IsEmpty() {
 		buff.WriteRune('?')
 		buff.WriteString(u.Params.Encode())
 	}
