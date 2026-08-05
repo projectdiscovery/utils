@@ -111,7 +111,7 @@ require (
 	github.com/projectdiscovery/retryablehttp-go v1.3.16
 	github.com/weppos/publicsuffix-go v0.50.3-0.20260104170930-90713dec78f2
 	github.com/zcalusic/sysinfo v1.0.2
-	golang.org/x/crypto v0.51.0 // indirect
+	golang.org/x/crypto v0.52.0 // indirect
 	golang.org/x/mod v0.35.0 // indirect
 	golang.org/x/net v0.55.0
 	golang.org/x/term v0.43.0
