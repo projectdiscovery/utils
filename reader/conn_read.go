@@ -26,6 +26,10 @@ var (
 // for file/buffer based reading, ConnReadN should be preferred
 // instead of 'conn.Read() without loop' . It ignores EOF, UnexpectedEOF and timeout errors
 // Note: you are responsible for adding a timeout to context
+// Note: if the reader supports SetReadDeadline (e.g. net.Conn), a cancelled
+// context expires its read deadline to unblock a pending read, leaving the
+// deadline in the past; a connection whose read was cancelled should be
+// discarded rather than reused.
 func ConnReadN(ctx context.Context, reader io.Reader, N int64) ([]byte, error) {
 	if N == -1 {
 		N = MaxReadSize
@@ -52,8 +56,21 @@ func ConnReadN(ctx context.Context, reader io.Reader, N int64) ([]byte, error) {
 		fn := func() (int64, error) {
 			return io.CopyN(pw, io.LimitReader(reader, N), N)
 		}
-		// ExecFuncWithTwoReturns will execute the function but errors if context is done
+		// A context deadline can't interrupt a blocking Read; if the reader
+		// supports deadlines (net.Conn and friends) expire it when ctx is
+		// cancelled so the read returns instead of leaking the goroutine and the
+		// connection. The deferred stop cancels this on the normal path, leaving
+		// the deadline untouched when the read finishes in time.
+		if rd, ok := reader.(interface{ SetReadDeadline(time.Time) error }); ok {
+			defer context.AfterFunc(ctx, func() { _ = rd.SetReadDeadline(time.Now()) })()
+		}
 		_, readErr = contextutil.ExecFuncWithTwoReturns(ctx, fn)
+		// On cancellation report the context error rather than the net timeout
+		// produced by expiring the deadline, so the timeout handling below is
+		// deterministic instead of depending on which goroutine wins.
+		if readErr != nil && ctx.Err() != nil {
+			readErr = ctx.Err()
+		}
 	}()
 
 	// read from pipe and return
