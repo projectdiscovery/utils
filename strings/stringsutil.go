@@ -108,10 +108,10 @@ func Join(elems []interface{}, sep string) string {
 
 	var b strings.Builder
 	b.Grow(n)
-	b.WriteString(fmt.Sprint(elems[0]))
+	fmt.Fprint(&b, elems[0])
 	for _, s := range elems[1:] {
 		b.WriteString(sep)
-		b.WriteString(fmt.Sprint(s))
+		fmt.Fprint(&b, s)
 	}
 	return b.String()
 }

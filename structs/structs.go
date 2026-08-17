@@ -20,7 +20,7 @@ type CallbackFunc func(reflect.Value, reflect.StructField)
 // The interface{} passed to the function should be a pointer to a struct
 func Walk(s interface{}, callback CallbackFunc) {
 	structValue := reflect.ValueOf(s)
-	if structValue.Kind() == reflect.Ptr {
+	if structValue.Kind() == reflect.Pointer {
 		structValue = structValue.Elem()
 	}
 	if structValue.Kind() != reflect.Struct {
@@ -34,7 +34,7 @@ func Walk(s interface{}, callback CallbackFunc) {
 		}
 		if field.Kind() == reflect.Struct {
 			Walk(field.Addr().Interface(), callback)
-		} else if field.Kind() == reflect.Ptr && field.Elem().Kind() == reflect.Struct {
+		} else if field.Kind() == reflect.Pointer && field.Elem().Kind() == reflect.Struct {
 			Walk(field.Interface(), callback)
 		} else {
 			callback(field, fieldType)
@@ -44,7 +44,7 @@ func Walk(s interface{}, callback CallbackFunc) {
 
 func walkFilteredFields[T any](input T, includeFields, excludeFields []string, walker func(field reflect.StructField, value reflect.Value)) error {
 	val := reflect.ValueOf(input)
-	if val.Kind() == reflect.Ptr {
+	if val.Kind() == reflect.Pointer {
 		val = val.Elem()
 	}
 	if val.Kind() != reflect.Struct {
@@ -85,7 +85,7 @@ func walkFilteredFields[T any](input T, includeFields, excludeFields []string, w
 func FilterStruct[T any](input T, includeFields, excludeFields []string) (T, error) {
 	var zeroValue T
 	val := reflect.ValueOf(input)
-	if val.Kind() == reflect.Ptr {
+	if val.Kind() == reflect.Pointer {
 		val = val.Elem()
 	}
 
@@ -133,7 +133,7 @@ func FilterStructToMap[T any](input T, includeFields, excludeFields []string) (*
 // Returns a slice of field names or an error if the input is not a struct.
 func GetStructFields[T any](input T) ([]string, error) {
 	val := reflect.ValueOf(input)
-	if val.Kind() == reflect.Ptr {
+	if val.Kind() == reflect.Pointer {
 		val = val.Elem()
 	}
 
