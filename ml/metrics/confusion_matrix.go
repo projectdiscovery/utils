@@ -35,24 +35,24 @@ func NewConfusionMatrix(actual, predicted []string, labels []string) *ConfusionM
 func (cm *ConfusionMatrix) PrintConfusionMatrix() string {
 	var s strings.Builder
 
-	s.WriteString(fmt.Sprintf("%30s\n", "Confusion Matrix"))
-	s.WriteString(fmt.Sprintln())
+	fmt.Fprintf(&s, "%30s\n", "Confusion Matrix")
+	fmt.Fprintln(&s)
 	// Print header
-	s.WriteString(fmt.Sprintf("%-15s", ""))
+	fmt.Fprintf(&s, "%-15s", "")
 	for _, label := range cm.labels {
-		s.WriteString(fmt.Sprintf("%-15s", label))
+		fmt.Fprintf(&s, "%-15s", label)
 	}
-	s.WriteString(fmt.Sprintln())
+	fmt.Fprintln(&s)
 
 	// Print rows
 	for i, row := range cm.matrix {
-		s.WriteString(fmt.Sprintf("%-15s", cm.labels[i]))
+		fmt.Fprintf(&s, "%-15s", cm.labels[i])
 		for _, value := range row {
-			s.WriteString(fmt.Sprintf("%-15d", value))
+			fmt.Fprintf(&s, "%-15d", value)
 		}
-		s.WriteString(fmt.Sprintln())
+		fmt.Fprintln(&s)
 	}
-	s.WriteString(fmt.Sprintln())
+	fmt.Fprintln(&s)
 
 	return s.String()
 }

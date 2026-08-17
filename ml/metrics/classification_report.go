@@ -7,10 +7,10 @@ import (
 
 func (cm *ConfusionMatrix) PrintClassificationReport() string {
 	var s strings.Builder
-	s.WriteString(fmt.Sprintf("%30s\n", "Classification Report"))
-	s.WriteString(fmt.Sprintln())
+	fmt.Fprintf(&s, "%30s\n", "Classification Report")
+	fmt.Fprintln(&s)
 
-	s.WriteString(fmt.Sprintf("\n%-15s %-10s %-10s %-10s %-10s\n", "", "precision", "recall", "f1-score", "support"))
+	fmt.Fprintf(&s, "\n%-15s %-10s %-10s %-10s %-10s\n", "", "precision", "recall", "f1-score", "support")
 
 	totals := map[string]float64{"true": 0, "predicted": 0, "correct": 0}
 	macroAvg := map[string]float64{"precision": 0, "recall": 0, "f1-score": 0}
@@ -42,22 +42,22 @@ func (cm *ConfusionMatrix) PrintClassificationReport() string {
 	}
 
 	accuracy := totals["correct"] / totals["true"]
-	s.WriteString(fmt.Sprintf("\n%-26s %-10s %-10.2f %-10d", "accuracy", "", accuracy, int(totals["true"])))
+	fmt.Fprintf(&s, "\n%-26s %-10s %-10.2f %-10d", "accuracy", "", accuracy, int(totals["true"]))
 
-	s.WriteString(fmt.Sprintf("\n%-15s %-10.2f %-10.2f %-10.2f %-10d\n", "macro avg",
+	fmt.Fprintf(&s, "\n%-15s %-10.2f %-10.2f %-10.2f %-10d\n", "macro avg",
 		macroAvg["precision"]/float64(len(cm.labels)),
 		macroAvg["recall"]/float64(len(cm.labels)),
 		macroAvg["f1-score"]/float64(len(cm.labels)),
-		int(totals["true"])))
+		int(totals["true"]))
 
 	precisionWeightedAvg := totals["correct"] / totals["predicted"]
 	recallWeightedAvg := totals["correct"] / totals["true"]
 	f1ScoreWeightedAvg := 2 * precisionWeightedAvg * recallWeightedAvg / (precisionWeightedAvg + recallWeightedAvg)
 
-	s.WriteString(fmt.Sprintf("%-15s %-10.2f %-10.2f %-10.2f %-10d\n", "weighted avg",
-		precisionWeightedAvg, recallWeightedAvg, f1ScoreWeightedAvg, int(totals["true"])))
+	fmt.Fprintf(&s, "%-15s %-10.2f %-10.2f %-10.2f %-10d\n", "weighted avg",
+		precisionWeightedAvg, recallWeightedAvg, f1ScoreWeightedAvg, int(totals["true"]))
 
-	s.WriteString(fmt.Sprintln())
+	fmt.Fprintln(&s)
 
 	return s.String()
 }
