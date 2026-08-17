@@ -1,11 +1,32 @@
 package chromeshell
 
 import (
+	"archive/zip"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
+
+func writeTestZip(path string, entries map[string]string) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = f.Close() }()
+
+	w := zip.NewWriter(f)
+	for name, content := range entries {
+		e, err := w.Create(name)
+		if err != nil {
+			return err
+		}
+		if _, err := e.Write([]byte(content)); err != nil {
+			return err
+		}
+	}
+	return w.Close()
+}
 
 func TestHost(t *testing.T) {
 	u := Host()
@@ -35,17 +56,33 @@ func TestFindBin(t *testing.T) {
 	}
 }
 
-func TestSafeJoin(t *testing.T) {
-	base := t.TempDir()
-	if _, err := safeJoin(base, "../evil"); err == nil {
-		t.Fatal("expected error for path escape")
-	}
-	got, err := safeJoin(base, "chrome-headless-shell")
-	if err != nil {
+func TestUnzipRejectsPathEscape(t *testing.T) {
+	dir := t.TempDir()
+	zipPath := filepath.Join(dir, "evil.zip")
+	if err := writeTestZip(zipPath, map[string]string{
+		"../evil": "x",
+	}); err != nil {
 		t.Fatal(err)
 	}
-	if got != filepath.Join(base, "chrome-headless-shell") {
-		t.Fatalf("got %q", got)
+	if err := unzip(zipPath, filepath.Join(dir, "out")); err == nil {
+		t.Fatal("expected error for path escape")
+	}
+}
+
+func TestUnzipExtractsLocalEntries(t *testing.T) {
+	dir := t.TempDir()
+	zipPath := filepath.Join(dir, "ok.zip")
+	if err := writeTestZip(zipPath, map[string]string{
+		"chrome-headless-shell": "x",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	out := filepath.Join(dir, "out")
+	if err := unzip(zipPath, out); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(out, "chrome-headless-shell")); err != nil {
+		t.Fatal(err)
 	}
 }
 

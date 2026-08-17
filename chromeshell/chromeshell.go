@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"sync"
 )
 
@@ -123,7 +122,7 @@ func downloadAndExtract(url, destDir string) error {
 	if err != nil {
 		return err
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	zipPath := filepath.Join(tmpDir, "chrome-headless-shell.zip")
 	if err := downloadFile(url, zipPath); err != nil {
@@ -153,7 +152,7 @@ func downloadFile(url, dest string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("download %s: unexpected status %s", url, resp.Status)
@@ -163,7 +162,7 @@ func downloadFile(url, dest string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	_, err = io.Copy(f, resp.Body)
 	return err
@@ -174,17 +173,19 @@ func unzip(zipPath, dest string) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer func() { _ = r.Close() }()
 
 	if err := os.MkdirAll(dest, 0o755); err != nil {
 		return err
 	}
 
 	for _, f := range r.File {
-		target, err := safeJoin(dest, f.Name)
-		if err != nil {
-			return err
+		// entry names must stay inside dest: reject "..", absolute paths and
+		// other non-local names before joining
+		if !filepath.IsLocal(f.Name) {
+			return fmt.Errorf("illegal path in zip: %s", f.Name)
 		}
+		target := filepath.Join(dest, f.Name)
 		if f.FileInfo().IsDir() {
 			if err := os.MkdirAll(target, 0o755); err != nil {
 				return err
@@ -206,7 +207,7 @@ func writeZipFile(f *zip.File, target string) error {
 	if err != nil {
 		return err
 	}
-	defer rc.Close()
+	defer func() { _ = rc.Close() }()
 
 	mode := f.Mode()
 	if mode&0o111 != 0 {
@@ -219,7 +220,7 @@ func writeZipFile(f *zip.File, target string) error {
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer func() { _ = out.Close() }()
 
 	_, err = io.Copy(out, rc)
 	return err
@@ -240,13 +241,4 @@ func stripFirstDir(dir string) (string, error) {
 		return dirs[0], nil
 	}
 	return dir, nil
-}
-
-func safeJoin(base, name string) (string, error) {
-	target := filepath.Clean(filepath.Join(base, name))
-	baseClean := filepath.Clean(base) + string(os.PathSeparator)
-	if target != filepath.Clean(base) && !strings.HasPrefix(target+string(os.PathSeparator), baseClean) {
-		return "", fmt.Errorf("illegal path in zip: %s", name)
-	}
-	return target, nil
 }
