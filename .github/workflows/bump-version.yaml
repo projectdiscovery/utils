@@ -16,4 +16,5 @@ jobs:
       - uses: projectdiscovery/actions/svu-next@v1
         with:
           v0: true
+          always: true
           release-create: true
