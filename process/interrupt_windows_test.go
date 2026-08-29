@@ -5,8 +5,12 @@ package process
 import (
 	"os"
 	"os/exec"
+	"os/signal"
 	"syscall"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestSendInterrupt(t *testing.T) {
@@ -14,7 +18,22 @@ func TestSendInterrupt(t *testing.T) {
 	// stays isolated and does not kill sibling processes (e.g. the Go
 	// compiler running in parallel during "go test ./...").
 	if os.Getenv("TEST_SEND_INTERRUPT_CHILD") == "1" {
+		// Register before raising: the runtime turns CTRL_BREAK_EVENT into
+		// SIGINT only when something is watching for it, otherwise the console
+		// default action terminates this process with STATUS_CONTROL_C_EXIT
+		// (0xc000013a) and the parent sees a failed child.
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, os.Interrupt)
+		defer signal.Stop(sigChan)
+
 		SendInterrupt()
+
+		select {
+		case sig := <-sigChan:
+			require.Equal(t, os.Interrupt, sig)
+		case <-time.After(2 * time.Second):
+			t.Fatal("timeout waiting for interrupt signal")
+		}
 		return
 	}
 

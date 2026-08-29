@@ -38,7 +38,7 @@ func ToMap(v interface{}, tomapkey ToMapKey, unexported bool) (map[string]interf
 	typ := reflect.TypeOf(v)
 	val := reflect.ValueOf(v)
 	switch typ.Kind() {
-	case reflect.Ptr:
+	case reflect.Pointer:
 		typ = typ.Elem()
 	}
 	if typ.Kind() != reflect.Struct {
@@ -175,7 +175,7 @@ func sizeOf(v reflect.Value, cache map[uintptr]bool) int {
 		cache[stringPtr] = true
 		return len(s) + int(v.Type().Size())
 
-	case reflect.Ptr:
+	case reflect.Pointer:
 		// return Ptr size if this node has been visited already (infinite recursion)
 		if cache[v.Pointer()] {
 			return int(v.Type().Size())
