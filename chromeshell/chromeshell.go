@@ -2,13 +2,13 @@ package chromeshell
 
 import (
 	"archive/zip"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
-	"sync"
 )
 
 const (
@@ -21,7 +21,11 @@ const (
 	revision = 1520797742
 )
 
-var ensureMu sync.Mutex
+var ensureLock = func() chan struct{} {
+	lock := make(chan struct{}, 1)
+	lock <- struct{}{}
+	return lock
+}()
 
 // Supported reports whether chrome-headless-shell auto-download is available
 // for the current platform.
@@ -58,18 +62,28 @@ func BinPath() string {
 // returns the executable path. It is a no-op download when the binary already
 // exists. Callers should only invoke this when Supported() is true.
 func Ensure() (string, error) {
+	return EnsureContext(context.Background())
+}
+
+// EnsureContext is like Ensure, but stops waiting for the shared download lock
+// and cancels the browser download when ctx is done.
+func EnsureContext(ctx context.Context) (string, error) {
 	if !Supported() {
 		return "", fmt.Errorf("chrome-headless-shell auto-download is only supported on linux/amd64")
 	}
 
-	ensureMu.Lock()
-	defer ensureMu.Unlock()
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	case <-ensureLock:
+		defer func() { ensureLock <- struct{}{} }()
+	}
 
 	if p := findBin(Dir()); p != "" {
 		return p, nil
 	}
 
-	if err := downloadAndExtract(Host(), Dir()); err != nil {
+	if err := downloadAndExtract(ctx, Host(), Dir()); err != nil {
 		return "", err
 	}
 
@@ -112,7 +126,7 @@ func defaultBrowserDir() string {
 	return filepath.Join(home, ".cache", "rod", "browser")
 }
 
-func downloadAndExtract(url, destDir string) error {
+func downloadAndExtract(ctx context.Context, url, destDir string) error {
 	tmpParent := filepath.Dir(destDir)
 	if err := os.MkdirAll(tmpParent, 0o755); err != nil {
 		return err
@@ -125,7 +139,7 @@ func downloadAndExtract(url, destDir string) error {
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	zipPath := filepath.Join(tmpDir, "chrome-headless-shell.zip")
-	if err := downloadFile(url, zipPath); err != nil {
+	if err := downloadFile(ctx, url, zipPath); err != nil {
 		return err
 	}
 
@@ -147,8 +161,12 @@ func downloadAndExtract(url, destDir string) error {
 	return nil
 }
 
-func downloadFile(url, dest string) error {
-	resp, err := http.Get(url) //nolint:noctx // one-shot browser binary fetch
+func downloadFile(ctx context.Context, url, dest string) error {
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := http.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
