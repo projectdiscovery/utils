@@ -33,7 +33,7 @@ require (
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/shirou/gopsutil/v4 v4.26.3
-	github.com/stretchr/testify v1.11.1
+	github.com/stretchr/testify v1.12.1
 	github.com/tidwall/gjson v1.18.0
 	github.com/wasilibs/go-re2 v1.10.0
 	github.com/zmap/zcrypto v0.0.0-20240803002437-3a861682ac77
@@ -73,9 +73,9 @@ require (
 	github.com/muesli/termenv v0.15.3-0.20240618155329-98d742f6907a // indirect
 	github.com/nxadm/tail v1.4.11 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
-	github.com/projectdiscovery/fastdialer v0.5.17 // indirect
-	github.com/projectdiscovery/networkpolicy v0.1.46 // indirect
-	github.com/projectdiscovery/retryabledns v1.0.115 // indirect
+	github.com/projectdiscovery/fastdialer v0.5.19 // indirect
+	github.com/projectdiscovery/networkpolicy v0.1.48 // indirect
+	github.com/projectdiscovery/retryabledns v1.0.116 // indirect
 	github.com/refraction-networking/utls v1.8.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
@@ -95,20 +95,19 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	github.com/zmap/rc2 v0.0.0-20190804163417-abaa70531248 // indirect
 	go.etcd.io/bbolt v1.3.7 // indirect
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
 )
 
 require (
 	aead.dev/minisign v0.2.0 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/cheggaaa/pb/v3 v3.1.4
-	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/ebitengine/purego v0.10.0
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
-	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/projectdiscovery/gologger v1.1.72
-	github.com/projectdiscovery/hmap v0.0.101
-	github.com/projectdiscovery/retryablehttp-go v1.3.23
+	github.com/projectdiscovery/hmap v0.0.102
+	github.com/projectdiscovery/retryablehttp-go v1.3.25
 	github.com/weppos/publicsuffix-go v0.50.3-0.20260104170930-90713dec78f2
 	github.com/zcalusic/sysinfo v1.0.2
 	golang.org/x/crypto v0.52.0 // indirect
