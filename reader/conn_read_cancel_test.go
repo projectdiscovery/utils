@@ -18,8 +18,6 @@ import (
 // stays parked in Read for the connection's lifetime, leaking the goroutine,
 // its buffers, and the connection on every cancelled read.
 func TestConnReadN_NoGoroutineLeakOnCancel(t *testing.T) {
-	addr := newSilentServer(t)
-
 	runtime.GC()
 	time.Sleep(50 * time.Millisecond)
 	runtime.GC()
@@ -27,14 +25,12 @@ func TestConnReadN_NoGoroutineLeakOnCancel(t *testing.T) {
 
 	const calls = 50
 	for range calls {
-		conn, err := net.Dial("tcp", addr)
-		if err != nil {
-			t.Fatal(err)
-		}
+		conn, peer := net.Pipe()
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Millisecond)
 		_, _ = ConnReadN(ctx, conn, 16) // peer sends nothing; ctx expires first
 		cancel()
-		t.Cleanup(func() { _ = conn.Close() })
+		_ = conn.Close()
+		_ = peer.Close()
 	}
 
 	deadline := time.Now().Add(5 * time.Second)
@@ -67,7 +63,7 @@ func TestConnReadN_ReturnsPartialDataOnCancel(t *testing.T) {
 		if err != nil {
 			return
 		}
-		defer c.Close()
+		defer func() { _ = c.Close() }()
 		_, _ = c.Write([]byte("hi"))  // send partial data, then stall
 		_, _ = io.Copy(io.Discard, c) // block until the client closes
 	}()
@@ -89,27 +85,4 @@ func TestConnReadN_ReturnsPartialDataOnCancel(t *testing.T) {
 	if string(data) != "hi" {
 		t.Fatalf("expected %q, got %q", "hi", string(data))
 	}
-}
-
-// newSilentServer returns the address of a TCP server that accepts connections
-// and holds them open without ever writing, so reads against it block until the
-// reader's deadline or close.
-func newSilentServer(t *testing.T) string {
-	t.Helper()
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	held := make(chan net.Conn, 1024)
-	go func() {
-		for {
-			c, err := ln.Accept()
-			if err != nil {
-				return
-			}
-			held <- c // hold the server end open; never write
-		}
-	}()
-	t.Cleanup(func() { _ = ln.Close() })
-	return ln.Addr().String()
 }
