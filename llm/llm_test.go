@@ -154,3 +154,18 @@ func TestConcurrencyLimitIsRespected(t *testing.T) {
 	wg.Wait()
 	require.LessOrEqual(t, atomic.LoadInt32(&peak), int32(2), "must not exceed MaxConcurrency in flight")
 }
+
+func TestConfigAPIKeyReachesAuthorizationHeader(t *testing.T) {
+	var gotAuth string
+	cfg := chatStub(t, func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		_, _ = w.Write([]byte(okBody("ok")))
+	})
+	cfg.APIKey = "explicit-key" // must win over the LLM_API_KEY env
+
+	client, err := New(cfg)
+	require.NoError(t, err)
+	_, err = client.Complete(context.Background(), Request{Prompt: "hi"})
+	require.NoError(t, err)
+	require.Equal(t, "Bearer explicit-key", gotAuth)
+}

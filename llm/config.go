@@ -42,6 +42,10 @@ var presets = map[string]string{
 type Config struct {
 	// Provider selects a preset endpoint. Ignored when BaseURL is set.
 	Provider string
+	// APIKey overrides the key read from LLM_API_KEY. A caller that resolves a
+	// key itself (e.g. for backward-compatible env fallbacks) passes it here;
+	// empty means read the environment.
+	APIKey string
 	// BaseURL is any OpenAI-compatible endpoint, including a local one.
 	BaseURL string
 	// Model is the model identifier passed to the provider.

@@ -71,8 +71,13 @@ func New(config Config) (*Client, error) {
 		concurrency = 1
 	}
 
+	apiKey := config.APIKey
+	if apiKey == "" {
+		apiKey = os.Getenv(APIKeyEnv)
+	}
+
 	client := &Client{
-		backend: newOpenAIBackend(baseURL, os.Getenv(APIKeyEnv), timeout),
+		backend: newOpenAIBackend(baseURL, apiKey, timeout),
 		model:   config.Model,
 		budget:  int32(config.MaxCalls),
 		tickets: make(chan struct{}, concurrency),
