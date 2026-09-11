@@ -53,18 +53,21 @@ func ConnReadN(ctx context.Context, reader io.Reader, N int64) ([]byte, error) {
 		defer func() {
 			_ = pw.Close()
 		}()
+		readDone := make(chan struct{})
 		fn := func() (int64, error) {
+			defer close(readDone)
 			return io.CopyN(pw, io.LimitReader(reader, N), N)
 		}
-		// A context deadline can't interrupt a blocking Read; if the reader
-		// supports deadlines (net.Conn and friends) expire it when ctx is
-		// cancelled so the read returns instead of leaking the goroutine and the
-		// connection. The deferred stop cancels this on the normal path, leaving
-		// the deadline untouched when the read finishes in time.
-		if rd, ok := reader.(interface{ SetReadDeadline(time.Time) error }); ok {
-			defer context.AfterFunc(ctx, func() { _ = rd.SetReadDeadline(time.Now()) })()
-		}
+		// A context deadline can't interrupt a blocking Read. If the context wins
+		// and the reader supports deadlines (net.Conn and friends), expire its read
+		// deadline and wait for Read to return instead of leaking its goroutine.
+		rd, canSetReadDeadline := reader.(interface{ SetReadDeadline(time.Time) error })
 		_, readErr = contextutil.ExecFuncWithTwoReturns(ctx, fn)
+		if ctxErr := ctx.Err(); ctxErr != nil && errors.Is(readErr, ctxErr) && canSetReadDeadline {
+			if err := rd.SetReadDeadline(time.Now()); err == nil {
+				<-readDone
+			}
+		}
 		// On cancellation report the context error rather than the net timeout
 		// produced by expiring the deadline, so the timeout handling below is
 		// deterministic instead of depending on which goroutine wins.

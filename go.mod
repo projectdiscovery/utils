@@ -15,7 +15,6 @@ require (
 	github.com/fortytw2/leaktest v1.3.0
 	github.com/google/go-github/v30 v30.1.0
 	github.com/google/uuid v1.3.1
-	github.com/hdm/jarm-go v0.0.7
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/klauspost/compress v1.18.2
 	github.com/kljensen/snowball v0.8.0
@@ -27,6 +26,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/blackrock v0.0.2
 	github.com/projectdiscovery/fdmax v0.0.4
+	github.com/projectdiscovery/jarm-go v0.0.0-20260910160638-430e2bae86f6
 	github.com/projectdiscovery/machineid v0.0.0-20250715113114-c77eb3567582
 	github.com/remeh/sizedwaitgroup v1.0.0
 	github.com/rs/xid v1.5.0
