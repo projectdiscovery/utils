@@ -3,8 +3,9 @@
 // It exists so the ProjectDiscovery ecosystem has one LLM client rather than
 // several: nuclei semantic matchers and the DSL llm_prompt helper both build on
 // it. Any OpenAI-compatible endpoint is supported, which covers local runtimes
-// (ollama, llama.cpp, vLLM, LM Studio) as well as hosted providers, and a local
-// model is the intended default so a scan need not send data to a third party.
+// (ollama, llama.cpp, vLLM, LM Studio) as well as hosted providers. There is no
+// implicit hosted default: a caller must set Provider or BaseURL so a scan
+// cannot send data off-box by accident.
 package llm
 
 import (
@@ -14,19 +15,22 @@ import (
 	"github.com/projectdiscovery/utils/errkit"
 )
 
-// APIKeyEnv is the single place an API key is read from. A key is never a
-// constructor argument or a flag, so it cannot be captured in a config struct
-// or leak through process args and shell history.
+// APIKeyEnv is the environment variable consulted when Config.APIKey is empty.
 const APIKeyEnv = "LLM_API_KEY"
 
-// ProviderOpenAICompatible talks to any /v1/chat/completions endpoint.
+// ProviderOpenAICompatible talks to any /v1/chat/completions endpoint. BaseURL
+// is required; this name never maps to a hosted vendor.
 const ProviderOpenAICompatible = "openai-compatible"
 
 const defaultTimeout = 2 * time.Minute
 
+// defaultMaxCacheEntries bounds the in-memory response cache. When MaxCalls is
+// set and smaller, that value is used instead so the cache cannot outgrow the
+// call budget.
+const defaultMaxCacheEntries = 4096
+
 // presets are base URLs for well known OpenAI-compatible endpoints. Anything
-// else is reached by setting BaseURL directly, so this table only needs the
-// common local runtimes and a couple of hosted providers.
+// else is reached by setting BaseURL directly.
 var presets = map[string]string{
 	"openai":     "https://api.openai.com/v1",
 	"ollama":     "http://localhost:11434/v1",
@@ -38,13 +42,19 @@ var presets = map[string]string{
 	"together":   "https://api.together.xyz/v1",
 }
 
+var hostedPresets = map[string]struct{}{
+	"openai":     {},
+	"groq":       {},
+	"openrouter": {},
+	"together":   {},
+}
+
 // Config describes how to reach a provider and how to bound its use.
 type Config struct {
 	// Provider selects a preset endpoint. Ignored when BaseURL is set.
 	Provider string
-	// APIKey overrides the key read from LLM_API_KEY. A caller that resolves a
-	// key itself (e.g. for backward-compatible env fallbacks) passes it here;
-	// empty means read the environment.
+	// APIKey overrides LLM_API_KEY. Empty means read the environment. Hosted
+	// presets require a key; local presets and a custom BaseURL do not.
 	APIKey string
 	// BaseURL is any OpenAI-compatible endpoint, including a local one.
 	BaseURL string
@@ -63,15 +73,18 @@ type Config struct {
 }
 
 // resolveBaseURL returns the endpoint to talk to, applying a preset when no
-// explicit URL is given.
+// explicit URL is given. An empty provider does not fall through to OpenAI.
 func (config Config) resolveBaseURL() (string, error) {
 	if url := strings.TrimSuffix(config.BaseURL, "/"); url != "" {
 		return url, nil
 	}
 
 	provider := strings.ToLower(strings.TrimSpace(config.Provider))
-	if provider == "" || provider == ProviderOpenAICompatible {
-		provider = "openai"
+	if provider == "" {
+		return "", errkit.New("no llm provider or base url configured")
+	}
+	if provider == ProviderOpenAICompatible {
+		return "", errkit.New("openai-compatible provider requires a base url")
 	}
 
 	preset, ok := presets[provider]
@@ -80,4 +93,18 @@ func (config Config) resolveBaseURL() (string, error) {
 	}
 
 	return preset, nil
+}
+
+func requiresAPIKey(provider, baseURL string) bool {
+	name := strings.ToLower(strings.TrimSpace(provider))
+	if _, ok := hostedPresets[name]; ok {
+		return true
+	}
+	normalized := strings.TrimSuffix(baseURL, "/")
+	for hosted := range hostedPresets {
+		if presets[hosted] == normalized {
+			return true
+		}
+	}
+	return false
 }

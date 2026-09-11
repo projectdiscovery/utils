@@ -49,8 +49,8 @@ type Client struct {
 	tickets chan struct{}
 }
 
-// New builds a client from config. The API key is read from LLM_API_KEY; local
-// providers need none.
+// New builds a client from config. Hosted presets require Config.APIKey or
+// LLM_API_KEY; local presets and a custom BaseURL do not.
 func New(config Config) (*Client, error) {
 	if strings.TrimSpace(config.Model) == "" {
 		return nil, errkit.New("no llm model configured")
@@ -75,6 +75,9 @@ func New(config Config) (*Client, error) {
 	if apiKey == "" {
 		apiKey = os.Getenv(APIKeyEnv)
 	}
+	if requiresAPIKey(config.Provider, baseURL) && apiKey == "" {
+		return nil, errkit.New("llm api key required (set LLM_API_KEY or Config.APIKey)")
+	}
 
 	client := &Client{
 		backend: newOpenAIBackend(baseURL, apiKey, timeout),
@@ -84,7 +87,11 @@ func New(config Config) (*Client, error) {
 	}
 
 	if config.Cache {
-		client.cache = newCache()
+		max := defaultMaxCacheEntries
+		if config.MaxCalls > 0 && config.MaxCalls < max {
+			max = config.MaxCalls
+		}
+		client.cache = newCache(max)
 	}
 
 	return client, nil
@@ -94,8 +101,8 @@ func New(config Config) (*Client, error) {
 //
 // A cached response is returned without consuming the budget or a concurrency
 // slot, so a warm cache both costs nothing and cannot be rate-limited. The
-// budget is checked and consumed only for calls that actually reach the
-// provider.
+// budget is checked and consumed only for calls that actually wait to reach
+// the provider; a cancelled wait refunds the reservation.
 func (client *Client) Complete(ctx context.Context, req Request) (string, error) {
 	if strings.TrimSpace(req.Prompt) == "" {
 		return "", errkit.New("empty prompt")
@@ -113,7 +120,12 @@ func (client *Client) Complete(ctx context.Context, req Request) (string, error)
 		return "", err
 	}
 
-	client.tickets <- struct{}{}
+	select {
+	case <-ctx.Done():
+		client.release()
+		return "", ctx.Err()
+	case client.tickets <- struct{}{}:
+	}
 	defer func() { <-client.tickets }()
 
 	response, err := client.backend.complete(ctx, client.model, req)
@@ -128,17 +140,23 @@ func (client *Client) Complete(ctx context.Context, req Request) (string, error)
 	return response, nil
 }
 
-// reserve consumes one unit of the call budget, if a budget is set.
 func (client *Client) reserve() error {
 	if client.budget <= 0 {
 		return nil
 	}
 
 	if atomic.AddInt32(&client.calls, 1) > client.budget {
+		atomic.AddInt32(&client.calls, -1)
 		return errkit.Newf("llm call budget exhausted (%d calls)", client.budget)
 	}
 
 	return nil
+}
+
+func (client *Client) release() {
+	if client.budget > 0 {
+		atomic.AddInt32(&client.calls, -1)
+	}
 }
 
 // key is the cache key: every input that can change the answer, hashed so a
@@ -156,15 +174,17 @@ func (client *Client) key(req Request) string {
 	return hex.EncodeToString(hasher.Sum(nil))
 }
 
-// cache is a trivial concurrency-safe response cache. Entries live for the life
-// of the client, which matches a single scan.
 type cache struct {
 	mu      sync.RWMutex
+	max     int
 	entries map[string]string
 }
 
-func newCache() *cache {
-	return &cache{entries: make(map[string]string)}
+func newCache(max int) *cache {
+	if max <= 0 {
+		max = defaultMaxCacheEntries
+	}
+	return &cache{max: max, entries: make(map[string]string)}
 }
 
 func (c *cache) get(key string) (string, bool) {
@@ -178,5 +198,11 @@ func (c *cache) get(key string) (string, bool) {
 func (c *cache) set(key, value string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	if _, exists := c.entries[key]; !exists && len(c.entries) >= c.max {
+		for existing := range c.entries {
+			delete(c.entries, existing)
+			break
+		}
+	}
 	c.entries[key] = value
 }

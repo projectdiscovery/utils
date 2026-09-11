@@ -26,17 +26,21 @@ func okBody(content string) string {
 }
 
 func TestResolveBaseURLPresetsAndDefault(t *testing.T) {
-	cases := map[string]string{
-		"":                  "https://api.openai.com/v1",
-		"openai":            "https://api.openai.com/v1",
-		"openai-compatible": "https://api.openai.com/v1",
-		"ollama":            "http://localhost:11434/v1",
-	}
-	for provider, want := range cases {
-		got, err := Config{Provider: provider}.resolveBaseURL()
-		require.NoError(t, err, provider)
-		require.Equal(t, want, got, provider)
-	}
+	got, err := Config{Provider: "openai"}.resolveBaseURL()
+	require.NoError(t, err)
+	require.Equal(t, "https://api.openai.com/v1", got)
+
+	got, err = Config{Provider: "ollama"}.resolveBaseURL()
+	require.NoError(t, err)
+	require.Equal(t, "http://localhost:11434/v1", got)
+}
+
+func TestResolveBaseURLRequiresExplicitTarget(t *testing.T) {
+	_, err := Config{}.resolveBaseURL()
+	require.ErrorContains(t, err, "no llm provider or base url")
+
+	_, err = Config{Provider: ProviderOpenAICompatible}.resolveBaseURL()
+	require.ErrorContains(t, err, "requires a base url")
 }
 
 func TestResolveBaseURLExplicitWins(t *testing.T) {
@@ -168,4 +172,62 @@ func TestConfigAPIKeyReachesAuthorizationHeader(t *testing.T) {
 	_, err = client.Complete(context.Background(), Request{Prompt: "hi"})
 	require.NoError(t, err)
 	require.Equal(t, "Bearer explicit-key", gotAuth)
+}
+
+func TestNewRequiresKeyForHostedPreset(t *testing.T) {
+	t.Setenv(APIKeyEnv, "")
+	_, err := New(Config{Provider: "openai", Model: "gpt-4o-mini"})
+	require.ErrorContains(t, err, "llm api key required")
+}
+
+func TestNewAllowsLocalPresetWithoutKey(t *testing.T) {
+	t.Setenv(APIKeyEnv, "")
+	client, err := New(Config{Provider: "ollama", Model: "qwen3:4b"})
+	require.NoError(t, err)
+	require.NotNil(t, client)
+}
+
+func TestCompleteCancelledWhileWaitingForTicket(t *testing.T) {
+	block := make(chan struct{})
+	started := make(chan struct{})
+	var startOnce sync.Once
+	cfg := chatStub(t, func(w http.ResponseWriter, _ *http.Request) {
+		startOnce.Do(func() { close(started) })
+		<-block
+		_, _ = w.Write([]byte(okBody("held")))
+	})
+	cfg.MaxConcurrency = 1
+	cfg.MaxCalls = 2
+	client, err := New(cfg)
+	require.NoError(t, err)
+
+	done := make(chan error, 1)
+	go func() {
+		_, holdErr := client.Complete(context.Background(), Request{Prompt: "hold"})
+		done <- holdErr
+	}()
+	<-started
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err = client.Complete(ctx, Request{Prompt: "second"})
+	require.ErrorIs(t, err, context.Canceled)
+
+	close(block)
+	require.NoError(t, <-done)
+
+	got, err := client.Complete(context.Background(), Request{Prompt: "third"})
+	require.NoError(t, err)
+	require.Equal(t, "held", got)
+}
+
+func TestCacheEvictsWhenFull(t *testing.T) {
+	c := newCache(1)
+	c.set("a", "1")
+	c.set("b", "2")
+	_, okA := c.get("a")
+	gotB, okB := c.get("b")
+	require.False(t, okA)
+	require.True(t, okB)
+	require.Equal(t, "2", gotB)
 }
