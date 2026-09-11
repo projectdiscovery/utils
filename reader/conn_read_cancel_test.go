@@ -67,7 +67,7 @@ func TestConnReadN_ReturnsPartialDataOnCancel(t *testing.T) {
 		if err != nil {
 			return
 		}
-		defer c.Close()
+		defer func() { _ = c.Close() }()
 		_, _ = c.Write([]byte("hi"))  // send partial data, then stall
 		_, _ = io.Copy(io.Discard, c) // block until the client closes
 	}()
