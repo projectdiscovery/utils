@@ -74,7 +74,7 @@ require (
 	github.com/nxadm/tail v1.4.11 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/projectdiscovery/fastdialer v0.5.20 // indirect
-	github.com/projectdiscovery/networkpolicy v0.1.49 // indirect
+	github.com/projectdiscovery/networkpolicy v0.1.50 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.116 // indirect
 	github.com/refraction-networking/utls v1.8.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
