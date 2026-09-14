@@ -2,10 +2,15 @@ package chromeshell
 
 import (
 	"archive/zip"
+	"context"
+	"errors"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func writeTestZip(path string, entries map[string]string) error {
@@ -93,4 +98,60 @@ func TestEnsureUnsupported(t *testing.T) {
 	if _, err := Ensure(); err == nil {
 		t.Fatal("expected unsupported error")
 	}
+}
+
+func TestDownloadFileContextCancellation(t *testing.T) {
+	requestDone := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer close(requestDone)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("partial"))
+		w.(http.Flusher).Flush()
+		<-r.Context().Done()
+	}))
+	t.Cleanup(server.Close)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	started := time.Now()
+	err := downloadFile(ctx, server.URL, filepath.Join(t.TempDir(), "browser.zip"))
+
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected context deadline exceeded, got %v", err)
+	}
+	if elapsed := time.Since(started); elapsed > time.Second {
+		t.Fatalf("download cancellation took %s", elapsed)
+	}
+	select {
+	case <-requestDone:
+	case <-time.After(time.Second):
+		t.Fatal("server request did not observe cancellation")
+	}
+}
+
+func TestAcquireEnsureLockGivesUpOnContext(t *testing.T) {
+	release, err := acquireEnsureLock(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	started := time.Now()
+	if _, err := acquireEnsureLock(ctx); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected context deadline exceeded while lock is held, got %v", err)
+	}
+	if elapsed := time.Since(started); elapsed > time.Second {
+		t.Fatalf("waiting for the lock took %s", elapsed)
+	}
+
+	release()
+
+	next, err := acquireEnsureLock(context.Background())
+	if err != nil {
+		t.Fatalf("lock not reusable after release: %v", err)
+	}
+	next()
 }
