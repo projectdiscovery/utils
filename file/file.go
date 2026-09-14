@@ -286,6 +286,122 @@ func ReadFileWithBufferSize(filename string, maxCapacity int) (chan string, erro
 	return out, nil
 }
 
+// lineConfig holds configuration options for line reading
+type lineConfig struct {
+	trimSpace  bool
+	skipEmpty  bool
+	comment    string
+	bufferSize int
+}
+
+// LineOption configures the line reader behavior
+type LineOption func(*lineConfig)
+
+// WithTrimSpace trims leading/trailing whitespace from each line
+func WithTrimSpace() LineOption {
+	return func(c *lineConfig) { c.trimSpace = true }
+}
+
+// WithSkipEmpty skips empty lines from the output
+func WithSkipEmpty() LineOption {
+	return func(c *lineConfig) { c.skipEmpty = true }
+}
+
+// WithComment skips lines starting with the given prefix (e.g. "#" for comments)
+func WithComment(prefix string) LineOption {
+	return func(c *lineConfig) { c.comment = prefix }
+}
+
+// WithBufferSize sets the scanner buffer size for reading large lines
+func WithBufferSize(size int) LineOption {
+	return func(c *lineConfig) { c.bufferSize = size }
+}
+
+// ReadFileWithError reads a file and streams lines with proper error handling
+// Returns two channels: one for lines and one for errors
+func ReadFileWithError(filename string) (<-chan string, <-chan error, error) {
+	if !FileExists(filename) {
+		return nil, nil, errors.New("file doesn't exist")
+	}
+
+	linesCh := make(chan string)
+	errCh := make(chan error, 1)
+
+	go func() {
+		defer close(linesCh)
+		defer close(errCh)
+
+		file, err := os.Open(filename)
+		if err != nil {
+			errCh <- err
+			return
+		}
+		defer file.Close()
+
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			linesCh <- scanner.Text()
+		}
+
+		if err := scanner.Err(); err != nil {
+			errCh <- err
+		}
+	}()
+
+	return linesCh, errCh, nil
+}
+
+// ReadLinesStream reads a file and streams lines with configurable options
+// Supports trim, skip empty, comment filtering, and custom buffer size
+func ReadLinesStream(filename string, opts ...LineOption) (<-chan string, <-chan error) {
+	linesCh := make(chan string)
+	errCh := make(chan error, 1)
+
+	go func() {
+		defer close(linesCh)
+		defer close(errCh)
+
+		file, err := os.Open(filename)
+		if err != nil {
+			errCh <- err
+			return
+		}
+		defer file.Close()
+
+		cfg := &lineConfig{}
+		for _, opt := range opts {
+			opt(cfg)
+		}
+
+		scanner := bufio.NewScanner(file)
+		if cfg.bufferSize > 0 {
+			scanner.Buffer(make([]byte, cfg.bufferSize), cfg.bufferSize)
+		}
+
+		for scanner.Scan() {
+			line := scanner.Text()
+
+			if cfg.comment != "" && strings.HasPrefix(strings.TrimSpace(line), cfg.comment) {
+				continue
+			}
+			if cfg.trimSpace {
+				line = strings.TrimSpace(line)
+			}
+			if cfg.skipEmpty && line == "" {
+				continue
+			}
+
+			linesCh <- line
+		}
+
+		if err := scanner.Err(); err != nil {
+			errCh <- err
+		}
+	}()
+
+	return linesCh, errCh
+}
+
 // GetTempFileName generate a temporary file name
 func GetTempFileName() (string, error) {
 	tmpfile, err := os.CreateTemp("", "")
