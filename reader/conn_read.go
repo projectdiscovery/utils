@@ -62,7 +62,16 @@ func ConnReadN(ctx context.Context, reader io.Reader, N int64) ([]byte, error) {
 		// connection. The deferred stop cancels this on the normal path, leaving
 		// the deadline untouched when the read finishes in time.
 		if rd, ok := reader.(interface{ SetReadDeadline(time.Time) error }); ok {
-			defer context.AfterFunc(ctx, func() { _ = rd.SetReadDeadline(time.Now()) })()
+			expire := func() { _ = rd.SetReadDeadline(time.Now()) }
+			stop := context.AfterFunc(ctx, expire)
+			defer func() {
+				// A parent cancellation closes Done before it runs AfterFunc
+				// callbacks, so stop can win after we observed Done and skip
+				// expire, leaving the read blocked forever.
+				if stop() && readErr != nil && ctx.Err() != nil {
+					expire()
+				}
+			}()
 		}
 		_, readErr = contextutil.ExecFuncWithTwoReturns(ctx, fn)
 		// On cancellation report the context error rather than the net timeout
