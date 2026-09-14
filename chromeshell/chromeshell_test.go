@@ -129,3 +129,29 @@ func TestDownloadFileContextCancellation(t *testing.T) {
 		t.Fatal("server request did not observe cancellation")
 	}
 }
+
+func TestAcquireEnsureLockGivesUpOnContext(t *testing.T) {
+	release, err := acquireEnsureLock(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	started := time.Now()
+	if _, err := acquireEnsureLock(ctx); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected context deadline exceeded while lock is held, got %v", err)
+	}
+	if elapsed := time.Since(started); elapsed > time.Second {
+		t.Fatalf("waiting for the lock took %s", elapsed)
+	}
+
+	release()
+
+	next, err := acquireEnsureLock(context.Background())
+	if err != nil {
+		t.Fatalf("lock not reusable after release: %v", err)
+	}
+	next()
+}

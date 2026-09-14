@@ -27,6 +27,18 @@ var ensureLock = func() chan struct{} {
 	return lock
 }()
 
+// acquireEnsureLock waits for the single download slot. A channel is used
+// instead of a sync.Mutex so a caller whose ctx expires stops waiting on a
+// download it cannot cancel. The returned release must always be called.
+func acquireEnsureLock(ctx context.Context) (func(), error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case <-ensureLock:
+		return func() { ensureLock <- struct{}{} }, nil
+	}
+}
+
 // Supported reports whether chrome-headless-shell auto-download is available
 // for the current platform.
 func Supported() bool {
@@ -72,12 +84,11 @@ func EnsureContext(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("chrome-headless-shell auto-download is only supported on linux/amd64")
 	}
 
-	select {
-	case <-ctx.Done():
-		return "", ctx.Err()
-	case <-ensureLock:
-		defer func() { ensureLock <- struct{}{} }()
+	release, err := acquireEnsureLock(ctx)
+	if err != nil {
+		return "", err
 	}
+	defer release()
 
 	if p := findBin(Dir()); p != "" {
 		return p, nil
