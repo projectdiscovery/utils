@@ -219,6 +219,7 @@ func resetBuffer() {
 type ResponseChain struct {
 	headers     *bytes.Buffer
 	body        *bytes.Buffer
+	rawBody     *bytes.Buffer
 	resp        *http.Response
 	reloaded    bool // if response was reloaded to its previous redirect
 	maxBodySize int64
@@ -229,6 +230,16 @@ type ResponseChain struct {
 //
 // If maxBody is less than or equal to zero, it defaults to [DefaultMaxBodySize].
 func NewResponseChain(resp *http.Response, maxBody int64) *ResponseChain {
+	return newResponseChain(resp, maxBody, false)
+}
+
+// NewResponseChainWithRaw creates a response chain that preserves the response
+// body bytes before content decoding and charset normalization.
+func NewResponseChainWithRaw(resp *http.Response, maxBody int64) *ResponseChain {
+	return newResponseChain(resp, maxBody, true)
+}
+
+func newResponseChain(resp *http.Response, maxBody int64, preserveRaw bool) *ResponseChain {
 	if maxBody <= 0 {
 		maxBody = int64(DefaultMaxBodySize)
 	}
@@ -237,12 +248,16 @@ func NewResponseChain(resp *http.Response, maxBody int64) *ResponseChain {
 		resp.Body = http.MaxBytesReader(nil, resp.Body, maxBody)
 	}
 
-	return &ResponseChain{
+	chain := &ResponseChain{
 		headers:     getBuffer(),
 		body:        getBuffer(),
 		resp:        resp,
 		maxBodySize: maxBody,
 	}
+	if preserveRaw {
+		chain.rawBody = getBuffer()
+	}
+	return chain
 }
 
 // Headers returns the current response headers buffer in the chain.
@@ -289,6 +304,27 @@ func (r *ResponseChain) BodyString() string {
 	return r.body.String()
 }
 
+// RawBodyBytes returns the response body before content decoding and charset
+// normalization. It is empty unless the chain was created with
+// NewResponseChainWithRaw.
+//
+// The returned slice is valid only until Close() is called.
+func (r *ResponseChain) RawBodyBytes() []byte {
+	if r.rawBody == nil {
+		return nil
+	}
+	return r.rawBody.Bytes()
+}
+
+// RawBodyString returns a copy of the response body before content decoding
+// and charset normalization.
+func (r *ResponseChain) RawBodyString() string {
+	if r.rawBody == nil {
+		return ""
+	}
+	return r.rawBody.String()
+}
+
 // FullResponse returns a new buffer containing headers+body.
 //
 // Warning: The caller is responsible for managing the returned buffer's
@@ -322,6 +358,27 @@ func (r *ResponseChain) FullResponseBytes() []byte {
 // The returned string is a copy and remains valid even after Close() is called.
 func (r *ResponseChain) FullResponseString() string {
 	return conversion.String(r.FullResponseBytes())
+}
+
+// RawFullResponseBytes returns headers followed by the body bytes captured
+// before content decoding and charset normalization.
+func (r *ResponseChain) RawFullResponseBytes() []byte {
+	if r.rawBody == nil {
+		return nil
+	}
+	size := r.headers.Len() + r.rawBody.Len()
+	buf := make([]byte, size)
+
+	copy(buf, r.headers.Bytes())
+	copy(buf[r.headers.Len():], r.rawBody.Bytes())
+
+	return buf
+}
+
+// RawFullResponseString returns a copy of the headers and body bytes captured
+// before content decoding and charset normalization.
+func (r *ResponseChain) RawFullResponseString() string {
+	return conversion.String(r.RawFullResponseBytes())
 }
 
 // previous updates response pointer to previous response
@@ -383,6 +440,11 @@ func (r *ResponseChain) Close() {
 		putBuffer(r.body)
 		r.body = nil
 	}
+
+	if r.rawBody != nil {
+		putBuffer(r.rawBody)
+		r.rawBody = nil
+	}
 }
 
 // Has returns true if the response chain has a response
@@ -408,4 +470,7 @@ func (r *ResponseChain) Response() *http.Response {
 func (r *ResponseChain) reset() {
 	r.headers.Reset()
 	r.body.Reset()
+	if r.rawBody != nil {
+		r.rawBody.Reset()
+	}
 }
