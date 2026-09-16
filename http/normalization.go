@@ -154,7 +154,9 @@ func wrapDecodeReader(resp *http.Response) (rc io.ReadCloser, err error) {
 		rc, err = brotli.NewReader(resp.Body, nil)
 	case "zstd":
 		var zstdReader *zstd.Decoder
-		zstdReader, err = zstd.NewReader(resp.Body)
+		// A bounded read can stop before EOF. Decode synchronously so no
+		// background workers retain the abandoned stream and its buffers.
+		zstdReader, err = zstd.NewReader(resp.Body, zstd.WithDecoderConcurrency(1))
 		if err != nil {
 			return nil, err
 		}
