@@ -61,6 +61,12 @@ func SetChunkSize(size int) {
 type limitedBuffer struct {
 	buf    *bytes.Buffer
 	maxCap int
+
+	// declared is Content-Length clamped to maxCap, or 0 when the server did
+	// not give one. It is a claim by the host being scanned, so it is only
+	// acted on once that much of the body has actually turned up.
+	declared int
+	presized bool
 }
 
 func (lb *limitedBuffer) ReadFrom(r io.Reader) (n int64, err error) {
@@ -69,6 +75,23 @@ func (lb *limitedBuffer) ReadFrom(r io.Reader) (n int64, err error) {
 	chunk := *chunkPtr
 
 	for {
+		// Once a full chunk has genuinely arrived, allocate the rest of the
+		// declared size in one step. Growing incrementally from here would
+		// double repeatedly (bytes.Buffer.Grow -> growSlice takes
+		// max(len+n, 2*cap) whatever increment it is asked for), which costs
+		// roughly 2N allocated and copied to reach N.
+		//
+		// Waiting for the chunk is what keeps Content-Length from being a free
+		// allocation primitive for the target: growSlice zeroes, so the pages
+		// are committed immediately, and a host that announces maxBodySize then
+		// sends nothing would otherwise pin all of it for free.
+		if !lb.presized && lb.declared > 0 && lb.buf.Len() >= chunkSize {
+			lb.presized = true
+			if grow := lb.declared - lb.buf.Cap(); grow > 0 {
+				lb.buf.Grow(grow)
+			}
+		}
+
 		available := lb.buf.Cap() - lb.buf.Len()
 		if available < chunkSize && lb.buf.Cap() < lb.maxCap {
 			needed := min(lb.buf.Len()+chunkSize, lb.maxCap)
@@ -117,9 +140,18 @@ func readNNormalizeRespBody(rc *ResponseChain, body *bytes.Buffer) (err error) {
 	limitReader := io.LimitReader(wrapped, rc.maxBodySize)
 
 	// Read body using ReadFrom for efficiency, but cap growth at maxBodySize.
-	// We use a custom limitedBuffer wrapper to prevent bytes.Buffer from
-	// over-allocating (it normally grows to 2x when size is unknown).
-	limitedBuf := &limitedBuffer{buf: body, maxCap: int(rc.maxBodySize)}
+	//
+	// Content-Length is handed to the buffer rather than acted on here: it is
+	// the scanned host's claim about a body it has not sent yet, and the buffer
+	// only sizes to it once that much has started arriving. Content-Length also
+	// describes the encoded body, so a compressed response stays under-sized and
+	// falls back to growing -- it just starts closer.
+	var declared int
+	if response.ContentLength > 0 {
+		declared = int(min(response.ContentLength, rc.maxBodySize))
+	}
+
+	limitedBuf := &limitedBuffer{buf: body, maxCap: int(rc.maxBodySize), declared: declared}
 	_, err = limitedBuf.ReadFrom(limitReader)
 	if err != nil {
 		if strings.Contains(err.Error(), "gzip: invalid header") {
