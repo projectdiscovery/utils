@@ -1,6 +1,6 @@
 module github.com/projectdiscovery/utils
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
@@ -13,7 +13,7 @@ require (
 	github.com/dsnet/compress v0.0.2-0.20230904184137-39efe44ab707
 	github.com/felixge/fgprof v0.9.5
 	github.com/fortytw2/leaktest v1.3.0
-	github.com/google/go-github/v30 v30.1.0
+	github.com/google/go-github/v92 v92.0.0
 	github.com/google/uuid v1.3.1
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/klauspost/compress v1.18.2
@@ -103,7 +103,7 @@ require (
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/cheggaaa/pb/v3 v3.1.4
 	github.com/ebitengine/purego v0.10.0
-	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/projectdiscovery/gologger v1.1.73
 	github.com/projectdiscovery/hmap v0.0.102

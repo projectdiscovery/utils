@@ -16,7 +16,7 @@ import (
 	"strings"
 
 	"github.com/cheggaaa/pb/v3"
-	"github.com/google/go-github/v30/github"
+	"github.com/google/go-github/v92/github"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/utils/errkit"
 	"golang.org/x/oauth2"
@@ -68,9 +68,13 @@ func NewghReleaseDownloader(RepoName string) (*GHReleaseDownloader, error) {
 	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
 		httpClient = oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))
 	}
-	ghrd := GHReleaseDownloader{client: github.NewClient(httpClient), repoName: repoName, assetName: repoName, httpClient: httpClient, organization: orgName}
+	client, err := github.NewClient(github.WithHTTPClient(httpClient))
+	if err != nil {
+		return nil, errkit.Wrap(err, "failed to create github client")
+	}
+	ghrd := GHReleaseDownloader{client: client, repoName: repoName, assetName: repoName, httpClient: httpClient, organization: orgName}
 
-	err := ghrd.getLatestRelease()
+	err = ghrd.getLatestRelease()
 	return &ghrd, err
 }
 
