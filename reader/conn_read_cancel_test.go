@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 	"net"
-	"runtime"
+	"sync"
 	"testing"
 	"time"
 )
@@ -18,34 +18,48 @@ import (
 // stays parked in Read for the connection's lifetime, leaking the goroutine,
 // its buffers, and the connection on every cancelled read.
 func TestConnReadN_NoGoroutineLeakOnCancel(t *testing.T) {
-	runtime.GC()
-	time.Sleep(50 * time.Millisecond)
-	runtime.GC()
-	base := runtime.NumGoroutine()
-
 	const calls = 50
 	for range calls {
-		conn, peer := net.Pipe()
+		reader := newDeadlineReader()
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Millisecond)
-		_, _ = ConnReadN(ctx, conn, 16) // peer sends nothing; ctx expires first
+		_, _ = ConnReadN(ctx, reader, 16)
 		cancel()
-		_ = conn.Close()
-		_ = peer.Close()
-	}
 
-	deadline := time.Now().Add(5 * time.Second)
-	for {
-		runtime.GC()
-		leaked := runtime.NumGoroutine() - base
-		if leaked <= 2 { // tolerance for transient runtime goroutines
-			return
+		select {
+		case <-reader.readDone:
+		case <-time.After(time.Second):
+			reader.release()
+			t.Fatal("read goroutine remained blocked after context cancellation")
 		}
-		if time.Now().After(deadline) {
-			t.Fatalf("goroutine leak: ~%d goroutines still alive after %d context-cancelled ConnReadN calls (base=%d, now=%d)",
-				leaked, calls, base, runtime.NumGoroutine())
-		}
-		time.Sleep(25 * time.Millisecond)
 	}
+}
+
+type deadlineReader struct {
+	unblock  chan struct{}
+	readDone chan struct{}
+	once     sync.Once
+}
+
+func newDeadlineReader() *deadlineReader {
+	return &deadlineReader{
+		unblock:  make(chan struct{}),
+		readDone: make(chan struct{}),
+	}
+}
+
+func (r *deadlineReader) Read(_ []byte) (int, error) {
+	<-r.unblock
+	close(r.readDone)
+	return 0, context.DeadlineExceeded
+}
+
+func (r *deadlineReader) SetReadDeadline(_ time.Time) error {
+	r.release()
+	return nil
+}
+
+func (r *deadlineReader) release() {
+	r.once.Do(func() { close(r.unblock) })
 }
 
 // TestConnReadN_ReturnsPartialDataOnCancel verifies that data already received
