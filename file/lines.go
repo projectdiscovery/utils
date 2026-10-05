@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// LineOption configures the line iterator returned by Lines / LinesReader.
+// LineOption configures line reading.
 type LineOption func(*lineConfig)
 
 type lineConfig struct {
@@ -18,6 +18,7 @@ type lineConfig struct {
 	trimSpace  bool
 	skipEmpty  bool
 	filter     func(string) bool
+	comment    string // Used by ReadLinesStream.
 }
 
 // WithBufferSize sets the underlying bufio.Scanner buffer. A non-positive

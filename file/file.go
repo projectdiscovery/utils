@@ -286,35 +286,10 @@ func ReadFileWithBufferSize(filename string, maxCapacity int) (chan string, erro
 	return out, nil
 }
 
-// lineConfig holds configuration options for line reading
-type lineConfig struct {
-	trimSpace  bool
-	skipEmpty  bool
-	comment    string
-	bufferSize int
-}
-
-// LineOption configures the line reader behavior
-type LineOption func(*lineConfig)
-
-// WithTrimSpace trims leading/trailing whitespace from each line
-func WithTrimSpace() LineOption {
-	return func(c *lineConfig) { c.trimSpace = true }
-}
-
-// WithSkipEmpty skips empty lines from the output
-func WithSkipEmpty() LineOption {
-	return func(c *lineConfig) { c.skipEmpty = true }
-}
-
-// WithComment skips lines starting with the given prefix (e.g. "#" for comments)
+// WithComment skips lines starting with the given prefix in ReadLinesStream
+// (e.g. "#" for comments). Leading whitespace is ignored when checking the prefix.
 func WithComment(prefix string) LineOption {
 	return func(c *lineConfig) { c.comment = prefix }
-}
-
-// WithBufferSize sets the scanner buffer size for reading large lines
-func WithBufferSize(size int) LineOption {
-	return func(c *lineConfig) { c.bufferSize = size }
 }
 
 // ReadFileWithError reads a file and streams lines with proper error handling

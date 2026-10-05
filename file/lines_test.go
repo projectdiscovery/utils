@@ -1,6 +1,7 @@
 package fileutil
 
 import (
+	"bufio"
 	"errors"
 	"io"
 	"io/fs"
@@ -153,6 +154,80 @@ func TestLinesReader_PropagatesScannerError(t *testing.T) {
 	}
 	require.Empty(t, seen)
 	require.ErrorIs(t, gotErr, io.ErrUnexpectedEOF)
+}
+
+func TestReadLinesStream_Options(t *testing.T) {
+	longLine := strings.Repeat("x", 70*1024)
+	tests := []struct {
+		name    string
+		body    string
+		opts    []LineOption
+		want    []string
+		wantErr error
+	}{
+		{
+			name: "default preserves whitespace and empty lines",
+			body: "  alpha  \n\n # comment\nbeta\n",
+			want: []string{"  alpha  ", "", " # comment", "beta"},
+		},
+		{
+			name: "shared trim and skip options",
+			body: "  alpha  \n \t \n\nbeta\n",
+			opts: []LineOption{WithTrimSpace(), WithSkipEmpty()},
+			want: []string{"alpha", "beta"},
+		},
+		{
+			name: "comments are checked without trimming output",
+			body: "  # comment\n  alpha  \n\nalpha # inline\n",
+			opts: []LineOption{WithComment("#")},
+			want: []string{"  alpha  ", "", "alpha # inline"},
+		},
+		{
+			name: "comment trim and skip options combined",
+			body: "  # comment\n  alpha  \n \t \n\nbeta\n",
+			opts: []LineOption{WithComment("#"), WithTrimSpace(), WithSkipEmpty()},
+			want: []string{"alpha", "beta"},
+		},
+		{
+			name: "empty comment prefix keeps all lines",
+			body: "# comment\n\n",
+			opts: []LineOption{WithComment("")},
+			want: []string{"# comment", ""},
+		},
+		{
+			name: "shared buffer option accepts large lines",
+			body: longLine + "\n",
+			opts: []LineOption{WithBufferSize(128 * 1024)},
+			want: []string{longLine},
+		},
+		{
+			name:    "default buffer reports scanner error",
+			body:    "alpha\n" + longLine + "\n",
+			want:    []string{"alpha"},
+			wantErr: bufio.ErrTooLong,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := writeTempFile(t, tt.body)
+			lines, errs := ReadLinesStream(path, tt.opts...)
+			var got []string
+			for line := range lines {
+				got = append(got, line)
+			}
+			var gotErrors []error
+			for err := range errs {
+				gotErrors = append(gotErrors, err)
+			}
+			require.Equal(t, tt.want, got)
+			if tt.wantErr == nil {
+				require.Empty(t, gotErrors)
+			} else {
+				require.Len(t, gotErrors, 1)
+				require.ErrorIs(t, gotErrors[0], tt.wantErr)
+			}
+		})
+	}
 }
 
 type errReader struct{ err error }
