@@ -135,6 +135,37 @@ func TestResponseChain_GzipHandling(t *testing.T) {
 	rc.Close()
 }
 
+func TestResponseChain_PreservesRawGzipBody(t *testing.T) {
+	originalBody := "compressed response body"
+
+	var compressed bytes.Buffer
+	gzWriter := gzip.NewWriter(&compressed)
+	_, err := gzWriter.Write([]byte(originalBody))
+	require.NoError(t, err)
+	require.NoError(t, gzWriter.Close())
+	compressedBytes := append([]byte(nil), compressed.Bytes()...)
+
+	resp := &http.Response{
+		StatusCode: 200,
+		Body:       io.NopCloser(bytes.NewReader(compressedBytes)),
+		Header: http.Header{
+			"Content-Encoding": []string{"gzip"},
+		},
+		Proto:      "HTTP/1.1",
+		ProtoMajor: 1,
+		ProtoMinor: 1,
+	}
+
+	rc := NewResponseChainWithRaw(resp, -1)
+	require.NoError(t, rc.Fill())
+	t.Cleanup(rc.Close)
+
+	assert.Equal(t, originalBody, rc.BodyString())
+	assert.Equal(t, compressedBytes, rc.RawBodyBytes())
+	assert.Contains(t, rc.RawFullResponseString(), "Content-Encoding: gzip")
+	assert.True(t, bytes.HasSuffix(rc.RawFullResponseBytes(), compressedBytes))
+}
+
 // TestResponseChain_EmptyBody tests handling of empty response bodies
 func TestResponseChain_EmptyBody(t *testing.T) {
 	resp := &http.Response{
