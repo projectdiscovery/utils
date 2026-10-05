@@ -286,8 +286,9 @@ func ReadFileWithBufferSize(filename string, maxCapacity int) (chan string, erro
 	return out, nil
 }
 
-// WithComment skips lines starting with the given prefix in ReadLinesStream
-// (e.g. "#" for comments). Leading whitespace is ignored when checking the prefix.
+// WithComment skips lines whose first non-whitespace characters are prefix,
+// for both Lines and ReadLinesStream. An empty prefix leaves every line in
+// place. The skipped line is not split or trimmed.
 func WithComment(prefix string) LineOption {
 	return func(c *lineConfig) { c.comment = prefix }
 }
@@ -311,7 +312,7 @@ func ReadFileWithError(filename string) (<-chan string, <-chan error, error) {
 			errCh <- err
 			return
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
@@ -341,7 +342,7 @@ func ReadLinesStream(filename string, opts ...LineOption) (<-chan string, <-chan
 			errCh <- err
 			return
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 
 		cfg := &lineConfig{}
 		for _, opt := range opts {
@@ -356,7 +357,7 @@ func ReadLinesStream(filename string, opts ...LineOption) (<-chan string, <-chan
 		for scanner.Scan() {
 			line := scanner.Text()
 
-			if cfg.comment != "" && strings.HasPrefix(strings.TrimSpace(line), cfg.comment) {
+			if isComment(line, cfg.comment) {
 				continue
 			}
 			if cfg.trimSpace {

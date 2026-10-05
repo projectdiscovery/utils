@@ -79,6 +79,24 @@ func TestLines_ResolverFileScenario(t *testing.T) {
 	require.Equal(t, []string{"1.1.1.1", "8.8.8.8", "9.9.9.9", "10.10.10.10", "11.11.11.11"}, got)
 }
 
+func TestLines_WithComment(t *testing.T) {
+	path := writeTempFile(t, "  # comment\n  alpha  \n\nalpha # inline\n# skip,keep\n1.1.1.1, 8.8.8.8\n")
+	got := collectLines(t, Lines(path, WithComment("#"), WithSplit(','), WithTrimSpace(), WithSkipEmpty()))
+	require.Equal(t, []string{"alpha", "alpha # inline", "1.1.1.1", "8.8.8.8"}, got)
+}
+
+func TestLines_WithComment_EmptyPrefixKeepsLines(t *testing.T) {
+	path := writeTempFile(t, "# comment\n\n")
+	got := collectLines(t, Lines(path, WithComment("")))
+	require.Equal(t, []string{"# comment", ""}, got)
+}
+
+func TestLinesReader_WithComment(t *testing.T) {
+	r := strings.NewReader("  # comment\nalpha\n")
+	got := collectLines(t, LinesReader(r, WithComment("#")))
+	require.Equal(t, []string{"alpha"}, got)
+}
+
 func TestLines_WithFilter_DropsComments(t *testing.T) {
 	path := writeTempFile(t, "alpha\n# comment\nbeta\n# another\n")
 	got := collectLines(t, Lines(path,

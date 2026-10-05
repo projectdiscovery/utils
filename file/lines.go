@@ -18,7 +18,7 @@ type lineConfig struct {
 	trimSpace  bool
 	skipEmpty  bool
 	filter     func(string) bool
-	comment    string // Used by ReadLinesStream.
+	comment    string
 }
 
 // WithBufferSize sets the underlying bufio.Scanner buffer. A non-positive
@@ -102,6 +102,9 @@ func scanLines(r io.Reader, opts []LineOption, yield func(string, error) bool) {
 	}
 	for scanner.Scan() {
 		line := scanner.Text()
+		if isComment(line, cfg.comment) {
+			continue
+		}
 		if !cfg.hasSplit {
 			if !emitLine(line, &cfg, yield) {
 				return
@@ -119,6 +122,13 @@ func scanLines(r io.Reader, opts []LineOption, yield func(string, error) bool) {
 	if err := scanner.Err(); err != nil {
 		yield("", err)
 	}
+}
+
+// isComment reports whether line should be skipped for prefix. An empty
+// prefix skips nothing. Leading whitespace is ignored, and the check happens
+// before split and trim so the rest of the line is dropped with it.
+func isComment(line, prefix string) bool {
+	return prefix != "" && strings.HasPrefix(strings.TrimSpace(line), prefix)
 }
 
 func emitLine(v string, cfg *lineConfig, yield func(string, error) bool) bool {
