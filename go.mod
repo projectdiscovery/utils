@@ -116,3 +116,5 @@ require (
 	golang.org/x/term v0.43.0
 	golang.org/x/tools v0.44.0
 )
+
+retract v0.11.7 // See https://github.com/projectdiscovery/utils/issues/789

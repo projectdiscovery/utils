@@ -286,35 +286,11 @@ func ReadFileWithBufferSize(filename string, maxCapacity int) (chan string, erro
 	return out, nil
 }
 
-// lineConfig holds configuration options for line reading
-type lineConfig struct {
-	trimSpace  bool
-	skipEmpty  bool
-	comment    string
-	bufferSize int
-}
-
-// LineOption configures the line reader behavior
-type LineOption func(*lineConfig)
-
-// WithTrimSpace trims leading/trailing whitespace from each line
-func WithTrimSpace() LineOption {
-	return func(c *lineConfig) { c.trimSpace = true }
-}
-
-// WithSkipEmpty skips empty lines from the output
-func WithSkipEmpty() LineOption {
-	return func(c *lineConfig) { c.skipEmpty = true }
-}
-
-// WithComment skips lines starting with the given prefix (e.g. "#" for comments)
+// WithComment skips lines whose first non-whitespace characters are prefix,
+// for both Lines and ReadLinesStream. An empty prefix leaves every line in
+// place. The skipped line is not split or trimmed.
 func WithComment(prefix string) LineOption {
 	return func(c *lineConfig) { c.comment = prefix }
-}
-
-// WithBufferSize sets the scanner buffer size for reading large lines
-func WithBufferSize(size int) LineOption {
-	return func(c *lineConfig) { c.bufferSize = size }
 }
 
 // ReadFileWithError reads a file and streams lines with proper error handling
@@ -336,7 +312,7 @@ func ReadFileWithError(filename string) (<-chan string, <-chan error, error) {
 			errCh <- err
 			return
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
@@ -366,7 +342,7 @@ func ReadLinesStream(filename string, opts ...LineOption) (<-chan string, <-chan
 			errCh <- err
 			return
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 
 		cfg := &lineConfig{}
 		for _, opt := range opts {
@@ -381,7 +357,7 @@ func ReadLinesStream(filename string, opts ...LineOption) (<-chan string, <-chan
 		for scanner.Scan() {
 			line := scanner.Text()
 
-			if cfg.comment != "" && strings.HasPrefix(strings.TrimSpace(line), cfg.comment) {
+			if isComment(line, cfg.comment) {
 				continue
 			}
 			if cfg.trimSpace {
