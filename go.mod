@@ -58,7 +58,7 @@ require (
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/djherbis/times v1.6.0 // indirect
 	github.com/fatih/color v1.15.0 // indirect
-	github.com/gaissmai/bart v0.29.0 // indirect
+	github.com/gaissmai/bart v0.29.1 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/pprof v0.0.0-20240227163752-401108e1b7e7 // indirect
@@ -73,8 +73,8 @@ require (
 	github.com/muesli/termenv v0.15.3-0.20240618155329-98d742f6907a // indirect
 	github.com/nxadm/tail v1.4.11 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
-	github.com/projectdiscovery/fastdialer v0.5.20 // indirect
-	github.com/projectdiscovery/networkpolicy v0.1.49 // indirect
+	github.com/projectdiscovery/fastdialer v0.5.23 // indirect
+	github.com/projectdiscovery/networkpolicy v0.1.52 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.116 // indirect
 	github.com/refraction-networking/utls v1.8.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
@@ -107,7 +107,7 @@ require (
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/projectdiscovery/gologger v1.1.73
 	github.com/projectdiscovery/hmap v0.0.102
-	github.com/projectdiscovery/retryablehttp-go v1.3.26
+	github.com/projectdiscovery/retryablehttp-go v1.3.29
 	github.com/weppos/publicsuffix-go v0.50.3-0.20260104170930-90713dec78f2
 	github.com/zcalusic/sysinfo v1.0.2
 	golang.org/x/crypto v0.52.0 // indirect
@@ -116,3 +116,5 @@ require (
 	golang.org/x/term v0.43.0
 	golang.org/x/tools v0.44.0
 )
+
+retract v0.11.7 // See https://github.com/projectdiscovery/utils/issues/789
