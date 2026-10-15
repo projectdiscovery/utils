@@ -35,7 +35,7 @@ func TestReusableReader(t *testing.T) {
 			}
 		})
 
-		// todo: readers shouldn't be used concurrently, so here we just try to catch pontential read concurring with resets panics
+		// todo: readers shouldn't be used concurrently, so here we just try to catch potential read concurring with resets panics
 		t.Run("concurrent-reset-with-read", func(t *testing.T) {
 			reusableReader, err := NewReusableReadCloser(v)
 			require.Nil(t, err)
@@ -55,6 +55,27 @@ func TestReusableReader(t *testing.T) {
 			}
 
 			wg.Wait()
+		})
+	}
+}
+
+// Readers must own their bytes: one built from a slice the caller reuses, or
+// several built from one slice and read concurrently, would otherwise see each
+// other's writes, since a reader writes its buffer back when it hits EOF.
+func TestReusableReaderCopiesByteSlices(t *testing.T) {
+	for name, build := range map[string]func([]byte) (*ReusableReadCloser, error){
+		"[]byte":  func(b []byte) (*ReusableReadCloser, error) { return NewReusableReadCloser(b) },
+		"*[]byte": func(b []byte) (*ReusableReadCloser, error) { return NewReusableReadCloser(&b) },
+	} {
+		t.Run(name, func(t *testing.T) {
+			body := []byte("original")
+			reader, err := build(body)
+			require.NoError(t, err)
+			copy(body, "modified")
+
+			got, err := io.ReadAll(reader)
+			require.NoError(t, err)
+			require.Equal(t, "original", string(got))
 		})
 	}
 }
