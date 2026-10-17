@@ -61,11 +61,15 @@ func cgroupMemoryUsage(procCgroupPath, cgroupRoot string) (uint64, uint64, bool,
 		}
 		group := strings.TrimPrefix(filepath.Clean("/"+parts[2]), "/")
 		if parts[0] == "0" && parts[1] == "" {
-			return memoryUsageFromHierarchy(
+			used, limit, limited, err := memoryUsageFromHierarchy(
 				filepath.Join(cgroupRoot, group), cgroupRoot,
 				"memory.current", "memory.max", "memory.stat",
 				"inactive_file",
 			)
+			if err != nil || limited {
+				return used, limit, limited, err
+			}
+			continue
 		}
 		for _, controller := range strings.Split(parts[1], ",") {
 			if controller == "memory" {

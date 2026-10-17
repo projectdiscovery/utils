@@ -60,6 +60,24 @@ func TestCgroupV1MemoryController(t *testing.T) {
 	}
 }
 
+func TestHybridCgroupFallsBackToLimitedMemoryController(t *testing.T) {
+	root := t.TempDir()
+	procPath := filepath.Join(root, "proc", "cgroup")
+	group := filepath.Join(root, "sys", "memory", "worker")
+	writeMemoryFixture(t, procPath, "0::/worker\n6:memory:/worker\n")
+	writeMemoryFixture(t, filepath.Join(group, "memory.limit_in_bytes"), "1000\n")
+	writeMemoryFixture(t, filepath.Join(group, "memory.usage_in_bytes"), "900\n")
+	writeMemoryFixture(t, filepath.Join(group, "memory.stat"), "total_inactive_file 100\n")
+
+	used, limit, limited, err := cgroupMemoryUsage(procPath, filepath.Join(root, "sys"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !limited || used != 800 || limit != 1000 {
+		t.Fatalf("cgroup memory = %d/%d limited=%t, want 800/1000 true", used, limit, limited)
+	}
+}
+
 func TestCgroupV2UsesConstrainedAncestor(t *testing.T) {
 	root := t.TempDir()
 	procPath := filepath.Join(root, "proc", "cgroup")
