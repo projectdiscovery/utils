@@ -61,8 +61,12 @@ func cgroupMemoryUsage(procCgroupPath, cgroupRoot string) (uint64, uint64, bool,
 		}
 		group := strings.TrimPrefix(filepath.Clean("/"+parts[2]), "/")
 		if parts[0] == "0" && parts[1] == "" {
+			groupDir, mountRoot, err := cgroupMountPath(procCgroupPath, "/"+group, "cgroup2", "", cgroupRoot)
+			if err != nil {
+				return 0, 0, false, err
+			}
 			used, limit, limited, err := memoryUsageFromHierarchy(
-				filepath.Join(cgroupRoot, group), cgroupRoot,
+				groupDir, mountRoot,
 				"memory.current", "memory.max", "memory.stat",
 				"inactive_file",
 			)
@@ -74,8 +78,12 @@ func cgroupMemoryUsage(procCgroupPath, cgroupRoot string) (uint64, uint64, bool,
 		for _, controller := range strings.Split(parts[1], ",") {
 			if controller == "memory" {
 				root := filepath.Join(cgroupRoot, "memory")
+				groupDir, mountRoot, err := cgroupMountPath(procCgroupPath, "/"+group, "cgroup", "memory", root)
+				if err != nil {
+					return 0, 0, false, err
+				}
 				return memoryUsageFromHierarchy(
-					filepath.Join(root, group), root,
+					groupDir, mountRoot,
 					"memory.usage_in_bytes", "memory.limit_in_bytes", "memory.stat",
 					"total_inactive_file",
 				)
@@ -83,6 +91,42 @@ func cgroupMemoryUsage(procCgroupPath, cgroupRoot string) (uint64, uint64, bool,
 		}
 	}
 	return 0, 0, false, nil
+}
+
+func cgroupMountPath(procCgroupPath, groupPath, fsType, controller, fallbackRoot string) (string, string, error) {
+	data, err := os.ReadFile(filepath.Join(filepath.Dir(procCgroupPath), "mountinfo"))
+	if os.IsNotExist(err) {
+		return filepath.Join(fallbackRoot, groupPath), fallbackRoot, nil
+	}
+	if err != nil {
+		return "", "", fmt.Errorf("read process mountinfo: %w", err)
+	}
+
+	for _, line := range strings.Split(string(data), "\n") {
+		sections := strings.SplitN(line, " - ", 2)
+		if len(sections) != 2 {
+			continue
+		}
+		mount := strings.Fields(sections[0])
+		filesystem := strings.Fields(sections[1])
+		if len(mount) < 5 || len(filesystem) < 3 || filesystem[0] != fsType {
+			continue
+		}
+		if controller != "" && !strings.Contains(","+filesystem[2]+",", ","+controller+",") {
+			continue
+		}
+		mountRoot, rootErr := strconv.Unquote("\"" + mount[3] + "\"")
+		mountPoint, pointErr := strconv.Unquote("\"" + mount[4] + "\"")
+		if rootErr != nil || pointErr != nil {
+			continue
+		}
+		relative, err := filepath.Rel(mountRoot, groupPath)
+		if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+			continue
+		}
+		return filepath.Join(mountPoint, relative), mountPoint, nil
+	}
+	return filepath.Join(fallbackRoot, groupPath), fallbackRoot, nil
 }
 
 func memoryUsageFromHierarchy(groupDir, rootDir, currentName, limitName, statName, inactiveFileKey string) (uint64, uint64, bool, error) {

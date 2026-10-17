@@ -60,6 +60,54 @@ func TestCgroupV1MemoryController(t *testing.T) {
 	}
 }
 
+func TestCgroupV1RemappedMountRoot(t *testing.T) {
+	root := t.TempDir()
+	procPath := filepath.Join(root, "proc", "cgroup")
+	mountPoint := filepath.Join(root, "sys", "memory")
+	writeMemoryFixture(t, procPath, "6:memory:/docker/worker\n")
+	writeMemoryFixture(t, filepath.Join(root, "proc", "mountinfo"),
+		"27 22 0:28 /docker "+mountPoint+" rw - cgroup cgroup rw,memory\n")
+	writeMemoryFixture(t, filepath.Join(mountPoint, "memory.limit_in_bytes"), "1000\n")
+	writeMemoryFixture(t, filepath.Join(mountPoint, "memory.usage_in_bytes"), "320\n")
+	writeMemoryFixture(t, filepath.Join(mountPoint, "memory.stat"), "total_inactive_file 100\n")
+	worker := filepath.Join(mountPoint, "worker")
+	writeMemoryFixture(t, filepath.Join(worker, "memory.limit_in_bytes"), "400\n")
+	writeMemoryFixture(t, filepath.Join(worker, "memory.usage_in_bytes"), "300\n")
+	writeMemoryFixture(t, filepath.Join(worker, "memory.stat"), "total_inactive_file 100\n")
+
+	used, limit, limited, err := cgroupMemoryUsage(procPath, filepath.Join(root, "sys"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !limited || used != 200 || limit != 400 {
+		t.Fatalf("cgroup memory = %d/%d limited=%t, want 200/400 true", used, limit, limited)
+	}
+}
+
+func TestCgroupV2RemappedMountRoot(t *testing.T) {
+	root := t.TempDir()
+	procPath := filepath.Join(root, "proc", "cgroup")
+	mountPoint := filepath.Join(root, "sys")
+	writeMemoryFixture(t, procPath, "0::/parent/worker\n")
+	writeMemoryFixture(t, filepath.Join(root, "proc", "mountinfo"),
+		"27 22 0:28 /parent "+mountPoint+" rw - cgroup2 cgroup rw\n")
+	writeMemoryFixture(t, filepath.Join(mountPoint, "memory.max"), "1000\n")
+	writeMemoryFixture(t, filepath.Join(mountPoint, "memory.current"), "320\n")
+	writeMemoryFixture(t, filepath.Join(mountPoint, "memory.stat"), "inactive_file 100\n")
+	worker := filepath.Join(mountPoint, "worker")
+	writeMemoryFixture(t, filepath.Join(worker, "memory.max"), "400\n")
+	writeMemoryFixture(t, filepath.Join(worker, "memory.current"), "300\n")
+	writeMemoryFixture(t, filepath.Join(worker, "memory.stat"), "inactive_file 100\n")
+
+	used, limit, limited, err := cgroupMemoryUsage(procPath, mountPoint)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !limited || used != 200 || limit != 400 {
+		t.Fatalf("cgroup memory = %d/%d limited=%t, want 200/400 true", used, limit, limited)
+	}
+}
+
 func TestHybridCgroupFallsBackToLimitedMemoryController(t *testing.T) {
 	root := t.TempDir()
 	procPath := filepath.Join(root, "proc", "cgroup")
