@@ -25,12 +25,12 @@ func NewReusableReadCloser(raw interface{}) (*ReusableReadCloser, error) {
 		switch body := raw.(type) {
 
 		case []byte:
-			// if a byte array , create buffer from bytes and use it
-			readBuf = *bytes.NewBuffer(body)
+			// copy: reset writes the buffer back, which must not reach the
+			// caller's slice or another reader built from it
+			readBuf = *bytes.NewBuffer(bytes.Clone(body))
 
 		case *[]byte:
-			// if *[]byte, create buffer from bytes and use it
-			readBuf = *bytes.NewBuffer(*body)
+			readBuf = *bytes.NewBuffer(bytes.Clone(*body))
 
 		case string:
 			// if a string , create buffer from string and use it
