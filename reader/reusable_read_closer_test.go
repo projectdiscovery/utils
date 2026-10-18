@@ -59,9 +59,9 @@ func TestReusableReader(t *testing.T) {
 	}
 }
 
-// Readers must own their bytes: one built from a slice the caller reuses, or
-// several built from one slice and read concurrently, would otherwise see each
-// other's writes, since a reader writes its buffer back when it hits EOF.
+// Readers must own their bytes. reset writes the buffer back at EOF, so a
+// caller that reuses the slice, and a second reader built from it, must still
+// see the original body.
 func TestReusableReaderCopiesByteSlices(t *testing.T) {
 	for name, build := range map[string]func([]byte) (*ReusableReadCloser, error){
 		"[]byte":  func(b []byte) (*ReusableReadCloser, error) { return NewReusableReadCloser(b) },
@@ -76,6 +76,23 @@ func TestReusableReaderCopiesByteSlices(t *testing.T) {
 			got, err := io.ReadAll(reader)
 			require.NoError(t, err)
 			require.Equal(t, "original", string(got))
+			require.Equal(t, "modified", string(body))
+		})
+
+		t.Run(name+" two readers", func(t *testing.T) {
+			body := []byte("original")
+			first, err := build(body)
+			require.NoError(t, err)
+			second, err := build(body)
+			require.NoError(t, err)
+			copy(body, "modified")
+
+			for _, reader := range []*ReusableReadCloser{first, second, first} {
+				got, err := io.ReadAll(reader)
+				require.NoError(t, err)
+				require.Equal(t, "original", string(got))
+			}
+			require.Equal(t, "modified", string(body))
 		})
 	}
 }
