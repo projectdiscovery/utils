@@ -198,6 +198,7 @@ func resetBuffer() {
 		if err != nil || buf == nil {
 			break
 		}
+		bufPool.Discard()
 	}
 
 	setLargeBufferSemSize(maxLargeBuffers)
@@ -209,7 +210,7 @@ func resetBuffer() {
 // body automatically.
 // In required cases it can be used but should never be used for anything
 // related to response body.
-// Bytes.Buffer returned by getters should not be used and are only meant for convinience
+// Bytes.Buffer returned by getters should not be used and are only meant for convenience
 // purposes like .String() or .Bytes() calls.
 // Remember to call Close() on ResponseChain once you are done with it.
 

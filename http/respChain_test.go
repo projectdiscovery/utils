@@ -1054,8 +1054,12 @@ func TestResponseChain_BurstWithPoolExhaustion(t *testing.T) {
 		_ = ChangePoolSize(originalSize - GetPoolSize())
 	}()
 
-	// Reduce pool size to force exhaustion
-	smallPoolSize := int64(10)
+	// Create more concurrent requests than pool can handle
+	concurrency := 50
+
+	// Each chain takes two slots one at a time, so a pool of concurrency
+	// slots or fewer can deadlock with every goroutine holding one.
+	smallPoolSize := int64(concurrency + 1)
 	_ = ChangePoolSize(smallPoolSize - GetPoolSize())
 
 	var m1, m2 runtime.MemStats
@@ -1064,8 +1068,6 @@ func TestResponseChain_BurstWithPoolExhaustion(t *testing.T) {
 	t.Logf("Before =  Alloc: %d MB, PoolSize: %d",
 		m1.Alloc/1024/1024, GetPoolSize())
 
-	// Create more concurrent requests than pool can handle
-	concurrency := 50
 	body := bytes.Repeat([]byte("E"), 50*1024) // 50KB
 
 	var wg sync.WaitGroup

@@ -56,9 +56,6 @@ func ZTLSGrab(conn *ztls.Conn) *ZTLSData {
 		if handshakeLog, err := json.Marshal(conn.GetHandshakeLog()); err == nil {
 			ztlsdata.HandshakeLog = handshakeLog
 		}
-		if heartBleedLog, err := json.Marshal(conn.GetHeartbleedLog()); err == nil {
-			ztlsdata.HeartBleedLog = heartBleedLog
-		}
 		return &ztlsdata
 	}
 	return nil
