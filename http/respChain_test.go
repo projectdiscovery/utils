@@ -1295,3 +1295,62 @@ func TestSemaphoreLeakDeadlock(t *testing.T) {
 	bufPool = origBufPool
 	largeBufferSem = origSem
 }
+
+func useBufPoolSize(t *testing.T, size int64) {
+	t.Helper()
+	origBufPool := bufPool
+	t.Cleanup(func() { bufPool = origBufPool })
+
+	var err error
+	bufPool, err = sizedpool.New(
+		sizedpool.WithPool[*bytes.Buffer](&sync.Pool{New: func() any { return new(bytes.Buffer) }}),
+		sizedpool.WithSize[*bytes.Buffer](size),
+	)
+	require.NoError(t, err)
+}
+
+// A chain waiting for its buffers must not hold any slot, or concurrent chains
+// can each hold one and wait on each other forever.
+func TestNewResponseChain_NoHoldAndWait(t *testing.T) {
+	useBufPoolSize(t, 2)
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		var wg sync.WaitGroup
+		for range 8 {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for range 200 {
+					NewResponseChain(&http.Response{}, -1).Close()
+				}
+			}()
+		}
+		wg.Wait()
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("concurrent chains deadlocked on the buffer pool")
+	}
+}
+
+func TestFullResponse_DoesNotUsePool(t *testing.T) {
+	useBufPoolSize(t, 2)
+
+	rc := NewResponseChain(&http.Response{}, -1)
+	defer rc.Close()
+	rc.headers.WriteString("H: v\r\n")
+	rc.body.WriteString("body")
+
+	done := make(chan string, 1)
+	go func() { done <- rc.FullResponse().String() }()
+	select {
+	case got := <-done:
+		require.Equal(t, "H: v\r\nbody", got)
+	case <-time.After(time.Second):
+		t.Fatal("FullResponse blocked on an exhausted pool")
+	}
+}

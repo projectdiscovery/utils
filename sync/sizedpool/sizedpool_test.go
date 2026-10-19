@@ -92,3 +92,27 @@ func TestSizedPoolVary(t *testing.T) {
 
 	wg.Wait()
 }
+
+func TestSizedPoolGetN(t *testing.T) {
+	pool, err := New[*testStruct](
+		WithSize[*testStruct](2),
+		WithPool[*testStruct](&sync.Pool{New: func() any { return &testStruct{} }}),
+	)
+	require.NoError(t, err)
+
+	items, err := pool.GetN(context.Background(), 2)
+	require.NoError(t, err)
+	require.Len(t, items, 2)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+	_, err = pool.GetN(ctx, 1)
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+
+	for _, item := range items {
+		pool.Put(item)
+	}
+	items, err = pool.GetN(context.Background(), 2)
+	require.NoError(t, err)
+	require.Len(t, items, 2)
+}

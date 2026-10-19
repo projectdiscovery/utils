@@ -64,6 +64,24 @@ func (sz *SizedPool[T]) Get(ctx context.Context) (T, error) {
 	return sz.pool.Get().(T), nil
 }
 
+// GetN retrieves n items from the pool, acquiring all n slots at once.
+//
+// Use it instead of calling [Get] n times when the items are needed together:
+// it never holds part of the slots while waiting for the rest, so concurrent
+// callers cannot deadlock on each other.
+func (sz *SizedPool[T]) GetN(ctx context.Context, n int64) ([]T, error) {
+	if sz.sem != nil {
+		if err := sz.sem.Acquire(ctx, n); err != nil {
+			return nil, err
+		}
+	}
+	items := make([]T, n)
+	for i := range items {
+		items[i] = sz.pool.Get().(T)
+	}
+	return items, nil
+}
+
 // Put returns an item to the pool and releases the semaphore slot.
 func (sz *SizedPool[T]) Put(x T) {
 	sz.Discard()
