@@ -142,16 +142,30 @@ func init() {
 // getBuffer returns a buffer from the pool
 func getBuffer() *bytes.Buffer {
 	buff, _ := bufPool.Get(context.Background())
+	claimLargeBuffer(buff)
 
-	if buff.Cap() >= largeBufferThreshold {
+	return buff
+}
+
+// getBuffers returns n buffers from the pool, acquired together so a caller
+// never holds some slots while waiting for the rest.
+func getBuffers(n int64) []*bytes.Buffer {
+	bufs, _ := bufPool.GetN(context.Background(), n)
+	for _, buf := range bufs {
+		claimLargeBuffer(buf)
+	}
+
+	return bufs
+}
+
+func claimLargeBuffer(buf *bytes.Buffer) {
+	if buf.Cap() >= largeBufferThreshold {
 		select {
 		case <-largeBufferSem:
 		default:
 			// Semaphore wasn't held (shouldn't happen, but handle gracefully)
 		}
 	}
-
-	return buff
 }
 
 // putBuffer returns a buffer to the pool for reuse.
@@ -198,6 +212,7 @@ func resetBuffer() {
 		if err != nil || buf == nil {
 			break
 		}
+		bufPool.Discard()
 	}
 
 	setLargeBufferSemSize(maxLargeBuffers)
@@ -209,7 +224,7 @@ func resetBuffer() {
 // body automatically.
 // In required cases it can be used but should never be used for anything
 // related to response body.
-// Bytes.Buffer returned by getters should not be used and are only meant for convinience
+// Bytes.Buffer returned by getters should not be used and are only meant for convenience
 // purposes like .String() or .Bytes() calls.
 // Remember to call Close() on ResponseChain once you are done with it.
 
@@ -237,9 +252,11 @@ func NewResponseChain(resp *http.Response, maxBody int64) *ResponseChain {
 		resp.Body = http.MaxBytesReader(nil, resp.Body, maxBody)
 	}
 
+	bufs := getBuffers(2)
+
 	return &ResponseChain{
-		headers:     getBuffer(),
-		body:        getBuffer(),
+		headers:     bufs[0],
+		body:        bufs[1],
 		resp:        resp,
 		maxBodySize: maxBody,
 	}
@@ -291,17 +308,10 @@ func (r *ResponseChain) BodyString() string {
 
 // FullResponse returns a new buffer containing headers+body.
 //
-// Warning: The caller is responsible for managing the returned buffer's
-// lifecycle.
-// The buffer should be returned to the pool using putBuffer() or allowed to be
-// garbage collected. Prefer FullResponseBytes() or FullResponseString() for
-// safe read-only access.
+// The buffer is not pooled: callers outside this package cannot return it, so
+// taking it from the pool would leak a slot on every call.
 func (r *ResponseChain) FullResponse() *bytes.Buffer {
-	buf := getBuffer()
-	buf.Write(r.headers.Bytes())
-	buf.Write(r.body.Bytes())
-
-	return buf
+	return bytes.NewBuffer(r.FullResponseBytes())
 }
 
 // FullResponseBytes returns the current response (headers+body) as byte slice.
