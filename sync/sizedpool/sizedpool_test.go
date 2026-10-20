@@ -100,6 +100,11 @@ func TestSizedPoolGetN(t *testing.T) {
 	)
 	require.NoError(t, err)
 
+	_, err = pool.GetN(context.Background(), 0)
+	require.Error(t, err)
+	_, err = pool.GetN(context.Background(), -1)
+	require.Error(t, err)
+
 	items, err := pool.GetN(context.Background(), 2)
 	require.NoError(t, err)
 	require.Len(t, items, 2)

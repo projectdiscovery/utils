@@ -70,6 +70,9 @@ func (sz *SizedPool[T]) Get(ctx context.Context) (T, error) {
 // it never holds part of the slots while waiting for the rest, so concurrent
 // callers cannot deadlock on each other.
 func (sz *SizedPool[T]) GetN(ctx context.Context, n int64) ([]T, error) {
+	if n <= 0 {
+		return nil, errors.New("n must be positive")
+	}
 	if sz.sem != nil {
 		if err := sz.sem.Acquire(ctx, n); err != nil {
 			return nil, err
