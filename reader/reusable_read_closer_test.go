@@ -129,10 +129,14 @@ func TestReusableReader_DoesNotShareCallerSlice(t *testing.T) {
 	buf := bytes.NewBuffer([]byte("buffer payload"))
 	rBuf, err := NewReusableReadCloser(buf)
 	require.NoError(t, err)
-	buf.Reset()
+	buf.Bytes()[0] = 'X'
 	bData, err := io.ReadAll(rBuf)
 	require.NoError(t, err)
 	require.Equal(t, "buffer payload", string(bData))
+	bData, err = io.ReadAll(rBuf)
+	require.NoError(t, err)
+	require.Equal(t, "buffer payload", string(bData))
+	require.Equal(t, "Xuffer payload", buf.String())
 }
 
 func TestReusableReader_MultipleReadersFromSameSlice(t *testing.T) {
