@@ -30,15 +30,19 @@ func NewReusableReadCloser(raw interface{}) (*ReusableReadCloser, error) {
 			readBuf = *bytes.NewBuffer(bytes.Clone(body))
 
 		case *[]byte:
-			readBuf = *bytes.NewBuffer(bytes.Clone(*body))
+			if body != nil {
+				readBuf = *bytes.NewBuffer(bytes.Clone(*body))
+			}
 
 		case string:
 			// if a string , create buffer from string and use it
 			readBuf = *bytes.NewBufferString(body)
 
 		case *bytes.Buffer:
-			// if *bytes.Buffer is given , use it
-			readBuf = *body
+			// clone buffer's bytes to avoid sharing and mutating caller's memory
+			if body != nil {
+				readBuf = *bytes.NewBuffer(bytes.Clone(body.Bytes()))
+			}
 
 		case *bytes.Reader:
 			// if *bytes.Reader , make buffer read from reader
