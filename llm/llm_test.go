@@ -33,6 +33,10 @@ func TestResolveBaseURLPresetsAndDefault(t *testing.T) {
 	got, err = Config{Provider: "ollama"}.resolveBaseURL()
 	require.NoError(t, err)
 	require.Equal(t, "http://localhost:11434/v1", got)
+
+	got, err = Config{Provider: "orcarouter"}.resolveBaseURL()
+	require.NoError(t, err)
+	require.Equal(t, "https://api.orcarouter.ai/v1", got)
 }
 
 func TestResolveBaseURLRequiresExplicitTarget(t *testing.T) {
@@ -177,6 +181,9 @@ func TestConfigAPIKeyReachesAuthorizationHeader(t *testing.T) {
 func TestNewRequiresKeyForHostedPreset(t *testing.T) {
 	t.Setenv(APIKeyEnv, "")
 	_, err := New(Config{Provider: "openai", Model: "gpt-4o-mini"})
+	require.ErrorContains(t, err, "llm api key required")
+
+	_, err = New(Config{Provider: "orcarouter", Model: "orcarouter/auto"})
 	require.ErrorContains(t, err, "llm api key required")
 }
 

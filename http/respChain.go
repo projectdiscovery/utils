@@ -142,16 +142,30 @@ func init() {
 // getBuffer returns a buffer from the pool
 func getBuffer() *bytes.Buffer {
 	buff, _ := bufPool.Get(context.Background())
+	claimLargeBuffer(buff)
 
-	if buff.Cap() >= largeBufferThreshold {
+	return buff
+}
+
+// getBuffers returns n buffers from the pool, acquired together so a caller
+// never holds some slots while waiting for the rest.
+func getBuffers(n int64) []*bytes.Buffer {
+	bufs, _ := bufPool.GetN(context.Background(), n)
+	for _, buf := range bufs {
+		claimLargeBuffer(buf)
+	}
+
+	return bufs
+}
+
+func claimLargeBuffer(buf *bytes.Buffer) {
+	if buf.Cap() >= largeBufferThreshold {
 		select {
 		case <-largeBufferSem:
 		default:
 			// Semaphore wasn't held (shouldn't happen, but handle gracefully)
 		}
 	}
-
-	return buff
 }
 
 // putBuffer returns a buffer to the pool for reuse.
@@ -198,6 +212,7 @@ func resetBuffer() {
 		if err != nil || buf == nil {
 			break
 		}
+		bufPool.Discard()
 	}
 
 	setLargeBufferSemSize(maxLargeBuffers)
@@ -209,7 +224,7 @@ func resetBuffer() {
 // body automatically.
 // In required cases it can be used but should never be used for anything
 // related to response body.
-// Bytes.Buffer returned by getters should not be used and are only meant for convinience
+// Bytes.Buffer returned by getters should not be used and are only meant for convenience
 // purposes like .String() or .Bytes() calls.
 // Remember to call Close() on ResponseChain once you are done with it.
 
@@ -219,6 +234,7 @@ func resetBuffer() {
 type ResponseChain struct {
 	headers     *bytes.Buffer
 	body        *bytes.Buffer
+	rawBody     *bytes.Buffer
 	resp        *http.Response
 	reloaded    bool // if response was reloaded to its previous redirect
 	maxBodySize int64
@@ -229,6 +245,16 @@ type ResponseChain struct {
 //
 // If maxBody is less than or equal to zero, it defaults to [DefaultMaxBodySize].
 func NewResponseChain(resp *http.Response, maxBody int64) *ResponseChain {
+	return newResponseChain(resp, maxBody, false)
+}
+
+// NewResponseChainWithRaw creates a response chain that preserves the response
+// body bytes before content decoding and charset normalization.
+func NewResponseChainWithRaw(resp *http.Response, maxBody int64) *ResponseChain {
+	return newResponseChain(resp, maxBody, true)
+}
+
+func newResponseChain(resp *http.Response, maxBody int64, preserveRaw bool) *ResponseChain {
 	if maxBody <= 0 {
 		maxBody = int64(DefaultMaxBodySize)
 	}
@@ -237,12 +263,21 @@ func NewResponseChain(resp *http.Response, maxBody int64) *ResponseChain {
 		resp.Body = http.MaxBytesReader(nil, resp.Body, maxBody)
 	}
 
-	return &ResponseChain{
-		headers:     getBuffer(),
-		body:        getBuffer(),
+	n := int64(2)
+	if preserveRaw {
+		n = 3
+	}
+	bufs := getBuffers(n)
+	chain := &ResponseChain{
+		headers:     bufs[0],
+		body:        bufs[1],
 		resp:        resp,
 		maxBodySize: maxBody,
 	}
+	if preserveRaw {
+		chain.rawBody = bufs[2]
+	}
+	return chain
 }
 
 // Headers returns the current response headers buffer in the chain.
@@ -289,19 +324,33 @@ func (r *ResponseChain) BodyString() string {
 	return r.body.String()
 }
 
+// RawBodyBytes returns the response body before content decoding and charset
+// normalization. It is empty unless the chain was created with
+// NewResponseChainWithRaw.
+//
+// The returned slice is valid only until Close() is called.
+func (r *ResponseChain) RawBodyBytes() []byte {
+	if r.rawBody == nil {
+		return nil
+	}
+	return r.rawBody.Bytes()
+}
+
+// RawBodyString returns a copy of the response body before content decoding
+// and charset normalization.
+func (r *ResponseChain) RawBodyString() string {
+	if r.rawBody == nil {
+		return ""
+	}
+	return r.rawBody.String()
+}
+
 // FullResponse returns a new buffer containing headers+body.
 //
-// Warning: The caller is responsible for managing the returned buffer's
-// lifecycle.
-// The buffer should be returned to the pool using putBuffer() or allowed to be
-// garbage collected. Prefer FullResponseBytes() or FullResponseString() for
-// safe read-only access.
+// The buffer is not pooled: callers outside this package cannot return it, so
+// taking it from the pool would leak a slot on every call.
 func (r *ResponseChain) FullResponse() *bytes.Buffer {
-	buf := getBuffer()
-	buf.Write(r.headers.Bytes())
-	buf.Write(r.body.Bytes())
-
-	return buf
+	return bytes.NewBuffer(r.FullResponseBytes())
 }
 
 // FullResponseBytes returns the current response (headers+body) as byte slice.
@@ -322,6 +371,27 @@ func (r *ResponseChain) FullResponseBytes() []byte {
 // The returned string is a copy and remains valid even after Close() is called.
 func (r *ResponseChain) FullResponseString() string {
 	return conversion.String(r.FullResponseBytes())
+}
+
+// RawFullResponseBytes returns headers followed by the body bytes captured
+// before content decoding and charset normalization.
+func (r *ResponseChain) RawFullResponseBytes() []byte {
+	if r.rawBody == nil {
+		return nil
+	}
+	size := r.headers.Len() + r.rawBody.Len()
+	buf := make([]byte, size)
+
+	copy(buf, r.headers.Bytes())
+	copy(buf[r.headers.Len():], r.rawBody.Bytes())
+
+	return buf
+}
+
+// RawFullResponseString returns a copy of the headers and body bytes captured
+// before content decoding and charset normalization.
+func (r *ResponseChain) RawFullResponseString() string {
+	return conversion.String(r.RawFullResponseBytes())
 }
 
 // previous updates response pointer to previous response
@@ -383,6 +453,11 @@ func (r *ResponseChain) Close() {
 		putBuffer(r.body)
 		r.body = nil
 	}
+
+	if r.rawBody != nil {
+		putBuffer(r.rawBody)
+		r.rawBody = nil
+	}
 }
 
 // Has returns true if the response chain has a response
@@ -408,4 +483,7 @@ func (r *ResponseChain) Response() *http.Response {
 func (r *ResponseChain) reset() {
 	r.headers.Reset()
 	r.body.Reset()
+	if r.rawBody != nil {
+		r.rawBody.Reset()
+	}
 }
