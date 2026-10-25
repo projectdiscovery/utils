@@ -128,7 +128,13 @@ func readNNormalizeRespBody(rc *ResponseChain, body *bytes.Buffer) (err error) {
 	// wrap with decode if applicable
 	wrapped, err := wrapDecodeReader(response)
 	if err != nil {
-		wrapped = origBody
+		if rc.rawBody != nil {
+			response.Body = io.NopCloser(bytes.NewReader(rc.rawBody.Bytes()))
+			wrapped = response.Body
+			origBody = wrapped
+		} else {
+			wrapped = origBody
+		}
 	}
 	limitReader := io.LimitReader(wrapped, rc.maxBodySize)
 
@@ -140,7 +146,12 @@ func readNNormalizeRespBody(rc *ResponseChain, body *bytes.Buffer) (err error) {
 	if err != nil {
 		if strings.Contains(err.Error(), "gzip: invalid header") {
 			// its invalid gzip but we will still use it from original body
-			_, gErr := body.ReadFrom(origBody)
+			reader := io.Reader(origBody)
+			if rc.rawBody != nil {
+				body.Reset()
+				reader = bytes.NewReader(rc.rawBody.Bytes())
+			}
+			_, gErr := body.ReadFrom(reader)
 			if gErr != nil {
 				return errors.Wrap(gErr, "could not read response body after gzip error")
 			}
