@@ -38,7 +38,7 @@ type threeValueCtx[T1 any, T2 any, T3 any] struct {
 // and executes that function. if context is cancelled before function returns
 // it will return context error otherwise it will return nil
 func ExecFunc(ctx context.Context, fn func()) error {
-	ch := make(chan struct{})
+	ch := make(chan struct{}, 1) // buffered so the worker can send-and-exit if ctx is cancelled first
 	go func() {
 		fn()
 		ch <- struct{}{}
@@ -56,7 +56,7 @@ func ExecFunc(ctx context.Context, fn func()) error {
 // if context is cancelled before function returns it will return context error
 // otherwise it will return function's return values
 func ExecFuncWithTwoReturns[T1 any](ctx context.Context, fn func() (T1, error)) (T1, error) {
-	ch := make(chan twoValueCtx[T1, error])
+	ch := make(chan twoValueCtx[T1, error], 1) // buffered so the worker can send-and-exit if ctx is cancelled first
 	go func() {
 		x, y := fn()
 		ch <- twoValueCtx[T1, error]{var1: x, var2: y}
@@ -75,7 +75,7 @@ func ExecFuncWithTwoReturns[T1 any](ctx context.Context, fn func() (T1, error)) 
 // if context is cancelled before function returns it will return context error
 // otherwise it will return function's return values
 func ExecFuncWithThreeReturns[T1 any, T2 any](ctx context.Context, fn func() (T1, T2, error)) (T1, T2, error) {
-	ch := make(chan threeValueCtx[T1, T2, error])
+	ch := make(chan threeValueCtx[T1, T2, error], 1) // buffered so the worker can send-and-exit if ctx is cancelled first
 	go func() {
 		x, y, z := fn()
 		ch <- threeValueCtx[T1, T2, error]{var1: x, var2: y, var3: z}

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	gojarm "github.com/hdm/jarm-go"
+	gojarm "github.com/projectdiscovery/jarm-go"
 	connpool "github.com/projectdiscovery/utils/conn/connpool"
 )
 

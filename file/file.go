@@ -286,6 +286,98 @@ func ReadFileWithBufferSize(filename string, maxCapacity int) (chan string, erro
 	return out, nil
 }
 
+// WithComment skips lines whose first non-whitespace characters are prefix,
+// for both Lines and ReadLinesStream. An empty prefix leaves every line in
+// place. The skipped line is not split or trimmed.
+func WithComment(prefix string) LineOption {
+	return func(c *lineConfig) { c.comment = prefix }
+}
+
+// ReadFileWithError reads a file and streams lines with proper error handling
+// Returns two channels: one for lines and one for errors
+func ReadFileWithError(filename string) (<-chan string, <-chan error, error) {
+	if !FileExists(filename) {
+		return nil, nil, errors.New("file doesn't exist")
+	}
+
+	linesCh := make(chan string)
+	errCh := make(chan error, 1)
+
+	go func() {
+		defer close(linesCh)
+		defer close(errCh)
+
+		file, err := os.Open(filename)
+		if err != nil {
+			errCh <- err
+			return
+		}
+		defer func() { _ = file.Close() }()
+
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			linesCh <- scanner.Text()
+		}
+
+		if err := scanner.Err(); err != nil {
+			errCh <- err
+		}
+	}()
+
+	return linesCh, errCh, nil
+}
+
+// ReadLinesStream reads a file and streams lines with configurable options
+// Supports trim, skip empty, comment filtering, and custom buffer size
+func ReadLinesStream(filename string, opts ...LineOption) (<-chan string, <-chan error) {
+	linesCh := make(chan string)
+	errCh := make(chan error, 1)
+
+	go func() {
+		defer close(linesCh)
+		defer close(errCh)
+
+		file, err := os.Open(filename)
+		if err != nil {
+			errCh <- err
+			return
+		}
+		defer func() { _ = file.Close() }()
+
+		cfg := &lineConfig{}
+		for _, opt := range opts {
+			opt(cfg)
+		}
+
+		scanner := bufio.NewScanner(file)
+		if cfg.bufferSize > 0 {
+			scanner.Buffer(make([]byte, cfg.bufferSize), cfg.bufferSize)
+		}
+
+		for scanner.Scan() {
+			line := scanner.Text()
+
+			if isComment(line, cfg.comment) {
+				continue
+			}
+			if cfg.trimSpace {
+				line = strings.TrimSpace(line)
+			}
+			if cfg.skipEmpty && line == "" {
+				continue
+			}
+
+			linesCh <- line
+		}
+
+		if err := scanner.Err(); err != nil {
+			errCh <- err
+		}
+	}()
+
+	return linesCh, errCh
+}
+
 // GetTempFileName generate a temporary file name
 func GetTempFileName() (string, error) {
 	tmpfile, err := os.CreateTemp("", "")

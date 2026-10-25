@@ -50,6 +50,16 @@ func NewOneTimePool(ctx context.Context, address string, poolSize int, opts ...O
 
 // Acquire acquires an idle connection from the pool
 func (p *OneTimePool) Acquire(c context.Context) (net.Conn, error) {
+	// A select chooses pseudo-randomly when multiple cases are ready. Check both
+	// contexts first so a buffered connection cannot win after its deadline and
+	// start another potentially long I/O operation.
+	if err := p.ctx.Err(); err != nil {
+		return nil, err
+	}
+	if err := c.Err(); err != nil {
+		return nil, err
+	}
+
 	select {
 	case <-p.ctx.Done():
 		return nil, p.ctx.Err()

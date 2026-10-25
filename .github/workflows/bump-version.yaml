@@ -13,7 +13,17 @@ jobs:
         with:
           fetch-depth: 0
       - uses: projectdiscovery/actions/setup/git@v1
+      # always: true patch-bumps when commits exist but are not conventional.
+      # Skip when HEAD is already the latest tag so empty weeks do not ship.
+      - id: on-tag
+        run: |
+          if git describe --exact-match --tags HEAD >/dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+        shell: bash
       - uses: projectdiscovery/actions/svu-next@v1
+        if: steps.on-tag.outputs.skip != 'true'
         with:
           v0: true
+          always: true
           release-create: true

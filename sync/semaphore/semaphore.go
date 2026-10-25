@@ -45,7 +45,7 @@ func (s *Semaphore) Vary(ctx context.Context, x int64) error {
 		s.currentSize.Add(x)
 		return nil
 	case x < 0:
-		err := s.sem.Acquire(ctx, x)
+		err := s.sem.Acquire(ctx, -x)
 		if err != nil {
 			return err
 		}
@@ -84,7 +84,7 @@ func (s *Semaphore) Size() int64 {
 	return s.currentSize.Load()
 }
 
-// Nominal size of the sempahore
+// Nominal size of the semaphore
 func (s *Semaphore) InitialSize() int64 {
 	return s.initialSize.Load()
 }
