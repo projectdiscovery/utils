@@ -36,7 +36,7 @@ require (
 	github.com/stretchr/testify v1.12.1
 	github.com/tidwall/gjson v1.18.0
 	github.com/wasilibs/go-re2 v1.10.0
-	github.com/zmap/zcrypto v0.0.0-20260906180147-3ed30b1e9340
+	github.com/zmap/zcrypto v0.0.0-20261015050653-aa1de3126e87
 	go.uber.org/multierr v1.11.0
 	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8
 	golang.org/x/oauth2 v0.27.0
@@ -107,7 +107,7 @@ require (
 	github.com/projectdiscovery/gologger v1.1.73
 	github.com/projectdiscovery/hmap v0.0.102
 	github.com/projectdiscovery/retryablehttp-go v1.3.31
-	github.com/weppos/publicsuffix-go v0.50.4-0.20260821095816-b0fdb5c2d345
+	github.com/weppos/publicsuffix-go v0.50.4-0.20260918082853-3c3d7dc4a0cb
 	github.com/zcalusic/sysinfo v1.0.2
 	golang.org/x/crypto v0.55.0 // indirect
 	golang.org/x/mod v0.38.0 // indirect
