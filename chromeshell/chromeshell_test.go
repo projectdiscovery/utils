@@ -155,3 +155,65 @@ func TestAcquireEnsureLockGivesUpOnContext(t *testing.T) {
 	}
 	next()
 }
+
+func TestDownloadAndExtractKeepsConcurrentInstall(t *testing.T) {
+	dir := t.TempDir()
+	zipPath := filepath.Join(dir, "shell.zip")
+	if err := writeTestZip(zipPath, map[string]string{
+		"chrome-headless-shell-linux64/chrome-headless-shell": "new",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	destDir := filepath.Join(dir, "browser", "chromium-1")
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// another process finishes its install while this download runs
+		if err := os.MkdirAll(destDir, 0o755); err != nil {
+			t.Error(err)
+		}
+		if err := os.WriteFile(filepath.Join(destDir, "chrome-headless-shell"), []byte("installed"), 0o755); err != nil {
+			t.Error(err)
+		}
+		http.ServeFile(w, r, zipPath)
+	}))
+	t.Cleanup(server.Close)
+
+	if err := downloadAndExtract(context.Background(), server.URL, destDir); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(filepath.Join(destDir, "chrome-headless-shell"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "installed" {
+		t.Fatalf("existing install was replaced, got %q", got)
+	}
+}
+
+func TestDownloadAndExtractInstallsArchive(t *testing.T) {
+	dir := t.TempDir()
+	zipPath := filepath.Join(dir, "shell.zip")
+	if err := writeTestZip(zipPath, map[string]string{
+		"chrome-headless-shell-linux64/chrome-headless-shell": "new",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, zipPath)
+	}))
+	t.Cleanup(server.Close)
+
+	destDir := filepath.Join(dir, "browser", "chromium-1")
+	if err := downloadAndExtract(context.Background(), server.URL, destDir); err != nil {
+		t.Fatal(err)
+	}
+	if got := findBin(destDir); got != filepath.Join(destDir, "chrome-headless-shell") {
+		t.Fatalf("binary not installed, got %q", got)
+	}
+	entries, err := os.ReadDir(filepath.Dir(destDir))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("temporary download dir left behind: %v", entries)
+	}
+}

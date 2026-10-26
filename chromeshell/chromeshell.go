@@ -165,8 +165,17 @@ func downloadAndExtract(ctx context.Context, url, destDir string) error {
 		return err
 	}
 
+	// The in-process lock does not cover other processes sharing the cache. If
+	// one of them installed the browser while we downloaded, keep its copy: it
+	// may already be running from destDir.
+	if findBin(destDir) != "" {
+		return nil
+	}
 	_ = os.RemoveAll(destDir)
 	if err := os.Rename(contentDir, destDir); err != nil {
+		if findBin(destDir) != "" {
+			return nil
+		}
 		return err
 	}
 	return nil
