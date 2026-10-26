@@ -115,7 +115,7 @@ func TestDownloadFileContextCancellation(t *testing.T) {
 	defer cancel()
 
 	started := time.Now()
-	err := downloadFile(ctx, server.URL, filepath.Join(t.TempDir(), "browser.zip"))
+	err := downloadFile(ctx, Options{}, server.URL, filepath.Join(t.TempDir(), "browser.zip"))
 
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("expected context deadline exceeded, got %v", err)
@@ -177,7 +177,7 @@ func TestDownloadAndExtractKeepsConcurrentInstall(t *testing.T) {
 	}))
 	t.Cleanup(server.Close)
 
-	if err := downloadAndExtract(context.Background(), server.URL, destDir); err != nil {
+	if err := downloadAndExtract(context.Background(), Options{}, server.URL, destDir); err != nil {
 		t.Fatal(err)
 	}
 	got, err := os.ReadFile(filepath.Join(destDir, "chrome-headless-shell"))
@@ -203,7 +203,7 @@ func TestDownloadAndExtractInstallsArchive(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	destDir := filepath.Join(dir, "browser", "chromium-1")
-	if err := downloadAndExtract(context.Background(), server.URL, destDir); err != nil {
+	if err := downloadAndExtract(context.Background(), Options{}, server.URL, destDir); err != nil {
 		t.Fatal(err)
 	}
 	if got := findBin(destDir); got != filepath.Join(destDir, "chrome-headless-shell") {
