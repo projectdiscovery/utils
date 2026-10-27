@@ -39,6 +39,7 @@ var presets = map[string]string{
 	"lmstudio":   "http://localhost:1234/v1",
 	"groq":       "https://api.groq.com/openai/v1",
 	"openrouter": "https://openrouter.ai/api/v1",
+	"opper":      "https://api.opper.ai/v3/compat",
 	"orcarouter": "https://api.orcarouter.ai/v1",
 	"together":   "https://api.together.xyz/v1",
 }
@@ -47,6 +48,7 @@ var hostedPresets = map[string]struct{}{
 	"openai":     {},
 	"groq":       {},
 	"openrouter": {},
+	"opper":      {},
 	"orcarouter": {},
 	"together":   {},
 }

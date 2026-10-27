@@ -37,6 +37,10 @@ func TestResolveBaseURLPresetsAndDefault(t *testing.T) {
 	got, err = Config{Provider: "orcarouter"}.resolveBaseURL()
 	require.NoError(t, err)
 	require.Equal(t, "https://api.orcarouter.ai/v1", got)
+
+	got, err = Config{Provider: "opper"}.resolveBaseURL()
+	require.NoError(t, err)
+	require.Equal(t, "https://api.opper.ai/v3/compat", got)
 }
 
 func TestResolveBaseURLRequiresExplicitTarget(t *testing.T) {
@@ -184,6 +188,9 @@ func TestNewRequiresKeyForHostedPreset(t *testing.T) {
 	require.ErrorContains(t, err, "llm api key required")
 
 	_, err = New(Config{Provider: "orcarouter", Model: "orcarouter/auto"})
+	require.ErrorContains(t, err, "llm api key required")
+
+	_, err = New(Config{Provider: "opper", Model: "claude-sonnet-4-6"})
 	require.ErrorContains(t, err, "llm api key required")
 }
 
