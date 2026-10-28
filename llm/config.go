@@ -32,25 +32,27 @@ const defaultMaxCacheEntries = 4096
 // presets are base URLs for well known OpenAI-compatible endpoints. Anything
 // else is reached by setting BaseURL directly.
 var presets = map[string]string{
-	"openai":     "https://api.openai.com/v1",
-	"ollama":     "http://localhost:11434/v1",
-	"llamacpp":   "http://localhost:8080/v1",
-	"vllm":       "http://localhost:8000/v1",
-	"lmstudio":   "http://localhost:1234/v1",
-	"groq":       "https://api.groq.com/openai/v1",
-	"openrouter": "https://openrouter.ai/api/v1",
-	"opper":      "https://api.opper.ai/v3/compat",
-	"orcarouter": "https://api.orcarouter.ai/v1",
-	"together":   "https://api.together.xyz/v1",
+	"openai":           "https://api.openai.com/v1",
+	"ollama":           "http://localhost:11434/v1",
+	"llamacpp":         "http://localhost:8080/v1",
+	"vllm":             "http://localhost:8000/v1",
+	"lmstudio":         "http://localhost:1234/v1",
+	"cheaperinference": "https://api.cheaperinference.com/v1",
+	"groq":             "https://api.groq.com/openai/v1",
+	"openrouter":       "https://openrouter.ai/api/v1",
+	"opper":            "https://api.opper.ai/v3/compat",
+	"orcarouter":       "https://api.orcarouter.ai/v1",
+	"together":         "https://api.together.xyz/v1",
 }
 
 var hostedPresets = map[string]struct{}{
-	"openai":     {},
-	"groq":       {},
-	"openrouter": {},
-	"opper":      {},
-	"orcarouter": {},
-	"together":   {},
+	"openai":           {},
+	"cheaperinference": {},
+	"groq":             {},
+	"openrouter":       {},
+	"opper":            {},
+	"orcarouter":       {},
+	"together":         {},
 }
 
 // Config describes how to reach a provider and how to bound its use.

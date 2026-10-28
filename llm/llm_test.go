@@ -41,6 +41,10 @@ func TestResolveBaseURLPresetsAndDefault(t *testing.T) {
 	got, err = Config{Provider: "opper"}.resolveBaseURL()
 	require.NoError(t, err)
 	require.Equal(t, "https://api.opper.ai/v3/compat", got)
+
+	got, err = Config{Provider: "cheaperinference"}.resolveBaseURL()
+	require.NoError(t, err)
+	require.Equal(t, "https://api.cheaperinference.com/v1", got)
 }
 
 func TestResolveBaseURLRequiresExplicitTarget(t *testing.T) {
@@ -191,6 +195,9 @@ func TestNewRequiresKeyForHostedPreset(t *testing.T) {
 	require.ErrorContains(t, err, "llm api key required")
 
 	_, err = New(Config{Provider: "opper", Model: "claude-sonnet-4-6"})
+	require.ErrorContains(t, err, "llm api key required")
+
+	_, err = New(Config{Provider: "cheaperinference", Model: "gpt-5.4-mini"})
 	require.ErrorContains(t, err, "llm api key required")
 }
 
