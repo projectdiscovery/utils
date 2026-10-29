@@ -43,7 +43,7 @@ func fakeGH(t *testing.T, tag string, assets map[string][]byte) *httptest.Server
 		for i, n := range names {
 			parts = append(parts, fmt.Sprintf(`{"id":%d,"name":%q}`, i+1, n))
 		}
-		fmt.Fprintf(w, `{"tag_name":%q,"assets":[%s]}`, tag, strings.Join(parts, ","))
+		_, _ = fmt.Fprintf(w, `{"tag_name":%q,"assets":[%s]}`, tag, strings.Join(parts, ","))
 	})
 	mux.HandleFunc("/repos/o/tool/releases/assets/", func(w http.ResponseWriter, r *http.Request) {
 		id := strings.TrimPrefix(r.URL.Path, "/repos/o/tool/releases/assets/")
@@ -51,7 +51,7 @@ func fakeGH(t *testing.T, tag string, assets map[string][]byte) *httptest.Server
 	})
 	mux.HandleFunc("/dl/", func(w http.ResponseWriter, r *http.Request) {
 		var i int
-		fmt.Sscanf(strings.TrimPrefix(r.URL.Path, "/dl/"), "%d", &i)
+		_, _ = fmt.Sscanf(strings.TrimPrefix(r.URL.Path, "/dl/"), "%d", &i)
 		_, _ = w.Write(assets[names[i-1]])
 	})
 	srv = httptest.NewServer(mux)
