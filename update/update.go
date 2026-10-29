@@ -78,6 +78,9 @@ func GetUpdateToolFromRepoCallback(toolName, version, repoName string) func() {
 		if err != nil {
 			gologger.Fatal().Label("updater").Msgf("executable %v not found in release asset `%v` got: %v", toolName, gh.AssetID, err)
 		}
+		if len(bin) == 0 {
+			gologger.Fatal().Label("updater").Msgf("executable %v in release asset `%v` is empty", toolName, gh.AssetID)
+		}
 
 		if err = selfupdate.Apply(bytes.NewBuffer(bin), updateOpts); err != nil {
 			gologger.Error().Msgf("update of %v %v -> %v failed, rolling back update", toolName, currentVersion.String(), latestVersion.String())
