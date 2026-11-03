@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"os"
 	"strings"
 	"sync"
@@ -35,6 +36,32 @@ type Request struct {
 // cache, budget and concurrency handling that wrap it.
 type backend interface {
 	complete(ctx context.Context, model string, req Request) (string, error)
+}
+
+// judger is implemented by backends that classify natively and return a
+// probability, instead of asking a chat model to report its own confidence.
+type judger interface {
+	judge(ctx context.Context, model string, req JudgeRequest) (Verdict, error)
+}
+
+// JudgeRequest asks which label fits the inputs.
+type JudgeRequest struct {
+	// Question is the instruction. It never carries the inputs, which is what
+	// keeps text inside them from being read as instructions.
+	Question string
+	// Labels are the allowed answers. Empty means a yes or no question.
+	Labels []string
+	// Inputs are the data being judged, such as one or more responses.
+	Inputs []string
+}
+
+// Verdict is the label a judge chose and its probability.
+type Verdict struct {
+	Label      string  `json:"label"`
+	Confidence float64 `json:"confidence"`
+	// Model is the exact model version that answered, when the provider
+	// reports one, so a verdict can be traced after an alias moves.
+	Model string `json:"model,omitempty"`
 }
 
 // Client is a provider-agnostic LLM client with caching, a call budget, and a
@@ -79,8 +106,13 @@ func New(config Config) (*Client, error) {
 		return nil, errkit.New("llm api key required (set LLM_API_KEY or Config.APIKey)")
 	}
 
+	var backend backend = newOpenAIBackend(baseURL, apiKey, timeout)
+	if strings.EqualFold(strings.TrimSpace(config.Provider), ProviderJev) || baseURL == presets[ProviderJev] {
+		backend = newJevBackend(baseURL, apiKey, timeout)
+	}
+
 	client := &Client{
-		backend: newOpenAIBackend(baseURL, apiKey, timeout),
+		backend: backend,
 		model:   config.Model,
 		budget:  int32(config.MaxCalls),
 		tickets: make(chan struct{}, concurrency),
@@ -98,18 +130,63 @@ func New(config Config) (*Client, error) {
 }
 
 // Complete returns a completion for the request.
-//
-// A cached response is returned without consuming the budget or a concurrency
-// slot, so a warm cache both costs nothing and cannot be rate-limited. The
-// budget is checked and consumed only for calls that actually wait to reach
-// the provider; a cancelled wait refunds the reservation.
 func (client *Client) Complete(ctx context.Context, req Request) (string, error) {
 	if strings.TrimSpace(req.Prompt) == "" {
 		return "", errkit.New("empty prompt")
 	}
 
-	key := client.key(req)
+	return client.call(ctx, client.key(req), func() (string, error) {
+		return client.backend.complete(ctx, client.model, req)
+	})
+}
 
+// CanJudge reports whether the provider answers Judge.
+func (client *Client) CanJudge() bool {
+	_, ok := client.backend.(judger)
+	return ok
+}
+
+// Judge asks the provider which label fits the inputs. It shares the cache,
+// budget and concurrency limit with Complete.
+func (client *Client) Judge(ctx context.Context, req JudgeRequest) (Verdict, error) {
+	judge, ok := client.backend.(judger)
+	if !ok {
+		return Verdict{}, errkit.New("llm provider does not support judge requests")
+	}
+	if strings.TrimSpace(req.Question) == "" {
+		return Verdict{}, errkit.New("empty question")
+	}
+	if len(req.Inputs) == 0 {
+		return Verdict{}, errkit.New("no inputs to judge")
+	}
+
+	parts := append([]string{"judge", req.Question, strings.Join(req.Labels, "\x00")}, req.Inputs...)
+	raw, err := client.call(ctx, client.hash(parts...), func() (string, error) {
+		verdict, err := judge.judge(ctx, client.model, req)
+		if err != nil {
+			return "", err
+		}
+		encoded, err := json.Marshal(verdict)
+		return string(encoded), err
+	})
+	if err != nil {
+		return Verdict{}, err
+	}
+
+	var verdict Verdict
+	if err := json.Unmarshal([]byte(raw), &verdict); err != nil {
+		return Verdict{}, errkit.Wrap(err, "could not decode cached verdict")
+	}
+	return verdict, nil
+}
+
+// call runs one provider request under the cache, budget and concurrency limit.
+//
+// A cached response is returned without consuming the budget or a concurrency
+// slot, so a warm cache both costs nothing and cannot be rate-limited. The
+// budget is checked and consumed only for calls that actually wait to reach
+// the provider; a cancelled wait refunds the reservation.
+func (client *Client) call(ctx context.Context, key string, request func() (string, error)) (string, error) {
 	if client.cache != nil {
 		if cached, ok := client.cache.get(key); ok {
 			return cached, nil
@@ -128,7 +205,7 @@ func (client *Client) Complete(ctx context.Context, req Request) (string, error)
 	}
 	defer func() { <-client.tickets }()
 
-	response, err := client.backend.complete(ctx, client.model, req)
+	response, err := request()
 	if err != nil {
 		return "", err
 	}
@@ -162,13 +239,18 @@ func (client *Client) release() {
 // key is the cache key: every input that can change the answer, hashed so a
 // large prompt or response body does not sit in a map key.
 func (client *Client) key(req Request) string {
+	format := ""
+	if req.Format.JSON {
+		format = "json"
+	}
+	return client.hash(req.System, req.Prompt, format)
+}
+
+func (client *Client) hash(parts ...string) string {
 	hasher := sha256.New()
-	for _, part := range []string{client.model, req.System, req.Prompt} {
+	for _, part := range append([]string{client.model}, parts...) {
 		_, _ = hasher.Write([]byte(part))
 		_, _ = hasher.Write([]byte{0})
-	}
-	if req.Format.JSON {
-		_, _ = hasher.Write([]byte("json"))
 	}
 
 	return hex.EncodeToString(hasher.Sum(nil))
