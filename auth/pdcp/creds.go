@@ -1,9 +1,13 @@
 package pdcp
 
 import (
+	"context"
+	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 
@@ -28,6 +32,30 @@ const (
 	ApiKeyHeaderName = "X-Api-Key"
 	dashBoardEnv     = "PDCP_DASHBOARD_URL"
 )
+
+// apiClient sends the API key, so it must verify the server certificate.
+// The retryablehttp default clients skip verification.
+var apiClient = newAPIClient()
+
+func newAPIClient() *retryablehttp.Client {
+	transport := retryablehttp.DefaultReusePooledTransport()
+	// fastdialer DialTLS does not verify certificates, so net/http does the
+	// TLS handshake over the fastdialer connection.
+	transport.DialTLSContext = nil
+	transport.TLSClientConfig = &tls.Config{MinVersion: tls.VersionTLS12}
+	opts := retryablehttp.DefaultOptionsSingle
+	opts.HttpClient = &http.Client{Transport: transport}
+	// a certificate error does not go away on retry
+	defaultRetry := retryablehttp.DefaultRetryPolicy()
+	opts.CheckRetry = func(ctx context.Context, resp *http.Response, err error) (bool, error) {
+		var certErr *tls.CertificateVerificationError
+		if errors.As(err, &certErr) {
+			return false, nil
+		}
+		return defaultRetry(ctx, resp, err)
+	}
+	return retryablehttp.NewClient(opts)
+}
 
 type PDCPCredentials struct {
 	Username string `yaml:"username"`
@@ -111,7 +139,7 @@ func (p *PDCPCredHandler) ValidateAPIKey(key string, host string, toolName strin
 		return nil, err
 	}
 	req.Header.Set(ApiKeyHeaderName, key)
-	resp, err := retryablehttp.DefaultHTTPClient.Do(req)
+	resp, err := apiClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
