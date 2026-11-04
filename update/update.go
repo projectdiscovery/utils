@@ -191,7 +191,7 @@ func init() {
 		Timeout: VersionCheckTimeout,
 		Transport: &http.Transport{
 			Proxy:           http.ProxyFromEnvironment,
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12},
 		},
 	}
 }
