@@ -114,18 +114,15 @@ func (d *GHReleaseDownloader) DownloadTool() (*bytes.Buffer, error) {
 
 // GetReleaseChecksums tries to download tool checksum if release contains any in map[asset_name]checksum_data format
 func (d *GHReleaseDownloader) GetReleaseChecksums() (map[string]string, error) {
-	builder := &strings.Builder{}
-	builder.WriteString(d.assetName)
-	builder.WriteString("_")
-	builder.WriteString(strings.TrimPrefix(d.Latest.GetTagName(), "v"))
-	builder.WriteString("_")
-	builder.WriteString("checksums.txt")
-	checksumFileName := builder.String()
-
 	checksumFileAssetID := 0
-	for _, v := range d.Latest.Assets {
-		if v.GetName() == checksumFileName {
-			checksumFileAssetID = int(v.GetID())
+	for _, name := range d.checksumFileNames() {
+		for _, v := range d.Latest.Assets {
+			if v.GetName() == name {
+				checksumFileAssetID = int(v.GetID())
+			}
+		}
+		if checksumFileAssetID != 0 {
+			break
 		}
 	}
 	if checksumFileAssetID == 0 {
@@ -158,15 +155,34 @@ func (d *GHReleaseDownloader) GetReleaseChecksums() (map[string]string, error) {
 	return m, nil
 }
 
+// checksumFileNames returns the names a release may give its checksums file,
+// for the tool name and the repository name (for example
+// tool_1.0.0_checksums.txt, tool-1.0.0-checksums.txt, tool-checksums.txt).
+func (d *GHReleaseDownloader) checksumFileNames() []string {
+	version := strings.TrimPrefix(d.Latest.GetTagName(), "v")
+	var names []string
+	for _, prefix := range []string{d.assetName, d.repoName} {
+		names = append(names,
+			prefix+"_"+version+"_checksums.txt",
+			prefix+"-"+version+"-checksums.txt",
+			prefix+"_checksums.txt",
+			prefix+"-checksums.txt",
+		)
+	}
+	return names
+}
+
 // GetExecutableFromAsset downloads , validates checksum and only returns tool Binary
 func (d *GHReleaseDownloader) GetExecutableFromAsset() ([]byte, error) {
 	var bin []byte
-	var err error
+	found := false
 	getToolCallback := func(path string, fileInfo fs.FileInfo, data io.Reader) error {
 		if !strings.EqualFold(strings.TrimSuffix(fileInfo.Name(), extIfFound), d.assetName) {
 			return nil
 		}
+		var err error
 		bin, err = io.ReadAll(data)
+		found = true
 		return err
 	}
 
@@ -175,25 +191,30 @@ func (d *GHReleaseDownloader) GetExecutableFromAsset() ([]byte, error) {
 		return nil, err
 	}
 
-	var expectedChecksum string
-	checksums, err := d.GetReleaseChecksums()
-	if checksums != nil {
-		expectedChecksum = checksums[d.fullAssetName]
-	}
-	// verify integrity using checksum
-	if expectedChecksum != "" {
+	// verify integrity using checksum: a missing checksums file or entry is
+	// an error, unless SkipCheckSumValidation is set
+	if !SkipCheckSumValidation {
+		checksums, err := d.GetReleaseChecksums()
+		if err != nil {
+			return nil, errkit.Wrap(err, "could not verify asset checksum")
+		}
+		expectedChecksum := checksums[d.fullAssetName]
+		if expectedChecksum == "" {
+			return nil, errkit.Newf("could not verify asset checksum: no checksum for %v in release checksums file", d.fullAssetName)
+		}
 		gotChecksumbytes := sha256.Sum256(buff.Bytes())
 		gotchecksum := hex.EncodeToString(gotChecksumbytes[:])
-		if expectedChecksum != gotchecksum {
+		if !strings.EqualFold(expectedChecksum, gotchecksum) {
 			return nil, errkit.Newf("asset file corrupted: checksum mismatch expected %v but got %v", expectedChecksum, gotchecksum)
-		} else {
-			gologger.Info().Msgf("Verified Integrity of %v", d.fullAssetName)
 		}
+		gologger.Info().Msgf("Verified Integrity of %v", d.fullAssetName)
 	}
 
-	_ = UnpackAssetWithCallback(d.Format, bytes.NewReader(buff.Bytes()), getToolCallback)
-	if err != nil {
-		return bin, errkit.Wrap(err, "executable not found in archive")
+	if err := UnpackAssetWithCallback(d.Format, bytes.NewReader(buff.Bytes()), getToolCallback); err != nil {
+		return nil, errkit.Wrap(err, "could not unpack release asset")
+	}
+	if !found || len(bin) == 0 {
+		return nil, errkit.Newf("executable %v not found in release asset %v", d.assetName, d.fullAssetName)
 	}
 	return bin, nil
 }
