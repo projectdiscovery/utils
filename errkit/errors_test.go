@@ -2,6 +2,7 @@ package errkit
 
 import (
 	"encoding/json"
+	"sync"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -164,4 +165,97 @@ func TestWithAttr(t *testing.T) {
 	// Test that WithAttr works with empty attrs
 	emptyErr := WithAttr(originalErr)
 	require.Equal(t, originalErr, emptyErr, "expected original error when no attrs provided")
+}
+
+// The tests below cover https://github.com/projectdiscovery/utils/issues/823:
+// wrapping an *ErrorX must copy its attributes, never write into them, so a
+// package-level sentinel stays unchanged no matter how often it is wrapped.
+
+func TestWrappingDoesNotMutateFirstError(t *testing.T) {
+	t.Parallel()
+
+	wrappers := map[string]func(first, second error) error{
+		"Append":  func(first, second error) error { return Append(first, second) },
+		"Join":    func(first, second error) error { return Join(first, second) },
+		"Combine": func(first, second error) error { return Combine(first, second) },
+		"Wrap":    func(first, second error) error { return Append(Wrap(first, "wrapped"), second) },
+	}
+	for name, wrap := range wrappers {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			sentinel := New("unexpected error", "component", "git")
+			inner := With(New("git show failed"), "stderr", "fatal: path does not exist")
+
+			err := wrap(sentinel, inner)
+
+			require.Equal(t, `cause="unexpected error" component=git`, sentinel.Error())
+			require.Equal(t,
+				[]string{"component=git", "stderr=fatal: path does not exist"},
+				attrStrings(err),
+			)
+		})
+	}
+}
+
+func TestAppendSameSentinelRepeatedly(t *testing.T) {
+	t.Parallel()
+
+	sentinel := New("unexpected error")
+	for i := range 10 {
+		err := Append(sentinel, With(New("git show failed"), "stdout", "", "stderr", "fatal"))
+		err = Append(sentinel, err)
+		require.Lenf(t, GetAttr(err), 2, "attributes after call %d", i+1)
+	}
+
+	require.Empty(t, GetAttr(sentinel))
+}
+
+// slog.Record stores five attributes inline and the rest in a slice. With()
+// leaves that slice with spare capacity here, so a shallow copy of the
+// sentinel's record would let both results write to the same array slot.
+func TestWrappedErrorsDoNotShareAttributeStorage(t *testing.T) {
+	t.Parallel()
+
+	sentinel := With(
+		New("unexpected error", "a1", 1, "a2", 2, "a3", 3, "a4", 4, "a5", 5, "a6", 6),
+		"a7", 7, "a8", 8,
+	)
+
+	first := Append(sentinel, With(New("first"), "k", "one"))
+	second := Append(sentinel, With(New("second"), "k", "two"))
+
+	require.Equal(t, "one", GetAttrValue(first, "k").String())
+	require.Equal(t, "two", GetAttrValue(second, "k").String())
+	require.Len(t, GetAttr(sentinel), 8)
+}
+
+// Run with -race: Append must only read the sentinel, so wrapping it from
+// several goroutines needs no locking.
+func TestAppendSentinelConcurrently(t *testing.T) {
+	t.Parallel()
+
+	sentinel := New("unexpected error")
+
+	var workers sync.WaitGroup
+
+	for range 8 {
+		workers.Go(func() {
+			_ = Append(sentinel, With(New("x"), "k", "v"))
+		})
+	}
+
+	workers.Wait()
+	require.Empty(t, GetAttr(sentinel))
+}
+
+func attrStrings(err error) []string {
+	attrs := GetAttr(err)
+
+	out := make([]string, 0, len(attrs))
+	for _, attr := range attrs {
+		out = append(out, attr.String())
+	}
+
+	return out
 }
