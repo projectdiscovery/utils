@@ -367,7 +367,11 @@ func parseError(to *ErrorX, err error) {
 		to.append(v.errs...)
 		if v.record != nil {
 			if to.record == nil {
-				to.record = v.record
+				// Clone rather than share v's record: later errors add
+				// their attributes to to.record, and those must not leak
+				// into v, which is often a package-level sentinel (#823).
+				r := v.record.Clone()
+				to.record = &r
 			} else {
 				v.record.Attrs(func(a slog.Attr) bool {
 					to.record.Add(a)
