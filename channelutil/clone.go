@@ -41,6 +41,9 @@ func NewCloneChannels[T any](opts *CloneOptions) *CloneChannels[T] {
 }
 
 // Clone takes data from source channel(src) and sends them to sinks(send only channel) without being totally unfair
+//
+// When ctx is done the workers stop promptly, dropping values not yet
+// delivered, and close the sinks. Wait returns once they have stopped.
 func (s *CloneChannels[T]) Clone(ctx context.Context, src chan T, sinks ...chan<- T) error {
 	if src == nil {
 		return errkit.New("source channel is nil")
@@ -167,18 +170,17 @@ func (s *CloneChannels[T]) cloneChanWorker(ctx context.Context, src chan T, sink
 		}
 	}
 
-	//drain buffer of given channel
-	drainAndReset := func() {
+	// drainAndReset drains the buffers of sinks that reached the threshold.
+	// It returns false when ctx is done before the drain completed.
+	drainAndReset := func() bool {
 		// drain buffer of given channel since threshold has been breached
 		// get pseudo random channel using map
 		count := 0
 		for chanID := range backlog {
 			if sink[chanID] != nil {
 				for _, item := range buffer[chanID] {
-					select {
-					case <-ctx.Done():
-						return
-					case sink[chanID] <- item:
+					if !sendCtx(ctx, sink[chanID], item) {
+						return false
 					}
 				}
 				buffer[chanID] = []T{}
@@ -186,10 +188,12 @@ func (s *CloneChannels[T]) cloneChanWorker(ctx context.Context, src chan T, sink
 				count++
 				if count == s.opts.MaxDrain {
 					// skip for now
-					return
+					return true
 				}
 			}
 		}
+
+		return true
 	}
 
 	// this is main loop of worker where source channels sends data to whatever sink is available at that time
@@ -200,12 +204,23 @@ forloop:
 		switch {
 		case len(backlog) > 0:
 			// if buffer of any channel has reached threshold
-			drainAndReset()
-			// if it is true
+			if !drainAndReset() {
+				return
+			}
 		default:
 			// send to sinks
-			w, ok := <-src
-			if !ok {
+			var (
+				w    T
+				open bool
+			)
+
+			select {
+			case <-ctx.Done():
+				return
+			case w, open = <-src:
+			}
+
+			if !open {
 				break forloop
 			}
 			select {
@@ -230,10 +245,8 @@ forloop:
 		if ch != nil {
 			if len(buffer[id]) > 0 {
 				for _, item := range buffer[id] {
-					select {
-					case <-ctx.Done():
+					if !sendCtx(ctx, ch, item) {
 						return
-					case ch <- item:
 					}
 				}
 			}
