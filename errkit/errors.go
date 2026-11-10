@@ -47,6 +47,10 @@ var (
 // ErrorX is a custom error type that can handle all known types of errors
 // wrapping and joining strategies including custom ones and it supports error class
 // which can be shown to client/users in more meaningful way
+//
+// SetKind, ResetKind, SetAttr, Msg and Msgf modify an ErrorX, so call them
+// before sharing it between goroutines, for example as a package-level
+// sentinel. The other methods only read it and are safe for concurrent use.
 type ErrorX struct {
 	kind   ErrKind
 	record *slog.Record
@@ -85,8 +89,12 @@ func (e *ErrorX) init(skipStack ...int) {
 // append is internal method to append given
 // error to error slice , it removes duplicates
 // earlier it used map which causes more allocations that necessary
+// nil errors and nil *ErrorX are skipped, e.errs never holds one.
 func (e *ErrorX) append(errs ...error) {
 	for _, nerr := range errs {
+		if isNilError(nerr) {
+			continue
+		}
 		found := false
 	new:
 		for _, oerr := range e.errs {
@@ -106,11 +114,8 @@ func (e ErrorX) MarshalJSON() ([]byte, error) {
 	for _, err := range e.errs {
 		tmp = append(tmp, err.Error())
 	}
-	if e.kind == nil {
-		e.kind = ErrKindUnknown
-	}
 	m := map[string]interface{}{
-		"kind":   e.kind.String(),
+		"kind":   e.Kind().String(),
 		"errors": tmp,
 	}
 	if e.record != nil && e.record.NumAttrs() > 0 {
@@ -124,12 +129,15 @@ func (e ErrorX) MarshalJSON() ([]byte, error) {
 
 // Errors returns all errors parsed by the error
 func (e *ErrorX) Errors() []error {
+	if e == nil {
+		return nil
+	}
 	return e.errs
 }
 
 // Attrs returns all attributes associated with the error
 func (e *ErrorX) Attrs() []slog.Attr {
-	if e.record == nil || e.record.NumAttrs() == 0 {
+	if e == nil || e.record == nil || e.record.NumAttrs() == 0 {
 		return nil
 	}
 	values := []slog.Attr{}
@@ -141,17 +149,24 @@ func (e *ErrorX) Attrs() []slog.Attr {
 }
 
 // Build returns the object as error interface
+// a nil *ErrorX yields a nil error, not an error interface wrapping nil.
 func (e *ErrorX) Build() error {
+	if e == nil {
+		return nil
+	}
 	return e
 }
 
 // Unwrap returns the underlying error
 func (e *ErrorX) Unwrap() []error {
-	return e.errs
+	return e.Errors()
 }
 
 // Is checks if current error contains given error
 func (e *ErrorX) Is(err error) bool {
+	if e == nil {
+		return false
+	}
 	x := &ErrorX{}
 	x.init()
 	parseError(x, err)
@@ -167,10 +182,22 @@ func (e *ErrorX) Is(err error) bool {
 }
 
 // Error returns the error string
+// an error holding no errors has an empty cause, and a nil *ErrorX
+// prints as "<nil>" like fmt does for a nil error.
 func (e *ErrorX) Error() string {
+	if e == nil {
+		return "<nil>"
+	}
+
+	cause := ""
+
+	if len(e.errs) > 0 {
+		cause = e.errs[0].Error()
+	}
+
 	var sb strings.Builder
 	sb.WriteString("cause=")
-	sb.WriteString(strconv.Quote(e.errs[0].Error()))
+	sb.WriteString(strconv.Quote(cause))
 	if e.record != nil && e.record.NumAttrs() > 0 {
 		values := []string{}
 		e.record.Attrs(func(a slog.Attr) bool {
@@ -193,19 +220,25 @@ func (e *ErrorX) Error() string {
 
 // Cause return the original error that caused this without any wrapping
 func (e *ErrorX) Cause() error {
-	if len(e.errs) > 0 {
+	if e != nil && len(e.errs) > 0 {
 		return e.errs[0]
 	}
 	return nil
 }
 
-// Kind returns the errorkind associated with this error
-// if any
+// Kind returns the kind of the error, or ErrKindUnknown if it has none.
 func (e *ErrorX) Kind() ErrKind {
-	if e.kind == nil || e.kind.String() == "" {
-		e.kind = ErrKindUnknown
+	if e == nil || !hasKind(e.kind) {
+		return ErrKindUnknown
 	}
 	return e.kind
+}
+
+// hasKind reports whether k is a kind rather than the absence of one.
+// CombineErrKinds returns an empty kind, whose String is "", when none of the
+// kinds it is given survive.
+func hasKind(k ErrKind) bool {
+	return k != nil && k.String() != ""
 }
 
 // FromError parses a given error to understand the error class
@@ -227,7 +260,7 @@ func FromError(err error) *ErrorX {
 //	this is correct (√)
 //	errkit.New("connection failed", "address", host, "port", port)
 //
-//	this is also correct (√) 
+//	this is also correct (√)
 //	errkit.New("timeout occurred")
 //
 //	this is not recommended (x) - use Newf instead
@@ -293,6 +326,9 @@ func (e *ErrorX) Msgf(format string, args ...interface{}) {
 //	this is correct (√)
 //	myError.SetKind(errkit.ErrKindNetworkPermanent)
 func (e *ErrorX) SetKind(kind ErrKind) *ErrorX {
+	if e == nil {
+		return nil
+	}
 	if e.kind == nil {
 		e.kind = kind
 	} else {
@@ -307,6 +343,9 @@ func (e *ErrorX) SetKind(kind ErrKind) *ErrorX {
 //
 //	myError.ResetKind()
 func (e *ErrorX) ResetKind() *ErrorX {
+	if e == nil {
+		return nil
+	}
 	e.kind = nil
 	return e
 }
@@ -325,6 +364,9 @@ func (e *ErrorX) ResetKind() *ErrorX {
 //	Recommended replacement:
 //	errkit.WithAttr(myError, slog.String("address", host))
 func (e *ErrorX) SetAttr(s ...slog.Attr) *ErrorX {
+	if e == nil {
+		return nil
+	}
 	e.init()
 	for _, attr := range s {
 		e.record.Add(attr)
@@ -364,6 +406,9 @@ func parseError(to *ErrorX, err error) {
 
 	switch v := err.(type) {
 	case *ErrorX:
+		if v == nil {
+			return
+		}
 		to.append(v.errs...)
 		if v.record != nil {
 			if to.record == nil {
@@ -382,10 +427,18 @@ func parseError(to *ErrorX, err error) {
 		if to.source == nil && v.source != nil {
 			to.source = v.source
 		}
-		to.kind = CombineErrKinds(to.kind, v.kind)
+		// Never store an empty kind: IsKind and GetErrorKind classify an
+		// error only when its kind is nil, and CombineErrKinds returns an
+		// empty kind when it has nothing to combine (#827).
+		if kind := CombineErrKinds(to.kind, v.kind); hasKind(kind) {
+			to.kind = kind
+		}
 	case JoinedError:
 		foundAny := false
 		for _, e := range v.Unwrap() {
+			if isNilError(e) {
+				continue
+			}
 			to.append(e)
 			foundAny = true
 		}
@@ -393,14 +446,21 @@ func parseError(to *ErrorX, err error) {
 			parseError(to, errors.New(err.Error()))
 		}
 	case WrappedError:
-		if v.Unwrap() != nil {
+		if !isNilError(v.Unwrap()) {
 			parseError(to, v.Unwrap())
 		} else {
 			parseError(to, errors.New(err.Error()))
 		}
 	case CauseError:
-		to.append(v.Cause())
-		remaining := strings.ReplaceAll(err.Error(), v.Cause().Error(), "")
+		cause := v.Cause()
+		if isNilError(cause) {
+			parseError(to, errors.New(err.Error()))
+
+			return
+		}
+
+		to.append(cause)
+		remaining := strings.ReplaceAll(err.Error(), cause.Error(), "")
 		parseError(to, errors.New(remaining))
 	default:
 		errString := err.Error()

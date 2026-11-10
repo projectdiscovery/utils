@@ -2,6 +2,7 @@ package errkit
 
 import (
 	"encoding/json"
+	"fmt"
 	"sync"
 	"testing"
 
@@ -247,6 +248,95 @@ func TestAppendSentinelConcurrently(t *testing.T) {
 
 	workers.Wait()
 	require.Empty(t, GetAttr(sentinel))
+}
+
+// The tests below cover https://github.com/projectdiscovery/utils/issues/826:
+// only the setters may modify an *ErrorX, so reading a shared sentinel needs
+// no locking and leaves it unchanged.
+
+// Run with -race.
+func TestReadMethodsConcurrently(t *testing.T) {
+	t.Parallel()
+
+	sentinel := New("unexpected error", "component", "git")
+
+	var readers sync.WaitGroup
+
+	for range 8 {
+		readers.Go(func() {
+			_ = sentinel.Kind()
+			_ = sentinel.Error()
+			_ = sentinel.Attrs()
+			_ = sentinel.Is(sentinel)
+			_, _ = json.Marshal(sentinel)
+		})
+	}
+
+	readers.Wait()
+	require.Equal(t, ErrKindUnknown, sentinel.Kind())
+}
+
+// Kind must not store the ErrKindUnknown it returns for an error without a
+// kind, or every error that wraps the sentinel afterwards inherits it.
+func TestKindDoesNotSetKind(t *testing.T) {
+	t.Parallel()
+
+	sentinel := New("unexpected error")
+	before := GetErrorKind(Wrap(sentinel, "wrapped")).String()
+
+	require.Equal(t, ErrKindUnknown, sentinel.Kind())
+	require.Equal(t, before, GetErrorKind(Wrap(sentinel, "wrapped")).String())
+}
+
+// The tests below cover https://github.com/projectdiscovery/utils/issues/827:
+// an errkit error without a kind is classified from its message, the same way
+// a plain error is.
+
+const noSuchHostMsg = "dial tcp: lookup example.invalid: no such host"
+
+var errNoSuchHost = stderrors.New(noSuchHostMsg)
+
+func TestKindDetectionOnErrkitErrors(t *testing.T) {
+	t.Parallel()
+
+	errs := map[string]error{
+		"errors.New":            errNoSuchHost,
+		"New":                   New(noSuchHostMsg),
+		"Wrap of a plain error": Wrap(errNoSuchHost, "request failed"),
+		"Wrap of New":           Wrap(New(noSuchHostMsg), "request failed"),
+		"fmt.Errorf of New":     fmt.Errorf("request failed: %w", New(noSuchHostMsg)),
+	}
+	for name, err := range errs {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			require.True(t, IsKind(err, ErrKindNetworkPermanent))
+			require.Equal(t, ErrKindNetworkPermanent.String(), GetErrorKind(err).String())
+		})
+	}
+}
+
+func TestErrorWithoutKindReportsUnknown(t *testing.T) {
+	t.Parallel()
+
+	err := Wrap(New("unexpected error"), "wrapped")
+
+	require.Equal(t, ErrKindUnknown.String(), GetErrorKind(err).String())
+
+	marshalled, jsonErr := json.Marshal(err)
+	require.NoError(t, jsonErr)
+	require.JSONEq(t, `{"errors":["unexpected error","wrapped"],"kind":"unknown-error"}`, string(marshalled))
+}
+
+// Detection only fills in a missing kind; it never replaces one set with
+// SetKind.
+func TestSetKindOverridesDetection(t *testing.T) {
+	t.Parallel()
+
+	err := Wrap(New(noSuchHostMsg).SetKind(ErrKindNetworkTemporary), "request failed")
+
+	require.False(t, IsKind(err, ErrKindNetworkPermanent))
+	require.Equal(t, ErrKindNetworkTemporary.String(), GetErrorKind(err).String())
 }
 
 func attrStrings(err error) []string {
