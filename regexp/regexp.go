@@ -1,8 +1,10 @@
 package regexp
 
 import (
-	"os"
+	"errors"
+	"fmt"
 	"regexp"
+	"regexp/syntax"
 
 	"github.com/dlclark/regexp2"
 	stringsutil "github.com/projectdiscovery/utils/strings"
@@ -84,24 +86,96 @@ func compileWithStandard(pattern string) (*Regexp, error) {
 	}, nil
 }
 
-// compileWithRE2 attempts to compile the pattern with the RE2 engine
-func compileWithRE2(pattern string) (*Regexp, error) {
-	originalStderr := os.Stderr
-	devNull, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0666)
-	if err != nil {
-		// If we can't open os.DevNull, we can't suppress stderr.
-		// Proceed without suppression, or return an error.
-		// For now, let's proceed without suppression and let re2.Compile behave as usual.
-		// Alternatively, we could log this issue or return a specific error.
-		// log.Printf("Warning: could not open os.DevNull to suppress stderr: %v", err)
-	} else {
-		os.Stderr = devNull
-		defer func() {
-			os.Stderr = originalStderr
-			_ = devNull.Close()
-		}()
+// checkRE2Syntax returns an error wrapping the Go *syntax.Error for a pattern
+// that RE2 is known to reject, or nil if RE2 should be asked.
+//
+// RE2 writes a log line to the process's stderr for every pattern it
+// rejects. In the default Wasm build go-re2 binds the module's stderr to
+// os.Stderr when it creates the module and has no option to turn the logging
+// off; only the re2_cgo build does. Redirecting os.Stderr around the call is
+// not a safe way to silence it: os.Stderr is process-wide, so concurrent
+// compiles race on it and can leave it pointing at a closed file. Rejecting
+// a pattern with the Go parser first keeps RE2 from logging for it.
+//
+// EngineAuto tries RE2 first on every pattern that does not contain "(?<",
+// "(?=" or "(?!)", so constructs such as "(?!x)", atomic groups, possessive
+// quantifiers and backreferences reach this check and are silenced. A
+// pattern that contains one of those three goes to regexp2 first and reaches
+// RE2 only if regexp2 rejects it; lookbehind is not silenced even then.
+//
+// The invariant is that a pattern RE2 accepts is never rejected here; wrongly
+// rejecting would turn a working EngineRE2 pattern into an error. Go's parser
+// is not RE2's, so an error is trusted only if its meaning cannot depend on
+// Unicode tables, UTF-8 decoding or size limits, which differ between the
+// two and between Go releases. That leaves the structural errors: an
+// unsupported (?...) group such as a lookahead or atomic group, a misplaced
+// or missing repetition operator, an unbalanced bracket or parenthesis, a
+// trailing backslash and an unknown escape. Everything else goes to RE2:
+//   - \C, which only RE2 supports. The exception also lets "[\C]" through,
+//     which RE2 rejects.
+//   - Character class and range errors, which Go also reports for \p and \P
+//     names. Go 1.26.0 and 1.26.1 reject script names that contain an
+//     underscore, such as \p{Old_Italic}, and SignWriting.
+//   - Invalid UTF-8, because Go rejects encoded surrogates (\xed\xa0\x80)
+//     that RE2 accepts.
+//   - A repeat count (RE2 reads an overflowing one as literal text), nesting
+//     depth and expression size, which are limits, and a group name (RE2
+//     accepts non-ASCII ones). Go also reports a lookbehind as an invalid
+//     group name.
+//
+// The remaining limitation is that a pattern RE2 rejects for one of those
+// reasons, or that Go accepts, still makes RE2 log to stderr. Examples are
+// "a{1001}", "[z-a]", "[\C]", "(?<=a)b" and "\xff".
+func checkRE2Syntax(pattern string) error {
+	_, err := syntax.Parse(pattern, syntax.Perl)
+
+	var synErr *syntax.Error
+	if !errors.As(err, &synErr) {
+		return nil
 	}
 
+	if synErr.Code == syntax.ErrInvalidEscape && synErr.Expr == `\C` {
+		return nil
+	}
+
+	switch synErr.Code {
+	case syntax.ErrInvalidEscape,
+		syntax.ErrInvalidPerlOp,
+		syntax.ErrInvalidRepeatOp,
+		syntax.ErrMissingBracket,
+		syntax.ErrMissingParen,
+		syntax.ErrMissingRepeatArgument,
+		syntax.ErrTrailingBackslash,
+		syntax.ErrUnexpectedParen:
+		return fmt.Errorf("unsupported RE2 syntax: %w", err)
+	case syntax.ErrInternalError,
+		syntax.ErrInvalidCharClass,
+		syntax.ErrInvalidCharRange,
+		syntax.ErrInvalidNamedCapture,
+		syntax.ErrInvalidRepeatSize,
+		syntax.ErrInvalidUTF8,
+		syntax.ErrLarge,
+		syntax.ErrNestingDepth:
+	}
+
+	return nil
+}
+
+// compileWithRE2 attempts to compile the pattern with the RE2 engine. A
+// pattern that checkRE2Syntax rejects is not passed to RE2.
+func compileWithRE2(pattern string) (*Regexp, error) {
+	err := checkRE2Syntax(pattern)
+	if err != nil {
+		return nil, err
+	}
+
+	return compileRE2(pattern)
+}
+
+// compileRE2 compiles the pattern with the RE2 engine without checking it
+// first, so a pattern RE2 rejects is logged to stderr. The tests use it to
+// get RE2's own verdict on a pattern.
+func compileRE2(pattern string) (*Regexp, error) {
 	re, err := re2.Compile(pattern)
 	if err != nil {
 		return nil, err
