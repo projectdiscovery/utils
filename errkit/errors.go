@@ -110,11 +110,8 @@ func (e ErrorX) MarshalJSON() ([]byte, error) {
 	for _, err := range e.errs {
 		tmp = append(tmp, err.Error())
 	}
-	if e.kind == nil {
-		e.kind = ErrKindUnknown
-	}
 	m := map[string]interface{}{
-		"kind":   e.kind.String(),
+		"kind":   e.Kind().String(),
 		"errors": tmp,
 	}
 	if e.record != nil && e.record.NumAttrs() > 0 {
@@ -205,10 +202,17 @@ func (e *ErrorX) Cause() error {
 
 // Kind returns the kind of the error, or ErrKindUnknown if it has none.
 func (e *ErrorX) Kind() ErrKind {
-	if e.kind == nil || e.kind.String() == "" {
+	if !hasKind(e.kind) {
 		return ErrKindUnknown
 	}
 	return e.kind
+}
+
+// hasKind reports whether k is a kind rather than the absence of one.
+// CombineErrKinds returns an empty kind, whose String is "", when none of the
+// kinds it is given survive.
+func hasKind(k ErrKind) bool {
+	return k != nil && k.String() != ""
 }
 
 // FromError parses a given error to understand the error class
@@ -385,7 +389,12 @@ func parseError(to *ErrorX, err error) {
 		if to.source == nil && v.source != nil {
 			to.source = v.source
 		}
-		to.kind = CombineErrKinds(to.kind, v.kind)
+		// Never store an empty kind: IsKind and GetErrorKind classify an
+		// error only when its kind is nil, and CombineErrKinds returns an
+		// empty kind when it has nothing to combine (#827).
+		if kind := CombineErrKinds(to.kind, v.kind); hasKind(kind) {
+			to.kind = kind
+		}
 	case JoinedError:
 		foundAny := false
 		for _, e := range v.Unwrap() {
