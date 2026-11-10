@@ -4,6 +4,7 @@ package rawmode
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"syscall"
 	"unsafe"
@@ -11,7 +12,14 @@ import (
 
 func init() {
 	GetMode = func(std *os.File) (interface{}, error) {
-		return getMode(std)
+		termios, err := getMode(std)
+		if err != nil {
+			// Returning termios directly would box a nil *syscall.Termios into
+			// a non-nil interface, which SetMode and SetRawMode would accept.
+			return nil, err
+		}
+
+		return termios, nil
 	}
 
 	SetMode = func(std *os.File, mode interface{}) error {
@@ -37,24 +45,33 @@ func init() {
 
 func getTermios(fd uintptr) (*syscall.Termios, error) {
 	var t syscall.Termios
-	_, _, err := syscall.Syscall6(
+	// A raw syscall reports success as Errno(0), which is a non-nil error
+	// once converted to the error interface.
+	_, _, errno := syscall.Syscall6(
 		syscall.SYS_IOCTL,
-		os.Stdin.Fd(),
+		fd,
 		TCGETS,
 		uintptr(unsafe.Pointer(&t)),
 		0, 0, 0)
+	if errno != 0 {
+		return nil, fmt.Errorf("get terminal attributes: %w", errno)
+	}
 
-	return &t, err
+	return &t, nil
 }
 
 func setTermios(fd uintptr, term *syscall.Termios) error {
-	_, _, err := syscall.Syscall6(
+	_, _, errno := syscall.Syscall6(
 		syscall.SYS_IOCTL,
-		os.Stdin.Fd(),
+		fd,
 		TCSETS,
 		uintptr(unsafe.Pointer(term)),
 		0, 0, 0)
-	return err
+	if errno != 0 {
+		return fmt.Errorf("set terminal attributes: %w", errno)
+	}
+
+	return nil
 }
 
 func setRaw(term *syscall.Termios) {
@@ -70,11 +87,11 @@ func setRaw(term *syscall.Termios) {
 }
 
 func getMode(std *os.File) (*syscall.Termios, error) {
-	return getTermios(os.Stdin.Fd())
+	return getTermios(std.Fd())
 }
 
 func setMode(std *os.File, mode *syscall.Termios) error {
-	return setTermios(os.Stdin.Fd(), mode)
+	return setTermios(std.Fd(), mode)
 }
 
 func setRawMode(std *os.File, mode *syscall.Termios) error {
@@ -83,5 +100,10 @@ func setRawMode(std *os.File, mode *syscall.Termios) error {
 }
 
 func read(std *os.File, buf []byte) (int, error) {
-	return syscall.Read(int(os.Stdin.Fd()), buf)
+	n, err := syscall.Read(int(std.Fd()), buf)
+	if err != nil {
+		return n, fmt.Errorf("read from file: %w", err)
+	}
+
+	return n, nil
 }
