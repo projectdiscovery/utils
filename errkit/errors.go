@@ -47,6 +47,10 @@ var (
 // ErrorX is a custom error type that can handle all known types of errors
 // wrapping and joining strategies including custom ones and it supports error class
 // which can be shown to client/users in more meaningful way
+//
+// SetKind, ResetKind, SetAttr, Msg and Msgf modify an ErrorX, so call them
+// before sharing it between goroutines, for example as a package-level
+// sentinel. The other methods only read it and are safe for concurrent use.
 type ErrorX struct {
 	kind   ErrKind
 	record *slog.Record
@@ -199,11 +203,10 @@ func (e *ErrorX) Cause() error {
 	return nil
 }
 
-// Kind returns the errorkind associated with this error
-// if any
+// Kind returns the kind of the error, or ErrKindUnknown if it has none.
 func (e *ErrorX) Kind() ErrKind {
 	if e.kind == nil || e.kind.String() == "" {
-		e.kind = ErrKindUnknown
+		return ErrKindUnknown
 	}
 	return e.kind
 }

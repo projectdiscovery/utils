@@ -249,6 +249,44 @@ func TestAppendSentinelConcurrently(t *testing.T) {
 	require.Empty(t, GetAttr(sentinel))
 }
 
+// The tests below cover https://github.com/projectdiscovery/utils/issues/826:
+// only the setters may modify an *ErrorX, so reading a shared sentinel needs
+// no locking and leaves it unchanged.
+
+// Run with -race.
+func TestReadMethodsConcurrently(t *testing.T) {
+	t.Parallel()
+
+	sentinel := New("unexpected error", "component", "git")
+
+	var readers sync.WaitGroup
+
+	for range 8 {
+		readers.Go(func() {
+			_ = sentinel.Kind()
+			_ = sentinel.Error()
+			_ = sentinel.Attrs()
+			_ = sentinel.Is(sentinel)
+			_, _ = json.Marshal(sentinel)
+		})
+	}
+
+	readers.Wait()
+	require.Equal(t, ErrKindUnknown, sentinel.Kind())
+}
+
+// Kind must not store the ErrKindUnknown it returns for an error without a
+// kind, or every error that wraps the sentinel afterwards inherits it.
+func TestKindDoesNotSetKind(t *testing.T) {
+	t.Parallel()
+
+	sentinel := New("unexpected error")
+	before := GetErrorKind(Wrap(sentinel, "wrapped")).String()
+
+	require.Equal(t, ErrKindUnknown, sentinel.Kind())
+	require.Equal(t, before, GetErrorKind(Wrap(sentinel, "wrapped")).String())
+}
+
 func attrStrings(err error) []string {
 	attrs := GetAttr(err)
 
