@@ -72,9 +72,9 @@ require (
 	github.com/muesli/termenv v0.15.3-0.20240618155329-98d742f6907a // indirect
 	github.com/nxadm/tail v1.4.11 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
-	github.com/projectdiscovery/fastdialer v0.6.1 // indirect
-	github.com/projectdiscovery/networkpolicy v0.1.57 // indirect
-	github.com/projectdiscovery/retryabledns v1.0.118 // indirect
+	github.com/projectdiscovery/fastdialer v0.6.3 // indirect
+	github.com/projectdiscovery/networkpolicy v0.1.58 // indirect
+	github.com/projectdiscovery/retryabledns v1.0.119 // indirect
 	github.com/refraction-networking/utls v1.8.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
@@ -103,9 +103,9 @@ require (
 	github.com/ebitengine/purego v0.10.0
 	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
-	github.com/projectdiscovery/gologger v1.1.75
-	github.com/projectdiscovery/hmap v0.0.104
-	github.com/projectdiscovery/retryablehttp-go v1.3.33
+	github.com/projectdiscovery/gologger v1.1.76
+	github.com/projectdiscovery/hmap v0.0.105
+	github.com/projectdiscovery/retryablehttp-go v1.3.35
 	github.com/weppos/publicsuffix-go v0.50.4-0.20260918082853-3c3d7dc4a0cb
 	github.com/zcalusic/sysinfo v1.0.2
 	golang.org/x/crypto v0.57.0 // indirect
