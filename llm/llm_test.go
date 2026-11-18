@@ -2,6 +2,7 @@ package llm
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -180,6 +181,20 @@ func TestConfigAPIKeyReachesAuthorizationHeader(t *testing.T) {
 	_, err = client.Complete(context.Background(), Request{Prompt: "hi"})
 	require.NoError(t, err)
 	require.Equal(t, "Bearer explicit-key", gotAuth)
+}
+
+func TestRequestOmitsTemperature(t *testing.T) {
+	var body map[string]any
+	cfg := chatStub(t, func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		_, _ = w.Write([]byte(okBody("ok")))
+	})
+
+	client, err := New(cfg)
+	require.NoError(t, err)
+	_, err = client.Complete(context.Background(), Request{Prompt: "hi"})
+	require.NoError(t, err)
+	require.NotContains(t, body, "temperature")
 }
 
 func TestNewRequiresKeyForHostedPreset(t *testing.T) {
