@@ -24,7 +24,6 @@ type openAIBackend struct {
 
 type chatRequest struct {
 	Model          string              `json:"model"`
-	Temperature    float32             `json:"temperature"`
 	Messages       []chatMessage       `json:"messages"`
 	ResponseFormat *chatResponseFormat `json:"response_format,omitempty"`
 }
@@ -66,12 +65,12 @@ func (b *openAIBackend) complete(ctx context.Context, model string, req Request)
 	messages = append(messages, chatMessage{Role: "user", Content: req.Prompt})
 
 	// no max_tokens: reasoning models spend an unpredictable amount before they
-	// emit content, and a cap truncates them to an empty response. temperature
-	// 0 so a cache miss on the same input tends to reproduce the same answer.
+	// emit content, and a cap truncates them to an empty response. No
+	// temperature either: OpenAI says to omit it for its newer models, and
+	// the response cache already makes repeat calls deterministic.
 	payload := chatRequest{
-		Model:       model,
-		Temperature: 0,
-		Messages:    messages,
+		Model:    model,
+		Messages: messages,
 	}
 	if req.Format.JSON {
 		payload.ResponseFormat = &chatResponseFormat{Type: "json_object"}
