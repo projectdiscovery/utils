@@ -135,6 +135,31 @@ func TestResponseChain_GzipHandling(t *testing.T) {
 	rc.Close()
 }
 
+// net/http matches content codings case-insensitively, as RFC 9110 requires
+func TestResponseChain_ContentEncodingIsCaseInsensitive(t *testing.T) {
+	originalBody := "compressed response body"
+
+	var compressed bytes.Buffer
+	gzWriter := gzip.NewWriter(&compressed)
+	_, err := gzWriter.Write([]byte(originalBody))
+	require.NoError(t, err)
+	require.NoError(t, gzWriter.Close())
+
+	resp := &http.Response{
+		StatusCode: 200,
+		Body:       io.NopCloser(&compressed),
+		Header: http.Header{
+			"Content-Encoding": []string{"GZip"},
+		},
+	}
+
+	rc := NewResponseChain(resp, -1)
+	require.NoError(t, rc.Fill())
+	t.Cleanup(rc.Close)
+
+	assert.Equal(t, originalBody, rc.BodyString())
+}
+
 func TestResponseChain_PreservesRawGzipBody(t *testing.T) {
 	originalBody := "compressed response body"
 
