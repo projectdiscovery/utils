@@ -125,16 +125,28 @@ func readNNormalizeRespBody(rc *ResponseChain, body *bytes.Buffer) (err error) {
 		response.Body = io.NopCloser(bytes.NewReader(rc.rawBody.Bytes()))
 		origBody = response.Body
 	}
+	// a decoder reads ahead before rejecting a body, so keep what it read to
+	// fall back on
+	var head *headReader
+	if rc.rawBody == nil {
+		head = &headReader{Reader: origBody, head: &bytes.Buffer{}}
+		response.Body = io.NopCloser(head)
+	}
 	// wrap with decode if applicable
 	wrapped, err := wrapDecodeReader(response)
+	if head != nil {
+		response.Body = origBody
+	}
 	if err != nil {
 		if rc.rawBody != nil {
 			response.Body = io.NopCloser(bytes.NewReader(rc.rawBody.Bytes()))
 			wrapped = response.Body
 			origBody = wrapped
 		} else {
-			wrapped = origBody
+			wrapped = io.NopCloser(io.MultiReader(head.head, origBody))
 		}
+	} else if head != nil {
+		head.head = nil
 	}
 	limitReader := io.LimitReader(wrapped, rc.maxBodySize)
 
@@ -167,6 +179,20 @@ func readNNormalizeRespBody(rc *ResponseChain, body *bytes.Buffer) (err error) {
 		}
 	}
 	return nil
+}
+
+// headReader records what is read while head is not nil.
+type headReader struct {
+	io.Reader
+	head *bytes.Buffer
+}
+
+func (h *headReader) Read(p []byte) (int, error) {
+	n, err := h.Reader.Read(p)
+	if h.head != nil {
+		h.head.Write(p[:n])
+	}
+	return n, err
 }
 
 // wrapDecodeReader wraps a decompression reader around the response body if it's compressed
