@@ -2,13 +2,17 @@ package chromeshell
 
 import (
 	"archive/zip"
+	"context"
+	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
-	"sync"
+	"time"
 )
 
 const (
@@ -19,9 +23,47 @@ const (
 	// revision is a synthetic cache key under the rod browser cache layout so
 	// existing go-rod consumers share the same on-disk location.
 	revision = 1520797742
+
+	// DefaultDownloadTimeout bounds one whole download. Callers should put it on
+	// the ctx they pass to EnsureContext, so every tool waits the same time.
+	DefaultDownloadTimeout = 5 * time.Minute
+
+	// dialTimeout bounds connecting to the download host or the proxy. It is
+	// short, so a firewalled host fails fast instead of waiting out the
+	// operating system connect timeout.
+	dialTimeout = 5 * time.Second
+
+	// retryAfter is how long a failed download is not tried again. Every run
+	// on a host that cannot reach the download host would otherwise wait for
+	// the attempt before it falls back to the default browser.
+	retryAfter = 24 * time.Hour
 )
 
-var ensureMu sync.Mutex
+// Options configures the download.
+type Options struct {
+	// Proxy is the proxy URL for the download (http, https or socks5). When
+	// empty, the proxy comes from the environment (HTTPS_PROXY, HTTP_PROXY,
+	// NO_PROXY).
+	Proxy string
+}
+
+var ensureLock = func() chan struct{} {
+	lock := make(chan struct{}, 1)
+	lock <- struct{}{}
+	return lock
+}()
+
+// acquireEnsureLock waits for the single download slot. A channel is used
+// instead of a sync.Mutex so a caller whose ctx expires stops waiting on a
+// download it cannot cancel. The returned release must always be called.
+func acquireEnsureLock(ctx context.Context) (func(), error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case <-ensureLock:
+		return func() { ensureLock <- struct{}{} }, nil
+	}
+}
 
 // Supported reports whether chrome-headless-shell auto-download is available
 // for the current platform.
@@ -58,34 +100,81 @@ func BinPath() string {
 // returns the executable path. It is a no-op download when the binary already
 // exists. Callers should only invoke this when Supported() is true.
 func Ensure() (string, error) {
+	return EnsureContext(context.Background())
+}
+
+// EnsureContext is like Ensure, but stops waiting for the shared download lock
+// and cancels the browser download when ctx is done.
+func EnsureContext(ctx context.Context) (string, error) {
+	return EnsureWithOptions(ctx, Options{})
+}
+
+// EnsureWithOptions is like EnsureContext, with download options.
+//
+// A failed download leaves a marker in the browser cache. For 24 hours after
+// that, no download is tried and an error is returned at once, so callers fall
+// back to their default browser without waiting. Delete the marker
+// (FailureMarker) to try again sooner.
+func EnsureWithOptions(ctx context.Context, opts Options) (string, error) {
 	if !Supported() {
 		return "", fmt.Errorf("chrome-headless-shell auto-download is only supported on linux/amd64")
 	}
+	return ensure(ctx, opts, Host(), Dir(), FailureMarker())
+}
 
-	ensureMu.Lock()
-	defer ensureMu.Unlock()
+// FailureMarker returns the path of the file that records a failed download.
+func FailureMarker() string {
+	return Dir() + ".download-failed"
+}
 
-	if p := findBin(Dir()); p != "" {
+func ensure(ctx context.Context, opts Options, source, dir, marker string) (string, error) {
+	release, err := acquireEnsureLock(ctx)
+	if err != nil {
+		return "", err
+	}
+	defer release()
+
+	if p := findBin(dir); p != "" {
 		return p, nil
 	}
 
-	if err := downloadAndExtract(Host(), Dir()); err != nil {
-		return "", err
+	if fi, err := os.Stat(marker); err == nil {
+		if next := fi.ModTime().Add(retryAfter); time.Now().Before(next) {
+			return "", fmt.Errorf("chrome-headless-shell download skipped: it failed at %s, next try after %s (delete %s to retry now)", fi.ModTime().Format(time.RFC3339), next.Format(time.RFC3339), marker)
+		}
 	}
 
-	p := findBin(Dir())
+	if err := downloadAndExtract(ctx, opts, source, dir); err != nil {
+		// A caller that cancels says nothing about the network.
+		if !errors.Is(err, context.Canceled) {
+			writeFailureMarker(marker, err)
+		}
+		return "", err
+	}
+	_ = os.Remove(marker)
+
+	p := findBin(dir)
 	if p == "" {
-		return "", fmt.Errorf("chrome-headless-shell binary missing after download in %s", Dir())
+		return "", fmt.Errorf("chrome-headless-shell binary missing after download in %s", dir)
 	}
 
 	// go-rod's linux BinPath expects "chrome"; keep a symlink for Validate().
-	chrome := filepath.Join(Dir(), "chrome")
+	chrome := filepath.Join(dir, "chrome")
 	if p != chrome {
 		_ = os.Remove(chrome)
 		_ = os.Symlink(filepath.Base(p), chrome)
 	}
 
 	return p, nil
+}
+
+// writeFailureMarker records a failed download. Its modification time is the
+// time of the failure.
+func writeFailureMarker(marker string, cause error) {
+	if err := os.MkdirAll(filepath.Dir(marker), 0o755); err != nil {
+		return
+	}
+	_ = os.WriteFile(marker, []byte(time.Now().Format(time.RFC3339)+" "+cause.Error()+"\n"), 0o644)
 }
 
 func findBin(dir string) string {
@@ -112,7 +201,7 @@ func defaultBrowserDir() string {
 	return filepath.Join(home, ".cache", "rod", "browser")
 }
 
-func downloadAndExtract(url, destDir string) error {
+func downloadAndExtract(ctx context.Context, opts Options, url, destDir string) error {
 	tmpParent := filepath.Dir(destDir)
 	if err := os.MkdirAll(tmpParent, 0o755); err != nil {
 		return err
@@ -125,7 +214,7 @@ func downloadAndExtract(url, destDir string) error {
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	zipPath := filepath.Join(tmpDir, "chrome-headless-shell.zip")
-	if err := downloadFile(url, zipPath); err != nil {
+	if err := downloadFile(ctx, opts, url, zipPath); err != nil {
 		return err
 	}
 
@@ -140,15 +229,33 @@ func downloadAndExtract(url, destDir string) error {
 		return err
 	}
 
+	// The in-process lock does not cover other processes sharing the cache. If
+	// one of them installed the browser while we downloaded, keep its copy: it
+	// may already be running from destDir.
+	if findBin(destDir) != "" {
+		return nil
+	}
 	_ = os.RemoveAll(destDir)
 	if err := os.Rename(contentDir, destDir); err != nil {
+		if findBin(destDir) != "" {
+			return nil
+		}
 		return err
 	}
 	return nil
 }
 
-func downloadFile(url, dest string) error {
-	resp, err := http.Get(url) //nolint:noctx // one-shot browser binary fetch
+func downloadFile(ctx context.Context, opts Options, url, dest string) error {
+	client, err := downloadClient(opts)
+	if err != nil {
+		return err
+	}
+	defer client.CloseIdleConnections()
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := client.Do(request)
 	if err != nil {
 		return err
 	}
@@ -166,6 +273,27 @@ func downloadFile(url, dest string) error {
 
 	_, err = io.Copy(f, resp.Body)
 	return err
+}
+
+// downloadClient returns a client that dials with dialTimeout and uses the
+// proxy of opts, or the environment proxy when none is set.
+func downloadClient(opts Options) (*http.Client, error) {
+	proxy := http.ProxyFromEnvironment
+	if opts.Proxy != "" {
+		proxyURL, err := url.Parse(opts.Proxy)
+		if err != nil {
+			return nil, fmt.Errorf("invalid proxy %q: %w", opts.Proxy, err)
+		}
+		proxy = http.ProxyURL(proxyURL)
+	}
+	transport := &http.Transport{
+		Proxy:                 proxy,
+		DialContext:           (&net.Dialer{Timeout: dialTimeout}).DialContext,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ResponseHeaderTimeout: 30 * time.Second,
+		ForceAttemptHTTP2:     true,
+	}
+	return &http.Client{Transport: transport}, nil
 }
 
 func unzip(zipPath, dest string) error {
