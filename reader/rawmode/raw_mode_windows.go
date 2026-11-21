@@ -85,12 +85,12 @@ func setTermMode(fd uintptr, mode uint32) error {
 
 // GetMode from file descriptor
 func getMode(std *os.File) (uint32, error) {
-	return getTermMode(os.Stdin.Fd())
+	return getTermMode(std.Fd())
 }
 
 // SetMode to file descriptor
 func setMode(std *os.File, mode uint32) error {
-	return setTermMode(os.Stdin.Fd(), mode)
+	return setTermMode(std.Fd(), mode)
 }
 
 // SetRawMode to file descriptor enriching existign mode with raw console flags
@@ -101,5 +101,5 @@ func setRawMode(std *os.File, mode uint32) error {
 
 // Read from file descriptor to buffer
 func read(std *os.File, buf []byte) (int, error) {
-	return syscall.Read(syscall.Handle(os.Stdin.Fd()), buf)
+	return syscall.Read(syscall.Handle(std.Fd()), buf)
 }

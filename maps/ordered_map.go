@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"slices"
 
 	"github.com/projectdiscovery/utils/conversion"
 	sliceutil "github.com/projectdiscovery/utils/slice"
@@ -21,10 +22,16 @@ var (
 // Note: Order is only guaranteed for current level of OrderedMap
 // nested values only have order preserved if they are also OrderedMap
 type OrderedMap[k comparable, v any] struct {
-	keys   []k
-	m      map[k]v
-	dirty  bool // mark dirty if keys are modified while iterating
-	inIter bool // are we iterating now ?
+	keys []k
+	m    map[k]v
+	// iterating counts the Iterate calls in progress. Each one ranges over the
+	// keys slice it started with, so while it is > 0 keys must not be shifted
+	// in place.
+	iterating int
+	// dirty means keys holds entries for keys deleted while iterating. Set
+	// appends only keys absent from m, so the entries for one key are zero or
+	// more stale ones followed by at most one live one, which is the last.
+	dirty bool
 }
 
 // Set sets a value in the OrderedMap (if the key already exists, it will be overwritten)
@@ -33,9 +40,6 @@ func (o *OrderedMap[k, v]) Set(key k, value v) {
 		o.keys = append(o.keys, key)
 	}
 	o.m[key] = value
-	if o.inIter {
-		o.dirty = true
-	}
 }
 
 // Get gets a value from the OrderedMap
@@ -44,12 +48,25 @@ func (o *OrderedMap[k, v]) Get(key k) (v, bool) {
 	return value, ok
 }
 
-// Iterate iterates over the OrderedMap in insertion order
+// Iterate iterates over the OrderedMap in insertion order.
+//
+// f may call Set and Delete on the OrderedMap. Keys that f adds are not
+// visited by this call. A key that f deletes before it is reached is skipped,
+// unless f sets it again first: it is then visited once, at its original
+// position, with the new value.
 func (o *OrderedMap[k, v]) Iterate(f func(key k, value v) bool) {
-	o.inIter = true
+	// an enclosing Iterate may have left stale entries that this call would
+	// otherwise visit
+	o.compact()
+
+	o.iterating++
 	defer func() {
-		o.inIter = false
+		o.iterating--
+		if o.iterating == 0 {
+			o.compact()
+		}
 	}()
+
 	for _, key := range o.keys {
 		// silently discard any missing keys from the map
 		if _, ok := o.m[key]; !ok {
@@ -59,20 +76,46 @@ func (o *OrderedMap[k, v]) Iterate(f func(key k, value v) bool) {
 			break
 		}
 	}
+}
+
+// compact drops the entries of keys that were deleted while iterating. The
+// clean case stays small enough to inline into Len and the other readers.
+func (o *OrderedMap[k, v]) compact() {
 	if o.dirty {
-		tmp := make([]k, len(o.m))
-		for _, key := range o.keys {
-			if _, ok := o.m[key]; ok {
-				tmp = append(tmp, key)
-			}
-		}
-		o.keys = tmp
-		o.dirty = false
+		o.rebuildKeys()
 	}
+}
+
+// rebuildKeys builds a new slice instead of shifting in place so that a range
+// over the old keys, held by a running Iterate, is unaffected.
+func (o *OrderedMap[k, v]) rebuildKeys() {
+	// walk backwards so that the live entry, the last one, wins over stale ones
+	seen := make(map[k]struct{}, len(o.m))
+	live := make([]k, 0, len(o.m))
+
+	for _, key := range slices.Backward(o.keys) {
+		if _, ok := o.m[key]; !ok {
+			continue
+		}
+
+		if _, dup := seen[key]; dup {
+			continue
+		}
+
+		seen[key] = struct{}{}
+
+		live = append(live, key)
+	}
+
+	slices.Reverse(live)
+
+	o.keys = live
+	o.dirty = false
 }
 
 // GetKeys returns the keys of the OrderedMap
 func (o *OrderedMap[k, v]) GetKeys() []k {
+	o.compact()
 	return o.keys
 }
 
@@ -84,11 +127,13 @@ func (o *OrderedMap[k, v]) Has(key k) bool {
 
 // IsEmpty checks if the OrderedMap is empty
 func (o *OrderedMap[k, v]) IsEmpty() bool {
+	o.compact()
 	return len(o.keys) == 0
 }
 
 // Clone returns clone of OrderedMap
 func (o *OrderedMap[k, v]) Clone() OrderedMap[k, v] {
+	o.compact()
 	return OrderedMap[k, v]{
 		keys: sliceutil.Clone(o.keys),
 		m:    maps.Clone(o.m),
@@ -97,6 +142,7 @@ func (o *OrderedMap[k, v]) Clone() OrderedMap[k, v] {
 
 // GetByIndex gets a value from the OrderedMap by index
 func (o *OrderedMap[k, v]) GetByIndex(index int) (v, bool) {
+	o.compact()
 	var t v
 	if index < 0 || index >= len(o.keys) {
 		return t, false
@@ -108,10 +154,15 @@ func (o *OrderedMap[k, v]) GetByIndex(index int) (v, bool) {
 // Delete deletes a value from the OrderedMap
 func (o *OrderedMap[k, v]) Delete(key k) {
 	delete(o.m, key)
-	if o.inIter {
+
+	if o.iterating > 0 {
+		// shifting keys here would move the entries a running Iterate is
+		// ranging over, so the entry is left for compact
 		o.dirty = true
-		return // skip delete from keys if we are iterating
+
+		return
 	}
+
 	for i, k := range o.keys {
 		if k == key {
 			o.keys = append(o.keys[:i], o.keys[i+1:]...)
@@ -122,11 +173,13 @@ func (o *OrderedMap[k, v]) Delete(key k) {
 
 // Len returns the length of the OrderedMap
 func (o *OrderedMap[k, v]) Len() int {
+	o.compact()
 	return len(o.keys)
 }
 
 // MarshalJSON marshals the OrderedMap to JSON
 func (o OrderedMap[k, v]) MarshalJSON() ([]byte, error) {
+	o.compact()
 	var buf bytes.Buffer
 	buf.WriteByte('{')
 	for i, key := range o.keys {

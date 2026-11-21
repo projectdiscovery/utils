@@ -7,7 +7,7 @@ import (
 
 // Proxy to StdLib errors.Is
 func Is(err error, target ...error) bool {
-	if err == nil {
+	if isNilError(err) {
 		return false
 	}
 	for i := range target {
@@ -23,7 +23,7 @@ func Is(err error, target ...error) bool {
 // if error did not already have a kind, it tries to parse it
 // using default error kinds and given kinds
 func IsKind(err error, match ...ErrKind) bool {
-	if err == nil {
+	if isNilError(err) {
 		return false
 	}
 	x := &ErrorX{}
@@ -61,23 +61,14 @@ func As(err error, target interface{}) bool {
 }
 
 // Combine combines multiple errors into a single error
+// it ignores all nil errors and returns nil if every error is nil.
 func Combine(errs ...error) error {
-	if len(errs) == 0 {
-		return nil
-	}
-	x := &ErrorX{}
-	for _, err := range errs {
-		if err == nil {
-			continue
-		}
-		parseError(x, err)
-	}
-	return x
+	return Append(errs...)
 }
 
 // Wrap wraps the given error with the message
 func Wrap(err error, message string) error {
-	if err == nil {
+	if isNilError(err) {
 		return nil
 	}
 	x := &ErrorX{}
@@ -88,7 +79,7 @@ func Wrap(err error, message string) error {
 
 // Wrapf wraps the given error with the message
 func Wrapf(err error, format string, args ...interface{}) error {
-	if err == nil {
+	if isNilError(err) {
 		return nil
 	}
 	x := &ErrorX{}
@@ -99,7 +90,7 @@ func Wrapf(err error, format string, args ...interface{}) error {
 
 // Errors returns all underlying errors there were appended or joined
 func Errors(err error) []error {
-	if err == nil {
+	if isNilError(err) {
 		return nil
 	}
 	x := &ErrorX{}
@@ -108,23 +99,42 @@ func Errors(err error) []error {
 }
 
 // Append appends given errors and returns a new error
-// it ignores all nil errors
+// it ignores all nil errors and returns nil if every error is nil.
 func Append(errs ...error) error {
-	if len(errs) == 0 {
-		return nil
-	}
 	x := &ErrorX{}
+	hasErr := false
 	for _, err := range errs {
-		if err == nil {
+		if isNilError(err) {
 			continue
 		}
+
 		parseError(x, err)
+
+		hasErr = true
+	}
+	// return a literal nil, not x: a nil-only input must not become an
+	// error holding nothing
+	if !hasErr {
+		return nil
 	}
 	return x
 }
 
+// isNilError reports whether err is nil or a nil *ErrorX, which is what an
+// error variable holds after it is assigned the result of FromError(nil).
+func isNilError(err error) bool {
+	if err == nil {
+		return true
+	}
+	// Only the exact type counts. errors.As would also unwrap a wrapper around
+	// a nil *ErrorX and report a real error as nil.
+	x, ok := any(err).(*ErrorX)
+
+	return ok && x == nil
+}
+
 // Join joins given errors and returns a new error
-// it ignores all nil errors
+// it ignores all nil errors and returns nil if every error is nil.
 // Note: unlike Other libraries, Join does not use `\n`
 // so it is equivalent to wrapping/Appending errors
 func Join(errs ...error) error {
@@ -133,7 +143,7 @@ func Join(errs ...error) error {
 
 // Cause returns the original error that caused this error
 func Cause(err error) error {
-	if err == nil {
+	if isNilError(err) {
 		return nil
 	}
 	x := &ErrorX{}
@@ -143,7 +153,7 @@ func Cause(err error) error {
 
 // WithMessage
 func WithMessage(err error, message string) error {
-	if err == nil {
+	if isNilError(err) {
 		return nil
 	}
 	x := &ErrorX{}
@@ -154,7 +164,7 @@ func WithMessage(err error, message string) error {
 
 // WithMessagef
 func WithMessagef(err error, format string, args ...interface{}) error {
-	if err == nil {
+	if isNilError(err) {
 		return nil
 	}
 	x := &ErrorX{}
@@ -165,7 +175,7 @@ func WithMessagef(err error, format string, args ...interface{}) error {
 
 // IsNetworkTemporaryErr checks if given error is a temporary network error
 func IsNetworkTemporaryErr(err error) bool {
-	if err == nil {
+	if isNilError(err) {
 		return false
 	}
 	x := &ErrorX{}
@@ -175,7 +185,7 @@ func IsNetworkTemporaryErr(err error) bool {
 
 // IsDeadlineErr checks if given error is a deadline error
 func IsDeadlineErr(err error) bool {
-	if err == nil {
+	if isNilError(err) {
 		return false
 	}
 	x := &ErrorX{}
@@ -185,7 +195,7 @@ func IsDeadlineErr(err error) bool {
 
 // IsNetworkPermanentErr checks if given error is a permanent network error
 func IsNetworkPermanentErr(err error) bool {
-	if err == nil {
+	if isNilError(err) {
 		return false
 	}
 	x := &ErrorX{}
@@ -197,7 +207,7 @@ func IsNetworkPermanentErr(err error) bool {
 //
 //	err = errkit.With(err,"resource",domain)
 func With(err error, args ...any) error {
-	if err == nil {
+	if isNilError(err) {
 		return nil
 	}
 	if len(args) == 0 {
@@ -215,7 +225,7 @@ func With(err error, args ...any) error {
 //	err = errkit.WithAttr(err, slog.String("resource", domain))
 //	err = errkit.WithAttr(err, slog.Int("port", 80), slog.String("protocol", "tcp"))
 func WithAttr(err error, attrs ...slog.Attr) error {
-	if err == nil {
+	if isNilError(err) {
 		return nil
 	}
 	if len(attrs) == 0 {
@@ -232,7 +242,7 @@ func WithAttr(err error, attrs ...slog.Attr) error {
 
 // GetAttr returns all attributes of given error if it has any
 func GetAttr(err error) []slog.Attr {
-	if err == nil {
+	if isNilError(err) {
 		return nil
 	}
 	x := &ErrorX{}
@@ -288,7 +298,7 @@ func ToSlogAttrs(err error) []slog.Attr {
 
 // GetAttrValue returns the value of the attribute with given key
 func GetAttrValue(err error, key string) slog.Value {
-	if err == nil {
+	if isNilError(err) {
 		return slog.Value{}
 	}
 	x := &ErrorX{}

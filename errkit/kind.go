@@ -94,17 +94,12 @@ func NewPrimitiveErrKind(id string, info string, represents func(*ErrorX) bool) 
 }
 
 func isNetworkTemporaryErr(err *ErrorX) bool {
-	if err.Cause() != nil {
-		return os.IsTimeout(err.Cause())
+	cause := err.Cause()
+	if cause == nil {
+		return false
 	}
-	v := err.Cause()
-	switch {
-	case os.IsTimeout(v):
-		return true
-	case strings.Contains(v.Error(), "Client.Timeout exceeded while awaiting headers"):
-		return true
-	}
-	return false
+
+	return os.IsTimeout(cause)
 }
 
 // isNetworkPermanentErr checks if given error is a permanent network error

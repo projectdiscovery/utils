@@ -1,6 +1,7 @@
 package batcher
 
 import (
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -22,8 +23,15 @@ type Batcher[T any] struct {
 
 	incomingData chan T
 	full         chan bool
-	mustExit     chan bool
-	done         chan bool
+	// mustExit is closed by the first Stop; a closed channel is how the
+	// run loop (and a Run that starts later) observes any number of Stops.
+	mustExit chan struct{}
+	done     chan bool
+
+	// runOnce and stopOnce make Run and Stop idempotent. done is closed by
+	// the run loop, so a second loop would close it twice and panic.
+	runOnce  sync.Once
+	stopOnce sync.Once
 }
 
 // BatcherOption is the option for the batcher
@@ -61,7 +69,7 @@ func WithFlushCallback[T any](fn FlushCallback[T]) BatcherOption[T] {
 func New[T any](opts ...BatcherOption[T]) *Batcher[T] {
 	batcher := &Batcher[T]{
 		full:     make(chan bool),
-		mustExit: make(chan bool, 1),
+		mustExit: make(chan struct{}),
 		done:     make(chan bool, 1),
 	}
 	for _, opt := range opts {
@@ -192,17 +200,26 @@ func (b *Batcher[T]) doCallback() {
 	b.flushCallback(items)
 }
 
-// Run starts the batcher
+// Run starts the batcher. Only the first call has an effect, and a batcher
+// cannot be restarted once stopped.
 func (b *Batcher[T]) Run() {
-	go b.run()
+	b.runOnce.Do(func() { go b.run() })
 }
 
-// Stop stops the batcher
+// Stop asks the batcher to flush the remaining items and exit, without
+// waiting for it (use WaitDone). It never blocks and may be called any number
+// of times, from any goroutine, including before Run, in which case the
+// batcher flushes and exits as soon as it runs.
+//
+// Append must not be called concurrently with or after Stop: once the batcher
+// has exited nothing drains it, so Append may block forever (the buffer is
+// full or the size limit is reached) or leave its items unflushed.
 func (b *Batcher[T]) Stop() {
-	b.mustExit <- true
+	b.stopOnce.Do(func() { close(b.mustExit) })
 }
 
-// WaitDone waits until the batcher is done
+// WaitDone waits until the batcher is done. It blocks until the batcher has
+// been run and stopped, so it never returns for a batcher that was not run.
 func (b *Batcher[T]) WaitDone() {
 	<-b.done
 }

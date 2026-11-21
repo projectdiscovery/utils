@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sort"
 	"strconv"
 	"sync"
 	"testing"
@@ -192,4 +193,372 @@ func TestNIntegration(t *testing.T) {
 		t.Error(err)
 	}
 	controller.Wait()
+}
+
+// arities returns source and sink counts that cover 1 through 5 (a single
+// worker padded with nil channels), the first counts past 5 (one relay level
+// with a partial last group), a full second level (25) and a partial one (26).
+func arities() []int {
+	return []int{1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 25, 26}
+}
+
+// workerFanIn is the number of channels a single worker multiplexes.
+const workerFanIn = 5
+
+const waitBound = 3 * time.Second
+
+// waitReturns fails the test when wait does not return within waitBound.
+func waitReturns(t *testing.T, name string, wait func()) {
+	t.Helper()
+
+	done := make(chan struct{})
+
+	go func() {
+		wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(waitBound):
+		t.Fatalf("%s: Wait did not return within %v of cancel", name, waitBound)
+	}
+}
+
+// requireClosed fails the test unless sink is closed, without blocking past
+// waitBound when it is not.
+func requireClosed(t *testing.T, sinkIdx int, sink <-chan int) {
+	t.Helper()
+
+	select {
+	case _, open := <-sink:
+		if open {
+			t.Fatalf("sink %d delivered a value after cancel, want it closed", sinkIdx)
+		}
+	case <-time.After(waitBound):
+		t.Fatalf("sink %d still open %v after cancel", sinkIdx, waitBound)
+	}
+}
+
+// awaitSignal fails the test when nothing arrives on ch within waitBound.
+func awaitSignal(t *testing.T, ch <-chan struct{}, what string) {
+	t.Helper()
+
+	select {
+	case <-ch:
+	case <-time.After(waitBound):
+		t.Fatalf("timed out waiting for %s", what)
+	}
+}
+
+func TestJoinValuesArrive(t *testing.T) {
+	t.Parallel()
+
+	for _, count := range arities() {
+		t.Run(strconv.Itoa(count), func(t *testing.T) {
+			t.Parallel()
+			checkJoinValuesArrive(t, count)
+		})
+	}
+}
+
+func checkJoinValuesArrive(t *testing.T, sourceCount int) {
+	t.Helper()
+
+	const perSource = 7
+
+	sink := make(chan int)
+	sources := make([]<-chan int, sourceCount)
+
+	for idx := range sources {
+		source := make(chan int)
+		sources[idx] = source
+
+		go func() {
+			defer close(source)
+
+			for j := range perSource {
+				source <- idx*perSource + j
+			}
+		}()
+	}
+
+	joiner := channelutil.JoinChannels[int]{Log: nil}
+
+	err := joiner.Join(context.Background(), sink, sources...)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	seen := drainCounting(t, sink)
+
+	waitReturns(t, "JoinChannels", joiner.Wait)
+
+	if len(seen) != sourceCount*perSource {
+		t.Fatalf("got %d distinct values, want %d", len(seen), sourceCount*perSource)
+	}
+
+	for value, times := range seen {
+		if times != 1 {
+			t.Fatalf("value %d delivered %d times", value, times)
+		}
+	}
+}
+
+// drainCounting reads sink until it is closed and counts each value.
+func drainCounting(t *testing.T, sink <-chan int) map[int]int {
+	t.Helper()
+
+	seen := map[int]int{}
+	timeout := time.After(10 * time.Second)
+
+	for {
+		select {
+		case value, ok := <-sink:
+			if !ok {
+				return seen
+			}
+
+			seen[value]++
+		case <-timeout:
+			t.Fatal("timed out reading joined values")
+		}
+	}
+}
+
+func TestCloneValuesArrive(t *testing.T) {
+	t.Parallel()
+
+	for _, count := range arities() {
+		t.Run(strconv.Itoa(count), func(t *testing.T) {
+			t.Parallel()
+			checkCloneValuesArrive(t, count)
+		})
+	}
+}
+
+func checkCloneValuesArrive(t *testing.T, sinkCount int) {
+	t.Helper()
+
+	const values = 20
+
+	source := make(chan int)
+	sinks := make([]chan<- int, sinkCount)
+	got := make([][]int, sinkCount)
+
+	var readers sync.WaitGroup
+
+	for idx := range sinks {
+		sink := make(chan int)
+		sinks[idx] = sink
+
+		readers.Go(func() {
+			for value := range sink {
+				got[idx] = append(got[idx], value)
+			}
+		})
+	}
+
+	cloner := channelutil.NewCloneChannels[int](nil)
+
+	err := cloner.Clone(context.Background(), source, sinks...)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for value := range values {
+		select {
+		case source <- value:
+		case <-time.After(10 * time.Second):
+			t.Fatal("timed out feeding source")
+		}
+	}
+
+	close(source)
+	waitReturns(t, "CloneChannels", cloner.Wait)
+	readers.Wait()
+
+	for idx, received := range got {
+		requireSequence(t, idx, received, values)
+	}
+}
+
+// requireSequence fails the test unless received holds exactly 0..want-1.
+func requireSequence(t *testing.T, sinkIdx int, received []int, want int) {
+	t.Helper()
+
+	if len(received) != want {
+		t.Fatalf("sink %d got %d values, want %d", sinkIdx, len(received), want)
+	}
+
+	sort.Ints(received)
+
+	for expected, value := range received {
+		if value != expected {
+			t.Fatalf("sink %d missing or duplicated value near %d: %v", sinkIdx, expected, received)
+		}
+	}
+}
+
+// Cancelling while workers are blocked sending into a sink nobody reads must
+// stop every worker and close the sink. Every library goroutine is paired with
+// a WaitGroup Add and Done, so a worker that fails to exit shows up as a Wait
+// that does not return.
+func TestJoinCancelUnblocksWait(t *testing.T) {
+	t.Parallel()
+
+	for _, count := range arities() {
+		t.Run(strconv.Itoa(count), func(t *testing.T) {
+			t.Parallel()
+			checkJoinCancel(t, count)
+		})
+	}
+}
+
+func checkJoinCancel(t *testing.T, sourceCount int) {
+	t.Helper()
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	defer cancel()
+
+	// One feeder per source offers a single value and reports once a worker
+	// took it. A worker takes a value before it can block on its downstream
+	// send, so once any report has arrived at least one worker holds a value
+	// it cannot deliver because the sink is never read, which is enough to
+	// hang Wait if sends ignore ctx. The loop below waits for one report per
+	// leaf worker, but those may all come from the same leaf.
+	sources := make([]<-chan int, sourceCount)
+	consumed := make(chan struct{}, sourceCount)
+
+	var feeders sync.WaitGroup
+
+	for idx := range sources {
+		source := make(chan int)
+		sources[idx] = source
+
+		feeders.Go(func() {
+			select {
+			case source <- idx:
+				consumed <- struct{}{}
+			case <-ctx.Done():
+			}
+		})
+	}
+
+	sink := make(chan int)
+	joiner := channelutil.JoinChannels[int]{Log: nil}
+
+	err := joiner.Join(ctx, sink, sources...)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for range (sourceCount + workerFanIn - 1) / workerFanIn {
+		awaitSignal(t, consumed, "a worker to take a source value")
+	}
+
+	cancel()
+	waitReturns(t, "JoinChannels", joiner.Wait)
+	requireClosed(t, 0, sink)
+	waitReturns(t, "feeders", feeders.Wait)
+}
+
+// Cancelling while the source is idle must stop every worker and close every
+// sink.
+func TestCloneCancelWhileIdle(t *testing.T) {
+	t.Parallel()
+
+	for _, count := range arities() {
+		t.Run(strconv.Itoa(count), func(t *testing.T) {
+			t.Parallel()
+
+			ctx, cancel := context.WithCancel(context.Background())
+
+			defer cancel()
+
+			sinks, sendOnly := makeSinks(count)
+			cloner := channelutil.NewCloneChannels[int](nil)
+
+			err := cloner.Clone(ctx, make(chan int), sendOnly...)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// Nothing is ever sent, so each worker waits on its source
+			// whether or not it has been scheduled yet.
+			cancel()
+			waitReturns(t, "CloneChannels", cloner.Wait)
+
+			for idx, sink := range sinks {
+				requireClosed(t, idx, sink)
+			}
+		})
+	}
+}
+
+// makeSinks returns count unbuffered channels, both as receivable and as
+// send-only.
+func makeSinks(count int) ([]chan int, []chan<- int) {
+	sinks := make([]chan int, count)
+	sendOnly := make([]chan<- int, count)
+
+	for idx := range sinks {
+		sinks[idx] = make(chan int)
+		sendOnly[idx] = sinks[idx]
+	}
+
+	return sinks, sendOnly
+}
+
+// Cancelling while a worker is draining into sinks nobody reads must stop it.
+// Only counts that fit one worker are covered: with relays, a value can end up
+// in a branch whose sink is never read, so no signal tells that the reading
+// worker has reached its drain.
+func TestCloneCancelWhileDraining(t *testing.T) {
+	t.Parallel()
+
+	for count := 2; count <= workerFanIn; count++ {
+		t.Run(strconv.Itoa(count), func(t *testing.T) {
+			t.Parallel()
+
+			ctx, cancel := context.WithCancel(context.Background())
+
+			defer cancel()
+
+			source := make(chan int)
+			sinks, sendOnly := makeSinks(count)
+
+			// With a threshold of 1, the first value sent to the one sink
+			// that is read puts every other sink into the backlog, and
+			// draining it blocks on a sink nobody reads.
+			cloner := channelutil.NewCloneChannels[int](&channelutil.CloneOptions{MaxDrain: 3, Threshold: 1})
+
+			err := cloner.Clone(ctx, source, sendOnly...)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			received := make(chan struct{})
+
+			go func() {
+				<-sinks[0]
+				close(received)
+			}()
+
+			select {
+			case source <- 1:
+			case <-time.After(waitBound):
+				t.Fatal("timed out feeding source")
+			}
+
+			awaitSignal(t, received, "the read sink to get the value")
+			cancel()
+			waitReturns(t, "CloneChannels", cloner.Wait)
+
+			for idx, sink := range sinks {
+				requireClosed(t, idx, sink)
+			}
+		})
+	}
 }

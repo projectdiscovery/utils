@@ -1,8 +1,9 @@
 package executil
 
 import (
+	"bytes"
 	"encoding/base64"
-	"io"
+	"errors"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -142,91 +143,12 @@ func RunSafe(cmd ...string) (string, error) {
 		cmdArgs = splitCmdArgs(strings.Join(cmd[1:], " "))
 	}
 
-	cmdExec := exec.Command(execpath, cmdArgs...)
-
-	in, err := cmdExec.StdinPipe()
-	if err != nil {
-		return "", errkit.WithMessage(err, "failed to create stdin pipe")
-	}
-	errorOut, err := cmdExec.StderrPipe()
-	if err != nil {
-		return "", errkit.WithMessage(err, "failed to create stderr pipe")
-	}
-	out, err := cmdExec.StdoutPipe()
-	if err != nil {
-		return "", errkit.WithMessage(err, "failed to create stdout pipe")
-	}
-
-	defer func() {
-		_ = in.Close()
-		_ = errorOut.Close()
-		_ = out.Close()
-	}()
-
-	if err := cmdExec.Start(); err != nil {
-		return "", errkit.Wrap(err, "failed to start command")
-	}
-
-	outData, _ := io.ReadAll(out)
-	errorData, _ := io.ReadAll(errorOut)
-
-	var adbError error = nil
-
-	if err := cmdExec.Wait(); err != nil {
-		if _, ok := err.(*exec.ExitError); ok {
-			adbError = errkit.Append(err, errkit.New("%s", string(errorData)), errkit.New("exit error"))
-			outData = errorData
-		} else {
-			return "", errkit.Wrap(err, "process i/o error")
-		}
-	}
-
-	return string(outData), adbError
+	return runCmd(exec.Command(execpath, cmdArgs...), "failed to start command")
 }
 
 // RunSh the specified command through sh
 func RunSh(cmd ...string) (string, error) {
-	cmdExec := exec.Command("sh", "-c", strings.Join(cmd, " "))
-
-	in, err := cmdExec.StdinPipe()
-	if err != nil {
-		return "", errkit.WithMessage(err, "failed to create stdin pipe")
-	}
-	errorOut, err := cmdExec.StderrPipe()
-	if err != nil {
-		return "", errkit.WithMessage(err, "failed to create stderr pipe")
-	}
-	out, err := cmdExec.StdoutPipe()
-	if err != nil {
-		return "", errkit.WithMessage(err, "failed to create stdout pipe")
-	}
-
-	defer func() {
-		_ = in.Close()
-		_ = errorOut.Close()
-		_ = out.Close()
-	}()
-
-	if err := cmdExec.Start(); err != nil {
-		errorData, _ := io.ReadAll(errorOut)
-		return "", errkit.Wrapf(err, "failed to start process %v", string(errorData))
-	}
-
-	outData, _ := io.ReadAll(out)
-	errorData, _ := io.ReadAll(errorOut)
-
-	var adbError error = nil
-
-	if err := cmdExec.Wait(); err != nil {
-		if _, ok := err.(*exec.ExitError); ok {
-			adbError = errkit.Append(err, errkit.New("%s", string(errorData)), errkit.New("exit error"))
-			outData = errorData
-		} else {
-			return "", errkit.Wrap(err, "process i/o error")
-		}
-	}
-
-	return string(outData), adbError
+	return runCmd(exec.Command("sh", "-c", strings.Join(cmd, " ")), "failed to start process")
 }
 
 // RunPS runs the specified command through powershell.exe
@@ -246,44 +168,38 @@ func RunPS(cmd string) (string, error) {
 	}
 	b64cmd := base64.StdEncoding.EncodeToString([]byte(encodedCmd))
 
-	cmdExec := exec.Command("powershell.exe", "-EncodedCommand", b64cmd)
+	return runCmd(exec.Command("powershell.exe", "-EncodedCommand", b64cmd), "start powershell.exe process error")
+}
 
-	in, err := cmdExec.StdinPipe()
+// runCmd runs cmd to completion and returns its stdout. If the command fails
+// (non-zero exit or killed by a signal), the returned output is its stderr and
+// the error carries that stderr too. startMsg is the message wrapped around
+// the error returned when the process cannot be started.
+//
+// stdin is left unset so the child reads the null device and sees EOF
+// instead of blocking on a pipe nobody writes to or closes. stdout and stderr
+// go to buffers that cmd fills concurrently and that [exec.Cmd.Wait] waits
+// for; draining one pipe to EOF before the other deadlocks once the unread
+// pipe's buffer fills.
+func runCmd(cmd *exec.Cmd, startMsg string) (string, error) {
+	var stdout, stderr bytes.Buffer
+
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Start()
 	if err != nil {
-		return "", errkit.WithMessage(err, "failed to create stdin pipe")
+		return "", errkit.Wrap(err, startMsg)
 	}
-	errorOut, err := cmdExec.StderrPipe()
+
+	err = cmd.Wait()
 	if err != nil {
-		return "", errkit.WithMessage(err, "failed to create stderr pipe")
-	}
-	out, err := cmdExec.StdoutPipe()
-	if err != nil {
-		return "", errkit.WithMessage(err, "failed to create stdout pipe")
-	}
-
-	defer func() {
-		_ = in.Close()
-		_ = errorOut.Close()
-		_ = out.Close()
-	}()
-
-	if err := cmdExec.Start(); err != nil {
-		return "", errkit.WithMessage(err, "start powershell.exe process error")
-	}
-
-	outData, _ := io.ReadAll(out)
-	errorData, _ := io.ReadAll(errorOut)
-
-	var adbError error = nil
-
-	if err := cmdExec.Wait(); err != nil {
-		if _, ok := err.(*exec.ExitError); ok {
-			adbError = errkit.Append(err, errkit.New("%s", string(errorData)), errkit.New("exit error"))
-			outData = errorData
-		} else {
-			return "", errkit.Wrap(err, "process i/o error")
+		if _, ok := errors.AsType[*exec.ExitError](err); ok {
+			return stderr.String(), errkit.Append(err, errkit.New("%s", stderr.String()), errkit.New("exit error"))
 		}
+
+		return "", errkit.Wrap(err, "process i/o error")
 	}
 
-	return string(outData), adbError
+	return stdout.String(), nil
 }

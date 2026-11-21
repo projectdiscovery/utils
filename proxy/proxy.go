@@ -1,3 +1,5 @@
+// Package proxyutils validates proxy URLs and probes proxies to find one
+// that accepts connections.
 package proxyutils
 
 import (
@@ -29,44 +31,43 @@ const (
 // GetAnyAliveProxy takes proxies as input and returns the first alive proxy
 // or returns error if all of them not alive
 func GetAnyAliveProxy(timeoutInSec int, proxies ...string) (string, error) {
-	sg := sizedwaitgroup.New(ProxyProbeConcurrency)
-	resChan := make(chan proxyResult, 4)
 	ctx, cancel := context.WithCancel(context.Background())
+	// Stops the producer and aborts probes still dialing once we return.
+	defer cancel()
+
+	probes := sizedwaitgroup.New(ProxyProbeConcurrency)
+
+	// Every proxy yields at most one result, so a buffer of len(proxies)
+	// means no sender ever blocks, even after the receiver has returned.
+	resChan := make(chan proxyResult, len(proxies))
 
 	go func() {
 		for _, v := range proxies {
-			// skip iterating if alive proxy is found
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				proxy, err := GetProxyURL(v)
-				if err != nil {
-					resChan <- proxyResult{Error: err}
-					continue
-				}
-				sg.Add()
-				go func(proxyAddr url.URL) {
-					defer sg.Done()
-					select {
-					case <-ctx.Done():
-						return
-					case resChan <- testProxyConn(proxyAddr, timeoutInSec):
-						cancel()
-					}
-				}(proxy)
+			proxy, err := GetProxyURL(v)
+			if err != nil {
+				resChan <- proxyResult{AliveProxy: "", Error: err}
+
+				continue
 			}
+
+			if probes.AddWithContext(ctx) != nil {
+				break
+			}
+
+			go func(proxyAddr url.URL) {
+				defer probes.Done()
+
+				resChan <- testProxyConn(ctx, proxyAddr, timeoutInSec)
+			}(proxy)
 		}
-		sg.Wait()
+
+		probes.Wait()
 		close(resChan)
 	}()
 
 	errstack := []string{}
-	for {
-		result, ok := <-resChan
-		if !ok {
-			break
-		}
+
+	for result := range resChan {
 		if result.AliveProxy != "" {
 			// found alive proxy return now
 			return result.AliveProxy, nil
@@ -80,15 +81,20 @@ func GetAnyAliveProxy(timeoutInSec int, proxies ...string) (string, error) {
 }
 
 // dial and test if proxy is open
-func testProxyConn(proxyAddr url.URL, timeoutInSec int) proxyResult {
-	p := proxyResult{}
-	if Conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%s", proxyAddr.Hostname(), proxyAddr.Port()), time.Duration(timeoutInSec)*time.Second); err == nil {
-		_ = Conn.Close()
-		p.AliveProxy = proxyAddr.String()
-	} else {
-		p.Error = err
+func testProxyConn(ctx context.Context, proxyAddr url.URL, timeoutInSec int) proxyResult {
+	var dialer net.Dialer
+
+	dialer.Timeout = time.Duration(timeoutInSec) * time.Second
+	addr := fmt.Sprintf("%s:%s", proxyAddr.Hostname(), proxyAddr.Port())
+
+	conn, err := dialer.DialContext(ctx, "tcp", addr)
+	if err != nil {
+		return proxyResult{AliveProxy: "", Error: err}
 	}
-	return p
+
+	_ = conn.Close()
+
+	return proxyResult{AliveProxy: proxyAddr.String(), Error: nil}
 }
 
 // GetProxyURL returns a Proxy URL after validating if given proxy url is valid

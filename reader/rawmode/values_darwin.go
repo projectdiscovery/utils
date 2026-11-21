@@ -5,6 +5,6 @@ package rawmode
 import "syscall"
 
 func init() {
-	TCSETS = syscall.TIOCGETA
-	TCGETS = syscall.TIOCSETA
+	TCSETS = syscall.TIOCSETA
+	TCGETS = syscall.TIOCGETA
 }

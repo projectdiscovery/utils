@@ -2,6 +2,7 @@ package llm
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -37,6 +38,10 @@ func TestResolveBaseURLPresetsAndDefault(t *testing.T) {
 	got, err = Config{Provider: "orcarouter"}.resolveBaseURL()
 	require.NoError(t, err)
 	require.Equal(t, "https://api.orcarouter.ai/v1", got)
+
+	got, err = Config{Provider: "opper"}.resolveBaseURL()
+	require.NoError(t, err)
+	require.Equal(t, "https://api.opper.ai/v3/compat", got)
 }
 
 func TestResolveBaseURLRequiresExplicitTarget(t *testing.T) {
@@ -178,12 +183,29 @@ func TestConfigAPIKeyReachesAuthorizationHeader(t *testing.T) {
 	require.Equal(t, "Bearer explicit-key", gotAuth)
 }
 
+func TestRequestOmitsTemperature(t *testing.T) {
+	var body map[string]any
+	cfg := chatStub(t, func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		_, _ = w.Write([]byte(okBody("ok")))
+	})
+
+	client, err := New(cfg)
+	require.NoError(t, err)
+	_, err = client.Complete(context.Background(), Request{Prompt: "hi"})
+	require.NoError(t, err)
+	require.NotContains(t, body, "temperature")
+}
+
 func TestNewRequiresKeyForHostedPreset(t *testing.T) {
 	t.Setenv(APIKeyEnv, "")
 	_, err := New(Config{Provider: "openai", Model: "gpt-4o-mini"})
 	require.ErrorContains(t, err, "llm api key required")
 
 	_, err = New(Config{Provider: "orcarouter", Model: "orcarouter/auto"})
+	require.ErrorContains(t, err, "llm api key required")
+
+	_, err = New(Config{Provider: "opper", Model: "claude-sonnet-4-6"})
 	require.ErrorContains(t, err, "llm api key required")
 }
 

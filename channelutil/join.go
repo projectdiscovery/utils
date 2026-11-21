@@ -18,6 +18,9 @@ type JoinChannels[T any] struct {
 }
 
 // JoinChannels Joins Many Channels to Create One
+//
+// When ctx is done the workers stop promptly, dropping values not yet
+// delivered, and close the sink. Wait returns once they have stopped.
 func (j *JoinChannels[T]) Join(ctx context.Context, sink chan T, sources ...<-chan T) error {
 	if sink == nil {
 		return errkit.New("sink cannot be nil")
@@ -128,31 +131,46 @@ func (j *JoinChannels[T]) joinWorker(ctx context.Context, sink chan T, sources .
 				src[0] = nil
 				continue
 			}
-			sink <- w
+
+			if !sendCtx(ctx, sink, w) {
+				return
+			}
 		case w, ok := <-src[1]:
 			if !ok {
 				src[1] = nil
 				continue
 			}
-			sink <- w
+
+			if !sendCtx(ctx, sink, w) {
+				return
+			}
 		case w, ok := <-src[2]:
 			if !ok {
 				src[2] = nil
 				continue
 			}
-			sink <- w
+
+			if !sendCtx(ctx, sink, w) {
+				return
+			}
 		case w, ok := <-src[3]:
 			if !ok {
 				src[3] = nil
 				continue
 			}
-			sink <- w
+
+			if !sendCtx(ctx, sink, w) {
+				return
+			}
 		case w, ok := <-src[4]:
 			if !ok {
 				src[4] = nil
 				continue
 			}
-			sink <- w
+
+			if !sendCtx(ctx, sink, w) {
+				return
+			}
 		}
 	}
 }

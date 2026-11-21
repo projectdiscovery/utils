@@ -1,3 +1,5 @@
+// Package rawmode reads and changes the terminal mode of a file, including
+// switching it to raw mode.
 package rawmode
 
 import (
@@ -5,7 +7,8 @@ import (
 )
 
 var (
-	// GetMode from file descriptor
+	// GetMode from file descriptor. The returned mode is only meaningful when
+	// the error is nil.
 	GetMode func(std *os.File) (interface{}, error)
 	// SetMode to file descriptor
 	SetMode func(std *os.File, mode interface{}) error

@@ -2,6 +2,7 @@ package reader
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"sync"
 	"time"
@@ -30,7 +31,11 @@ func (reader *KeyPressReader) Start() error {
 	})
 	// set raw mode
 	if reader.Raw {
-		mode, _ := rawmode.GetMode(os.Stdin)
+		mode, err := rawmode.GetMode(os.Stdin)
+		if err != nil {
+			return fmt.Errorf("get terminal mode: %w", err)
+		}
+
 		return rawmode.SetRawMode(os.Stdin, mode)
 	}
 
@@ -41,6 +46,12 @@ func (reader *KeyPressReader) Start() error {
 func (reader *KeyPressReader) Stop() error {
 	// disable raw mode
 	if reader.Raw {
+		// Start leaves originalMode unset when it could not read the terminal
+		// mode, in which case it also left the terminal unchanged.
+		if reader.originalMode == nil {
+			return nil
+		}
+
 		return rawmode.SetMode(os.Stdin, reader.originalMode)
 	}
 

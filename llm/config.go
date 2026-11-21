@@ -22,6 +22,10 @@ const APIKeyEnv = "LLM_API_KEY"
 // is required; this name never maps to a hosted vendor.
 const ProviderOpenAICompatible = "openai-compatible"
 
+// ProviderJev is TypeSafe's Jev, a classifier rather than a chat model: it
+// answers Judge with calibrated probabilities and cannot Complete.
+const ProviderJev = "jev"
+
 const defaultTimeout = 2 * time.Minute
 
 // defaultMaxCacheEntries bounds the in-memory response cache. When MaxCalls is
@@ -39,16 +43,20 @@ var presets = map[string]string{
 	"lmstudio":   "http://localhost:1234/v1",
 	"groq":       "https://api.groq.com/openai/v1",
 	"openrouter": "https://openrouter.ai/api/v1",
+	"opper":      "https://api.opper.ai/v3/compat",
 	"orcarouter": "https://api.orcarouter.ai/v1",
 	"together":   "https://api.together.xyz/v1",
+	ProviderJev:  "https://api.typesafe.ai/v1",
 }
 
 var hostedPresets = map[string]struct{}{
 	"openai":     {},
 	"groq":       {},
 	"openrouter": {},
+	"opper":      {},
 	"orcarouter": {},
 	"together":   {},
+	ProviderJev:  {},
 }
 
 // Config describes how to reach a provider and how to bound its use.
