@@ -172,7 +172,7 @@ func readNNormalizeRespBody(rc *ResponseChain, body *bytes.Buffer) (err error) {
 // wrapDecodeReader wraps a decompression reader around the response body if it's compressed
 // using gzip or deflate.
 func wrapDecodeReader(resp *http.Response) (rc io.ReadCloser, err error) {
-	switch resp.Header.Get("Content-Encoding") {
+	switch strings.ToLower(resp.Header.Get("Content-Encoding")) {
 	case "gzip":
 		rc, err = gzip.NewReader(resp.Body)
 	case "deflate":
