@@ -212,6 +212,28 @@ func TestResponseChain_InvalidGzipFallsBackToRawBody(t *testing.T) {
 	assert.Equal(t, string(raw), rc.BodyString())
 }
 
+// servers mislabel bodies, and rawhttp decodes gzip but keeps the header
+func TestResponseChain_UndecodableBodyKeepsTheBytesTheDecoderRead(t *testing.T) {
+	raw := `{"hello":"world"}` + strings.Repeat("x", 6000)
+	for _, encoding := range []string{"gzip", "deflate"} {
+		t.Run(encoding, func(t *testing.T) {
+			resp := &http.Response{
+				StatusCode: 200,
+				Body:       io.NopCloser(strings.NewReader(raw)),
+				Header: http.Header{
+					"Content-Encoding": []string{encoding},
+				},
+			}
+
+			rc := NewResponseChain(resp, -1)
+			require.NoError(t, rc.Fill())
+			t.Cleanup(rc.Close)
+
+			assert.Equal(t, raw, rc.BodyString())
+		})
+	}
+}
+
 // TestResponseChain_EmptyBody tests handling of empty response bodies
 func TestResponseChain_EmptyBody(t *testing.T) {
 	resp := &http.Response{
