@@ -24,7 +24,7 @@ require (
 	github.com/miekg/dns v1.1.62
 	github.com/minio/selfupdate v0.6.1-0.20230907112617-f11e74f84ca7
 	github.com/pkg/errors v0.9.1
-	github.com/projectdiscovery/blackrock v0.0.2
+	github.com/projectdiscovery/blackrock v0.0.4
 	github.com/projectdiscovery/fdmax v0.0.6
 	github.com/projectdiscovery/jarm-go v0.0.0-20260910160638-430e2bae86f6
 	github.com/projectdiscovery/machineid v0.0.0-20250715113114-c77eb3567582
@@ -73,7 +73,7 @@ require (
 	github.com/nxadm/tail v1.4.11 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/projectdiscovery/fastdialer v0.6.3 // indirect
-	github.com/projectdiscovery/networkpolicy v0.1.58 // indirect
+	github.com/projectdiscovery/networkpolicy v0.1.59 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.119 // indirect
 	github.com/refraction-networking/utls v1.8.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
